@@ -1,0 +1,14 @@
+var searchData=
+[
+  ['observablecollection',['ObservableCollection',['../class_orange_bug_reloaded_1_1_core_1_1_observable_collection.html#a07031d4dcebc52c36cf5097b3c319fea',1,'OrangeBugReloaded.Core.ObservableCollection.ObservableCollection()'],['../class_orange_bug_reloaded_1_1_core_1_1_observable_collection.html#a37a94d58d12241e38944046fb99e4fb4',1,'OrangeBugReloaded.Core.ObservableCollection.ObservableCollection(IEnumerable&lt; T &gt; items)']]],
+  ['observabledictionary',['ObservableDictionary',['../class_orange_bug_reloaded_1_1_core_1_1_observable_dictionary.html#ae2e1cc2001a7144507d9ec62b47917ea',1,'OrangeBugReloaded.Core.ObservableDictionary.ObservableDictionary()'],['../class_orange_bug_reloaded_1_1_core_1_1_observable_dictionary.html#a6bd6024c72c7d83b3c87e363fc9d66e0',1,'OrangeBugReloaded.Core.ObservableDictionary.ObservableDictionary(IDictionary&lt; TKey, TValue &gt; entries)']]],
+  ['onsaved',['OnSaved',['../interface_orange_bug_reloaded_1_1_core_1_1_i_read_only_chunk.html#af1d8cae5130e1d4c89821308764d9891',1,'OrangeBugReloaded.Core.IReadOnlyChunk.OnSaved()'],['../class_orange_bug_reloaded_1_1_core_1_1_chunk.html#a9c1e1be5ae8ab0bc46225b9fe5bf5875',1,'OrangeBugReloaded.Core.Chunk.OnSaved()']]],
+  ['operator_20rectangle',['operator Rectangle',['../struct_orange_bug_reloaded_1_1_core_1_1_rectangle.html#a31595902df2027b213ad366996adb6f6',1,'OrangeBugReloaded::Core::Rectangle']]],
+  ['operator_21_3d',['operator!=',['../struct_orange_bug_reloaded_1_1_core_1_1_point.html#a0bbf718c8a048a296e377909960e11ba',1,'OrangeBugReloaded::Core::Point']]],
+  ['operator_25',['operator%',['../struct_orange_bug_reloaded_1_1_core_1_1_point.html#a00e4194d273b4b1b1d6344e9f4f34dce',1,'OrangeBugReloaded::Core::Point']]],
+  ['operator_2a',['operator*',['../struct_orange_bug_reloaded_1_1_core_1_1_point.html#abb770390df7842128d8a37fda2de03d0',1,'OrangeBugReloaded.Core.Point.operator*(Point p, int scale)'],['../struct_orange_bug_reloaded_1_1_core_1_1_point.html#a397c2b432227af4be0bc9acd2c03661b',1,'OrangeBugReloaded.Core.Point.operator*(int scale, Point p)']]],
+  ['operator_2b',['operator+',['../struct_orange_bug_reloaded_1_1_core_1_1_point.html#a9cc696857fb1ed30551175e9f983c382',1,'OrangeBugReloaded::Core::Point']]],
+  ['operator_2d',['operator-',['../struct_orange_bug_reloaded_1_1_core_1_1_point.html#ad26dfa4a3fd55f8d9a1e51b93ea4e056',1,'OrangeBugReloaded.Core.Point.operator-(Point p)'],['../struct_orange_bug_reloaded_1_1_core_1_1_point.html#a3fb48b90a75c4d0d390ce6d8605b73e7',1,'OrangeBugReloaded.Core.Point.operator-(Point a, Point b)']]],
+  ['operator_2f',['operator/',['../struct_orange_bug_reloaded_1_1_core_1_1_point.html#a846422ebcfcee4af2342f7726f2e1072',1,'OrangeBugReloaded::Core::Point']]],
+  ['operator_3d_3d',['operator==',['../struct_orange_bug_reloaded_1_1_core_1_1_point.html#a8b9070c02dd24c8daf9fa92e7a4d15fa',1,'OrangeBugReloaded::Core::Point']]]
+];

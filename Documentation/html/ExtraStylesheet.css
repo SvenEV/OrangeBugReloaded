@@ -1,0 +1,128 @@
+#projectname
+{
+	font: 200% Tahoma, Arial,sans-serif;
+	margin: 0px;
+	padding: 2px 0px;
+    color: white;
+}
+
+#projectlogo img {
+    margin: 12px;
+    width: 40px;
+}
+
+#titlearea
+{
+	padding: 0px;
+	margin: 0px;
+	width: 100%;
+    background-color: #727171;
+    border: none;
+}
+
+a {
+	color: black;
+	font-weight: normal;
+	text-decoration: none;
+    text-shadow: none;
+}
+
+a:visited {
+    color: black;
+}
+
+.contents a:visited {
+    color: black;
+}
+
+#nav-tree {
+    background-color: #e6e6e6;
+    background-image: none;
+}
+
+#nav-tree .selected {
+  background-image: none;
+  background-color: #FE6A01;
+  color: #fff;
+}
+
+.tablist a {
+    color: white;
+    text-shadow: none;
+    background-image: none;
+}
+
+.tablist a:hover {
+    text-shadow: none;
+    background-image: none;
+    background-color: #727171;
+}
+
+.tablist li {
+    background-image: none;
+}
+
+.tablist li.current a {
+    text-shadow: none;
+    background-image: none;
+    background-color: #FE6A01;
+}
+
+.navpath ul {
+    border: none;
+    background-image: none;
+    background-color: #5a5959;
+}
+
+.navpath li.navelem a {
+    text-shadow: none;
+    color: white;
+}
+
+.navpath li {
+    background-image: none;
+    padding-right: 0;
+}
+
+.navpath li.navelem a:after {
+    content: "»";
+    margin-left: 10px;
+}
+
+div.header {
+    background-image: none;
+    background-color: #e6e6e6;
+}
+
+.tabs, .tabs2, .tabs3 {
+    background-image: none;
+    background-color: #5a5959;
+}
+
+h2.groupheader {
+    border: none;
+    color: black;
+    padding-bottom: 12px;
+}
+
+.memproto, dl.reflist dt {
+    background-image: none;
+    border-radius: 0;
+    box-shadow: none;
+    background-color: #e6e6e6;
+}
+
+.memdoc, dl.reflist dd {
+    background-image: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.memSeparator {
+    border-bottom: 1px solid #727171;
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 6px;
+}

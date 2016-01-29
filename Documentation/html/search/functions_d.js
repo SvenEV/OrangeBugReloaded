@@ -1,0 +1,7 @@
+var searchData=
+[
+  ['saveasync',['SaveAsync',['../interface_orange_bug_reloaded_1_1_core_1_1_i_chunk_storage.html#a3d3c57e6709d079bfcecf288353069cf',1,'OrangeBugReloaded.Core.IChunkStorage.SaveAsync()'],['../class_orange_bug_reloaded_1_1_core_1_1_in_memory_chunk_storage.html#a28f05a2a202b14f6d672849d209fd13f',1,'OrangeBugReloaded.Core.InMemoryChunkStorage.SaveAsync()']]],
+  ['savechangesasync',['SaveChangesAsync',['../class_orange_bug_reloaded_1_1_core_1_1_chunk_loader.html#a7a7f8dd1298704bcb3c5600d1e35f579',1,'OrangeBugReloaded::Core::ChunkLoader']]],
+  ['savemetadataasync',['SaveMetadataAsync',['../interface_orange_bug_reloaded_1_1_core_1_1_i_chunk_storage.html#a7d58593010e9c1f2762d1e2b36732db4',1,'OrangeBugReloaded.Core.IChunkStorage.SaveMetadataAsync()'],['../class_orange_bug_reloaded_1_1_core_1_1_in_memory_chunk_storage.html#a4131ecbfaabc09afd959f94842578cd2',1,'OrangeBugReloaded.Core.InMemoryChunkStorage.SaveMetadataAsync()']]],
+  ['setasync',['SetAsync',['../interface_orange_bug_reloaded_1_1_core_1_1_i_map.html#a54d4107501396052501f65cd3ec02fec',1,'OrangeBugReloaded.Core.IMap.SetAsync()'],['../class_orange_bug_reloaded_1_1_core_1_1_map.html#a84d9a54d5172fa8db5d0490bd506ddd6',1,'OrangeBugReloaded.Core.Map.SetAsync()'],['../class_orange_bug_reloaded_1_1_core_1_1_transactions_1_1_map_transaction.html#a4837c69cd7a4c788cb1368226e1f2044',1,'OrangeBugReloaded.Core.Transactions.MapTransaction.SetAsync()']]]
+];

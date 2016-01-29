@@ -1,0 +1,5 @@
+var searchData=
+[
+  ['itemadded',['ItemAdded',['../interface_orange_bug_reloaded_1_1_core_1_1_i_notify_collection_changed.html#afa24490ec140a01c12124e380c3c15a3',1,'OrangeBugReloaded.Core.INotifyCollectionChanged.ItemAdded()'],['../class_orange_bug_reloaded_1_1_core_1_1_observable_collection.html#a8fa98a3ccd7755a270490d982e386a4e',1,'OrangeBugReloaded.Core.ObservableCollection.ItemAdded()'],['../class_orange_bug_reloaded_1_1_core_1_1_observable_dictionary.html#a19ea0fb33eadb114a8f5f54d5729985e',1,'OrangeBugReloaded.Core.ObservableDictionary.ItemAdded()']]],
+  ['itemremoved',['ItemRemoved',['../interface_orange_bug_reloaded_1_1_core_1_1_i_notify_collection_changed.html#a8b6e7aa8c65875a6df75109eeb449a54',1,'OrangeBugReloaded.Core.INotifyCollectionChanged.ItemRemoved()'],['../class_orange_bug_reloaded_1_1_core_1_1_observable_collection.html#a013dcd3189cf344120929dfe9e7a77c5',1,'OrangeBugReloaded.Core.ObservableCollection.ItemRemoved()'],['../class_orange_bug_reloaded_1_1_core_1_1_observable_dictionary.html#aa757cad46b870be56d4f42a8d1f6f485',1,'OrangeBugReloaded.Core.ObservableDictionary.ItemRemoved()']]]
+];
