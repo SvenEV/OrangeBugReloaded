@@ -3,13 +3,13 @@ using System;
 
 namespace OrangeBugReloaded.Core
 {
-    public abstract class GameEventArgs<T>
+    public abstract class GameEventArgs<TResult, TTransaction> where TTransaction : IReadOnlyMapTransaction
     {
-        public IMapTransactionWithMoveSupport Transaction { get; }
+        public TTransaction Transaction { get; }
 
-        public T Result { get; set; }
+        public TResult Result { get; set; }
 
-        public GameEventArgs(IMapTransactionWithMoveSupport transaction)
+        public GameEventArgs(TTransaction transaction)
         {
             Transaction = transaction;
         }
@@ -24,7 +24,7 @@ namespace OrangeBugReloaded.Core
         }
     }
 
-    public class EntityEventArgs : GameEventArgs<Entity>
+    public class EntityEventArgs : GameEventArgs<Entity, IMapTransactionWithMoveSupport>
     {
         public EntityEventArgs(IMapTransactionWithMoveSupport transaction)
             : base(transaction)
@@ -32,7 +32,34 @@ namespace OrangeBugReloaded.Core
         }
     }
 
-    public class TileEventArgs : GameEventArgs<Tile>
+    public class AttachEventArgs : TileEventArgs
+    {
+        /// <summary>
+        /// If set to true, the detachment of the entity from the source tile
+        /// is not executed. Note that this may duplicate an entity if the
+        /// target tile decides to correctly attach the entity.
+        /// </summary>
+        public bool PreventDetach { get; set; }
+
+        public AttachEventArgs(IMapTransactionWithMoveSupport transaction) : base(transaction)
+        {
+        }
+    }
+
+    public class DetachEventArgs : TileEventArgs
+    {
+        /// <summary>
+        /// If set to true, the attachment of the entity to the target tile
+        /// is not executed.
+        /// </summary>
+        public bool PreventAttach { get; set; }
+
+        public DetachEventArgs(IMapTransactionWithMoveSupport transaction) : base(transaction)
+        {
+        }
+    }
+
+    public class TileEventArgs : GameEventArgs<Tile, IMapTransactionWithMoveSupport>
     {
         public TileEventArgs(IMapTransactionWithMoveSupport transaction)
             : base(transaction)

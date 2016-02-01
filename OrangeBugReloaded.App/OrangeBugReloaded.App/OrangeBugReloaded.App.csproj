@@ -96,11 +96,13 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="Common\AudioPlayer.cs" />
+    <Compile Include="Common\EntityMoveAnimationPlugin.cs" />
     <Compile Include="Common\IRendererPlugin.cs" />
     <Compile Include="Common\Mathf.cs" />
     <Compile Include="Common\OrangeBugAudioPlayer.cs" />
     <Compile Include="Common\OrangeBugRenderer.cs" />
     <Compile Include="Common\PluginCollection.cs" />
+    <Compile Include="Common\PluginDrawEventArgs.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>

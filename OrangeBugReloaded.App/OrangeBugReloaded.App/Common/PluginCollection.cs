@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace OrangeBugReloaded
+namespace OrangeBugReloaded.App.Common
 {
     public class PluginCollection
     {
@@ -58,6 +58,14 @@ namespace OrangeBugReloaded
 
                 foreach (var plugin in _plugins)
                     plugin.Initialize(newMap);
+            }
+        }
+
+        internal void RaiseOnDraw(PluginDrawEventArgs e)
+        {
+            foreach (var plugin in _plugins)
+            {
+                plugin.OnDraw(e);
             }
         }
     }

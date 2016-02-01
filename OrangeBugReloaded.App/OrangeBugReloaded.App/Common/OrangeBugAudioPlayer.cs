@@ -1,20 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
-using Microsoft.Graphics.Canvas;
 using OrangeBugReloaded.Core;
 using System.Reactive.Linq;
 using OrangeBugReloaded.Core.Rendering;
 
-namespace OrangeBugReloaded
+namespace OrangeBugReloaded.App.Common
 {
     public class OrangeBugAudioPlayer : IRendererPlugin
     {
         private Dictionary<string, Uri> _sounds = new Dictionary<string, Uri>();
         private IDisposable _eventSubscription;
 
-        public void OnDraw(CanvasDrawingSession g, Vector2 canvasSize)
+        public void OnDraw(PluginDrawEventArgs e)
         {
         }
 

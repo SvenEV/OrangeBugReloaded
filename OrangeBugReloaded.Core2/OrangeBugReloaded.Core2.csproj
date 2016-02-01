@@ -112,13 +112,16 @@
     <Compile Include="Entities\BalloonEntity.cs" />
     <Compile Include="Entities\BoxEntity.cs" />
     <Compile Include="Entities\CoinEntity.cs" />
+    <Compile Include="Entities\IPusher.cs" />
     <Compile Include="Entities\NullEntity.cs" />
+    <Compile Include="Entities\PistonEntity.cs" />
     <Compile Include="Entities\PlayerEntity.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="EntityFilterMode.cs" />
     <Compile Include="EventArgs.cs" />
     <Compile Include="Events\ChunkAddedEvent.cs" />
     <Compile Include="Events\ChunkRemovedEvent.cs" />
+    <Compile Include="Events\EntityMoveEvent.cs" />
     <Compile Include="Events\IGameEvent.cs" />
     <Compile Include="Events\IGameEventEmitter.cs" />
     <Compile Include="ExtensionMethods.cs" />
@@ -148,6 +151,7 @@
     <Compile Include="Tiles\ITrigger.cs" />
     <Compile Include="Tiles\PathTile.cs" />
     <Compile Include="Tiles\PinTile.cs" />
+    <Compile Include="Tiles\PistonTile.cs" />
     <Compile Include="Tiles\TeleporterTile.cs" />
     <Compile Include="Tiles\WallTile.cs" />
     <Compile Include="Transactions\EntityMoveInfo.cs" />

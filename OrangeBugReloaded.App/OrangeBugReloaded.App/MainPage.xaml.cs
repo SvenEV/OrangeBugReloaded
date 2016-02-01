@@ -1,4 +1,5 @@
 ﻿using OrangeBugReloaded.Core;
+using OrangeBugReloaded.App.Common;
 using System;
 using Windows.UI.Xaml.Controls;
 using System.Numerics;
@@ -55,11 +56,12 @@ namespace OrangeBugReloaded.App
 
         private async void Init()
         {
-            _map = new Map(new InMemoryChunkStorage(new[] { Chunk.SampleChunk }));
+            _map = new Map(new InMemoryChunkStorage(new[] { Chunk.SampleChunk, Chunk.SampleChunk2 }));
 
             _renderer = new OrangeBugRenderer();
             _renderer.Attach(canvas);
             _renderer.Plugins.Add<OrangeBugAudioPlayer>();
+            _renderer.Plugins.Add<EntityMoveAnimationPlugin>();
             _renderer.Map = _map;
 
             await _map.ChunkLoader.TryGetAsync(Point.Zero);

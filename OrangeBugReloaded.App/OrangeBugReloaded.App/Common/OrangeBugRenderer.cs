@@ -2,7 +2,6 @@
 using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using OrangeBugReloaded.Core;
-using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Rendering;
 using System;
 using System.Collections.Generic;
@@ -11,7 +10,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using F = Windows.Foundation;
 
-namespace OrangeBugReloaded
+namespace OrangeBugReloaded.App.Common
 {
     public class OrangeBugRenderer
     {
@@ -21,7 +20,6 @@ namespace OrangeBugReloaded
         private Dictionary<string, CanvasBitmap> _sprites = new Dictionary<string, CanvasBitmap>();
         private CanvasAnimatedControl _canvas;
         private Map _map;
-        private IDisposable _mapEventSubscription;
         private float _currentZoomLevel = 50;
         private Vector2 _currentCameraPosition = Vector2.Zero;
 
@@ -32,15 +30,15 @@ namespace OrangeBugReloaded
             {
                 if (!Equals(_map, value))
                 {
-                    _mapEventSubscription?.Dispose();
                     _map = value;
-                    _mapEventSubscription = _map?.Events.Subscribe(OnEvent);
                     Plugins.OnMapChanged(value);
                 }
             }
         }
 
         public PluginCollection Plugins { get; }
+
+        public IReadOnlyDictionary<string, CanvasBitmap> Sprites => _sprites;
 
         public float ZoomLevel { get; set; }
 
@@ -65,11 +63,6 @@ namespace OrangeBugReloaded
             _canvas.Draw -= OnDraw;
             _canvas.CreateResources -= OnCreateResources;
             _canvas = null;
-        }
-
-        private void OnEvent(IGameEvent e)
-        {
-            System.Diagnostics.Debug.WriteLine(e.ToString());
         }
 
         private void OnDraw(ICanvasAnimatedControl sender, CanvasAnimatedDrawEventArgs args)
@@ -111,6 +104,16 @@ namespace OrangeBugReloaded
                     }
                 }
             }
+
+            var pluginDrawArgs = new PluginDrawEventArgs(args, this);
+            Plugins.RaiseOnDraw(pluginDrawArgs);
+        }
+
+        public Vector2 TransformPosition(Point position)
+        {
+            return new Vector2(
+                (position.X - _currentCameraPosition.X - .5f) * _currentZoomLevel + (float)_canvas.Size.Width / 2,
+                -(position.Y - _currentCameraPosition.Y + .5f) * _currentZoomLevel + (float)_canvas.Size.Height / 2);
         }
 
         private void OnCreateResources(CanvasAnimatedControl sender, CanvasCreateResourcesEventArgs args)
@@ -143,6 +146,7 @@ namespace OrangeBugReloaded
             _sprites["InkTile-Red"] = await loadSpriteAsync("RedInk");
             _sprites["InkTile-Green"] = await loadSpriteAsync("GreenInk");
             _sprites["InkTile-Blue"] = await loadSpriteAsync("BlueInk");
+            _sprites["PistonTile"] = await loadSpriteAsync("Piston");
 
             // Entity sprites
             _sprites["PlayerEntity"] = await loadSpriteAsync("PlayerRight");
@@ -150,6 +154,7 @@ namespace OrangeBugReloaded
             _sprites["BalloonEntity-Red"] = await loadSpriteAsync("RedBall");
             _sprites["BalloonEntity-Green"] = await loadSpriteAsync("GreenBall");
             _sprites["BalloonEntity-Blue"] = await loadSpriteAsync("BlueBall");
+            _sprites["PistonEntity"] = _sprites["NoSprite"];
         }
     }
 }

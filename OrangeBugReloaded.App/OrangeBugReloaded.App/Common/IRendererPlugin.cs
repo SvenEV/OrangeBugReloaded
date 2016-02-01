@@ -1,14 +1,13 @@
-﻿using Microsoft.Graphics.Canvas;
+﻿using OrangeBugReloaded.App.Common;
 using OrangeBugReloaded.Core;
 using System;
-using System.Numerics;
 
 namespace OrangeBugReloaded
 {
     public interface IRendererPlugin : IDisposable
     {
         void Initialize(Map map);
-        void OnDraw(CanvasDrawingSession g, Vector2 canvasSize);
+        void OnDraw(PluginDrawEventArgs e);
         //Task OnCreateResourcesAsync(ICanvasResourceCreatorWithDpi resourceCreator);
     }
 }

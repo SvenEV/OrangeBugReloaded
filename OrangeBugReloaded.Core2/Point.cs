@@ -110,6 +110,18 @@ namespace OrangeBugReloaded.Core
 #pragma warning restore CS1591 // Fehledes XML-Kommentar für öffentlich sichtbaren Typ oder Element
 
         /// <summary>
+        /// Throws an exception if the <see cref="Point"/> is not a direction,
+        /// i.e. if <see cref="IsDirection"/> is false.
+        /// </summary>
+        /// <remarks>The point</remarks>
+        public Point EnsureDirection()
+        {
+            if (!IsDirection)
+                throw new ArgumentException("The specified point does not represent a direction");
+            return this;
+        }
+
+        /// <summary>
         /// Returns a string representation of the <see cref="Point"/>.
         /// </summary>
         /// <returns></returns>

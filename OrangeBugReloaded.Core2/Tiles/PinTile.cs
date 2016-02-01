@@ -23,7 +23,7 @@ namespace OrangeBugReloaded.Core.Tiles
             Color = color;
         }
 
-        internal override async Task AttachEntityAsync(TileEventArgs e)
+        internal override async Task AttachEntityAsync(AttachEventArgs e)
         {
             if (e.Transaction.CurrentMove.Entity is PlayerEntity)
             {

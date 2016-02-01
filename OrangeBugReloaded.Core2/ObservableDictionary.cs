@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace OrangeBugReloaded.Core
 {
@@ -45,10 +46,10 @@ namespace OrangeBugReloaded.Core
         public bool IsReadOnly => false;
 
         /// <inheritdoc/>
-        public ICollection<TKey> Keys { get { lock (_lock) return _dict.Keys; } }
+        public ICollection<TKey> Keys { get { lock (_lock) return _dict.Keys.ToArray(); } }
 
         /// <inheritdoc/>
-        public ICollection<TValue> Values { get { lock (_lock) return _dict.Values; } }
+        public ICollection<TValue> Values { get { lock (_lock) return _dict.Values.ToArray(); } }
 
         /// <inheritdoc/>
         public event Action<KeyValuePair<TKey, TValue>> ItemAdded;

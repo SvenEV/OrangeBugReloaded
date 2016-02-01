@@ -38,6 +38,7 @@ namespace OrangeBugReloaded.Core
         public bool HasChanged { get; internal set; }
 
         public static Chunk SampleChunk { get; } = CreateSampleChunk();
+        public static Chunk SampleChunk2 { get; } = CreateSampleChunk2();
 
         public Chunk(Point index)
         {
@@ -69,6 +70,29 @@ namespace OrangeBugReloaded.Core
             chunk[4, 5, MapLayer.Gameplay] = new InkTile(InkColor.Red);
             chunk[4, 4, MapLayer.Gameplay] = new InkTile(InkColor.Green);
             chunk[6, 5, MapLayer.Gameplay] = new InkTile(InkColor.Blue);
+
+            chunk[0, 3, MapLayer.Gameplay] = PathTile.Default;
+            chunk[0, 4, MapLayer.Gameplay] = PathTile.Default;
+            return chunk;
+        }
+
+        private static Chunk CreateSampleChunk2()
+        {
+            var chunk = new Chunk(Point.West);
+
+            for (var y = 1; y < Size - 1; y++)
+                for (var x = 1; x < Size - 1; x++)
+                    chunk[x, y, MapLayer.Gameplay] = PathTile.Default;
+
+            chunk[3, 3, MapLayer.Gameplay] = new PistonTile(new Point(3, 2), Point.East);
+            chunk[4, 3, MapLayer.Gameplay] = Tile.Compose(new ButtonTile(false, EntityFilterMode.Entities), BoxEntity.Default);
+            chunk[5, 3, MapLayer.Gameplay] = new InkTile(InkColor.Blue);
+
+            chunk[2, 5, MapLayer.Gameplay] = new PistonTile(new Point(-4, 3), Point.South);
+            chunk[3, 5, MapLayer.Gameplay] = new GateTile(new Point(-4, 3), false);
+
+            chunk[7, 3, MapLayer.Gameplay] = PathTile.Default;
+            chunk[7, 4, MapLayer.Gameplay] = PathTile.Default;
             return chunk;
         }
 

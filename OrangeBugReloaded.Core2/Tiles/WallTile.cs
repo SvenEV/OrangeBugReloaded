@@ -11,7 +11,7 @@ namespace OrangeBugReloaded.Core.Tiles
 
         private WallTile() { }
 
-        internal override Task AttachEntityAsync(TileEventArgs e)
+        internal override Task AttachEntityAsync(AttachEventArgs e)
         {
             e.Transaction.Cancel();
             return Task.CompletedTask;

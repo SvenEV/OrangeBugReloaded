@@ -6,7 +6,7 @@ namespace OrangeBugReloaded.Core.Entities
     /// <summary>
     /// This is Orange Bug!
     /// </summary>
-    public class PlayerEntity : Entity
+    public class PlayerEntity : Entity, IPusher
     {
         public static PlayerEntity PlayerLookingNorth { get; } = new PlayerEntity(Point.North);
         public static PlayerEntity PlayerLookingEast { get; } = new PlayerEntity(Point.East);

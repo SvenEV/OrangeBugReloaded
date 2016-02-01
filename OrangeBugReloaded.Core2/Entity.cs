@@ -54,7 +54,7 @@ namespace OrangeBugReloaded.Core
         /// <returns>Task</returns>
         protected static async Task DetachByPushingAsync(TileEventArgs e, Tile tile)
         {
-            if (e.Transaction.CurrentMove.Entity is PlayerEntity && e.Transaction.CurrentMove.Offset.IsDirection)
+            if (e.Transaction.CurrentMove.Entity is IPusher && e.Transaction.CurrentMove.Offset.IsDirection)
             {
                 await e.Transaction.MoveAsync(
                     e.Transaction.CurrentMove.TargetPosition,
@@ -120,7 +120,7 @@ namespace OrangeBugReloaded.Core
         public static Entity EnsureNotNone(this Entity entity, [CallerMemberName]string callerMemberName = null)
         {
             if (entity.EnsureNotNull() == Entity.None)
-                throw new ArgumentException($"No entity in {callerMemberName}");
+                throw new ArgumentException($"Entity is null or none in {callerMemberName}");
             return entity;
         }
     }

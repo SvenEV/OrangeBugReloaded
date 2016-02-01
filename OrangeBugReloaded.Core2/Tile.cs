@@ -11,6 +11,15 @@ namespace OrangeBugReloaded.Core
 
         public Entity Entity { get; private set; } = Entity.None;
 
+        public Tile()
+        {
+        }
+
+        protected Tile(Entity entity)
+        {
+            Entity = entity.EnsureNotNull();
+        }
+
         /// <summary>
         /// Attaches an <see cref="Entity"/> to the <see cref="Tile"/>.
         /// </summary>
@@ -30,7 +39,7 @@ namespace OrangeBugReloaded.Core
         /// </remarks>
         /// <param name="e">Event arguments</param>
         /// <returns>Task</returns>
-        internal virtual async Task AttachEntityAsync(TileEventArgs e)
+        internal virtual async Task AttachEntityAsync(AttachEventArgs e)
         {
             if (Entity != Entity.None)
                 await Entity.DetachAsync(e, this);

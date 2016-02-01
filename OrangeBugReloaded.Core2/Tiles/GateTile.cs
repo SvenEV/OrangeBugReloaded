@@ -31,7 +31,7 @@ namespace OrangeBugReloaded.Core.Tiles
             IsOpen = isOpen;
         }
 
-        internal override async Task AttachEntityAsync(TileEventArgs e)
+        internal override async Task AttachEntityAsync(AttachEventArgs e)
         {
             if (IsOpen)
             {

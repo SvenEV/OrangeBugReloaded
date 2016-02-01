@@ -142,17 +142,20 @@ namespace OrangeBugReloaded.Core
 
         private async Task MoveCoreAsync(Point sourcePosition, Point targetPosition, EntityMoveTransaction transaction)
         {
+            var source = await transaction.GetAsync(sourcePosition);
+            var target = await transaction.GetAsync(targetPosition);
+            var originalEntity = source.Entity;
+
             var move = new EntityMoveInfo
             {
                 SourcePosition = sourcePosition,
-                TargetPosition = targetPosition
+                TargetPosition = targetPosition,
+                Entity = source.Entity
             };
 
             transaction.Moves.Push(move);
 
-            var source = await transaction.GetAsync(sourcePosition);
-            var target = await transaction.GetAsync(targetPosition);
-            move.Entity = source.Entity;
+            source.Entity.EnsureNotNone();
 
             // OnBeginMove: Notify entity that a move has been initiated
             var beginMoveArgs = new EntityEventArgs(transaction);
@@ -164,20 +167,30 @@ namespace OrangeBugReloaded.Core
             move.Entity = beginMoveArgs.Result;
 
             // Detach: Remove the entity from the source tile
-            var detachArgs = new TileEventArgs(transaction);
+            var detachArgs = new DetachEventArgs(transaction);
             await source.DetachEntityAsync(detachArgs);
             detachArgs.ValidateResult();
             if (transaction.IsCancelled) return;
-            source = detachArgs.Result;
-            await transaction.SetAsync(sourcePosition, source);
 
             // Attach: Add the entity to the target tile
-            var attachArgs = new TileEventArgs(transaction);
+            var attachArgs = new AttachEventArgs(transaction);
             await target.AttachEntityAsync(attachArgs);
             attachArgs.ValidateResult();
             if (transaction.IsCancelled) return;
-            target = attachArgs.Result;
-            await transaction.SetAsync(targetPosition, target);
+
+            if (!attachArgs.PreventDetach)
+            {
+                source = detachArgs.Result;
+                await transaction.SetAsync(sourcePosition, detachArgs.Result);
+            }
+
+            if (!detachArgs.PreventAttach)
+            {
+                target = attachArgs.Result;
+                await transaction.SetAsync(targetPosition, attachArgs.Result);
+            }
+
+            transaction.Emit(new EntityMoveEvent(sourcePosition, targetPosition, originalEntity, target.Entity));
 
             transaction.Moves.Pop();
         }
@@ -210,9 +223,10 @@ namespace OrangeBugReloaded.Core
             {
                 for (var x = 0; x < Chunk.Size; x++)
                 {
-                    var p = new Point(x, y);
-                    Dependencies.RemoveDependenciesOf(kvp.Value[p, MapLayer.Gameplay], p);
-                    Dependencies.RemoveDependenciesOn(p);
+                    var localPoint = new Point(x, y);
+                    var globalPoint = kvp.Value.Index * Chunk.Size + localPoint;
+                    Dependencies.RemoveDependenciesOf(kvp.Value[localPoint, MapLayer.Gameplay], globalPoint);
+                    Dependencies.RemoveDependenciesOn(globalPoint);
                 }
             }
 
@@ -225,8 +239,9 @@ namespace OrangeBugReloaded.Core
             {
                 for (var x = 0; x < Chunk.Size; x++)
                 {
-                    var p = new Point(x, y);
-                    Dependencies.AddDependenciesOf(kvp.Value[p, MapLayer.Gameplay], p);
+                    var localPoint = new Point(x, y);
+                    var globalPoint = kvp.Value.Index * Chunk.Size + localPoint;
+                    Dependencies.AddDependenciesOf(kvp.Value[localPoint, MapLayer.Gameplay], globalPoint);
                 }
             }
 
