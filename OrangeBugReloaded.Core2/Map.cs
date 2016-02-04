@@ -111,7 +111,7 @@ namespace OrangeBugReloaded.Core
         {
             var source = await transactionChain.GetAsync(sourcePosition);
             var target = await transactionChain.GetAsync(targetPosition);
-            var originalEntity = source.Entity;
+            var originalSource = source;
 
             var move = new EntityMoveInfo
             {
@@ -159,7 +159,7 @@ namespace OrangeBugReloaded.Core
                 await transactionChain.SetAsync(targetPosition, attachArgs.Result);
             }
 
-            transactionChain.Emit(new EntityMoveEvent(sourcePosition, targetPosition, originalEntity, target.Entity));
+            transactionChain.Emit(new EntityMoveEvent(sourcePosition, targetPosition, originalSource, target));
 
             transaction.Moves.Pop();
         }

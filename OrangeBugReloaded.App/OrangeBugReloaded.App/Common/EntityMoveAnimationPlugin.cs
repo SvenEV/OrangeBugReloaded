@@ -23,7 +23,7 @@ namespace OrangeBugReloaded.App.Common
 
         private void OnEntityMoved(EntityMoveEvent e)
         {
-            Debug.WriteLine($"{e.SourceEntity.GetType().Name} at {e.SourcePosition} -> {e.TargetEntity.GetType().Name} at {e.TargetPosition}");
+            Debug.WriteLine($"{e.Source.Entity.GetType().Name} at {e.SourcePosition} -> {e.Target.Entity.GetType().Name} at {e.TargetPosition}");
             _animations.Add(new Animation(e));
         }
 
@@ -32,10 +32,6 @@ namespace OrangeBugReloaded.App.Common
             for (var i = 0; i < _animations.Count; i++)
             {
                 var animation = _animations[i];
-                var entity = animation.Event.SourceEntity;
-                var sprite = e.Renderer.Sprites[VisualHintAttribute.GetVisualName(entity)];
-                var sourcePosition = e.Renderer.TransformPosition(animation.Event.SourcePosition);
-                var targetPosition = e.Renderer.TransformPosition(animation.Event.TargetPosition);
 
                 var t = (DateTime.Now - animation.StartTime).TotalSeconds / animation.Duration.TotalSeconds;
 
@@ -46,10 +42,21 @@ namespace OrangeBugReloaded.App.Common
                 }
                 else
                 {
-                    var finalPosition = Vector2.Lerp(sourcePosition, targetPosition, (float)t);
-                    var rect = new F.Rect(finalPosition.X, finalPosition.Y, e.Renderer.ZoomLevel, e.Renderer.ZoomLevel);
+                    var sourcePosition = e.Renderer.TransformPosition(animation.Event.SourcePosition);
+                    var targetPosition = e.Renderer.TransformPosition(animation.Event.TargetPosition);
+                    var entityPosition = Vector2.Lerp(sourcePosition, targetPosition, (float)t);
 
-                    e.Args.DrawingSession.DrawImage(sprite, rect);
+                    var sourceRect = new F.Rect(sourcePosition.X, sourcePosition.Y, e.Renderer.ZoomLevel, e.Renderer.ZoomLevel);
+                    var targetRect = new F.Rect(targetPosition.X, targetPosition.Y, e.Renderer.ZoomLevel, e.Renderer.ZoomLevel);
+                    var entityRect = new F.Rect(entityPosition.X, entityPosition.Y, e.Renderer.ZoomLevel, e.Renderer.ZoomLevel);
+
+                    var sourceSprite = e.Renderer.GetSprite(animation.Event.Source);
+                    var targetSprite = e.Renderer.GetSprite(animation.Event.Target);
+                    var entitySprite = e.Renderer.GetSprite(animation.Event.Source.Entity);
+
+                    e.Args.DrawingSession.DrawImage(sourceSprite, sourceRect);
+                    e.Args.DrawingSession.DrawImage(targetSprite, targetRect);
+                    e.Args.DrawingSession.DrawImage(entitySprite, entityRect);
                 }
             }
         }

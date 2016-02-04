@@ -26,13 +26,13 @@ namespace OrangeBugReloaded.Core
         /// The X coordinate of the left edge.
         /// </summary>
         [JsonProperty]
-        public int Left { get; private set; }
+        public int Left { get; }
 
         /// <summary>
         /// The Y coordinate of the bottom edge.
         /// </summary>
         [JsonProperty]
-        public int Bottom { get; private set; }
+        public int Bottom { get; }
 
         /// <summary>
         /// The X coordinate of the right edge that is the sum
@@ -50,13 +50,13 @@ namespace OrangeBugReloaded.Core
         /// The non-negative width.
         /// </summary>
         [JsonProperty]
-        public int Width { get; private set; }
+        public int Width { get; }
 
         /// <summary>
         /// The non-negative height.
         /// </summary>
         [JsonProperty]
-        public int Height { get; private set; }
+        public int Height { get; }
 
         /// <summary>
         /// Size of the <see cref="Rectangle"/>.
@@ -122,7 +122,9 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         /// <param name="point">Point</param>
         /// <returns>True if contained</returns>
-        public bool Contains(Point point) => point.X >= Left && point.X <= Left + Width && point.Y >= Bottom && point.Y <= Bottom + Height;
+        public bool Contains(Point point) =>
+            point.X >= Left && point.X <= Left + Width &&
+            point.Y >= Bottom && point.Y <= Bottom + Height;
 
         /// <summary>
         /// Calculates a new <see cref="Rectangle"/> that is expanded
@@ -168,7 +170,9 @@ namespace OrangeBugReloaded.Core
         /// <returns>Rectangle</returns>
         public static Rectangle FromEdges(int left, int top, int right, int bottom)
         {
-            if (right < left || top < bottom) throw new ArgumentOutOfRangeException();
+            if (right < left || top < bottom)
+                throw new ArgumentOutOfRangeException();
+
             return new Rectangle(left, bottom, right - left, top - bottom);
         }
 

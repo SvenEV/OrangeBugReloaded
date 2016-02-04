@@ -50,13 +50,13 @@ namespace OrangeBugReloaded.Core
         /// X coordinate.
         /// </summary>
         [JsonProperty]
-        public int X { get; private set; }
+        public int X { get; }
 
         /// <summary>
         /// Y coordinate.
         /// </summary>
         [JsonProperty]
-        public int Y { get; private set; }
+        public int Y { get; }
 
         /// <summary>
         /// True if the point indicates a direction

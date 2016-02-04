@@ -4,15 +4,15 @@
     {
         public Point SourcePosition { get; }
         public Point TargetPosition { get; }
-        public Entity SourceEntity { get; }
-        public Entity TargetEntity { get; }
+        public Tile Source { get; }
+        public Tile Target { get; }
 
-        public EntityMoveEvent(Point sourcePosition, Point targetPosition, Entity sourceEntity, Entity targetEntity)
+        public EntityMoveEvent(Point sourcePosition, Point targetPosition, Tile source, Tile target)
         {
             SourcePosition = sourcePosition;
             TargetPosition = targetPosition;
-            SourceEntity = sourceEntity;
-            TargetEntity = targetEntity;
+            Source = source;
+            Target = target;
         }
     }
 }

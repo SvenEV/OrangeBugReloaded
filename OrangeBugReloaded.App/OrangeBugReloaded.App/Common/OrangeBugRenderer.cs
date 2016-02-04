@@ -20,7 +20,7 @@ namespace OrangeBugReloaded.App.Common
         private Dictionary<string, CanvasBitmap> _sprites = new Dictionary<string, CanvasBitmap>();
         private CanvasAnimatedControl _canvas;
         private Map _map;
-        private float _currentZoomLevel = 50;
+        private float _currentZoomLevel = 40;
         private Vector2 _currentCameraPosition = Vector2.Zero;
 
         public Map Map
@@ -114,6 +114,11 @@ namespace OrangeBugReloaded.App.Common
             return new Vector2(
                 (position.X - _currentCameraPosition.X - .5f) * _currentZoomLevel + (float)_canvas.Size.Width / 2,
                 -(position.Y - _currentCameraPosition.Y + .5f) * _currentZoomLevel + (float)_canvas.Size.Height / 2);
+        }
+
+        public CanvasBitmap GetSprite(object o)
+        {
+            return _sprites.TryGetValue(VisualHintAttribute.GetVisualName(o), _sprites["NoSprite"]);
         }
 
         private void OnCreateResources(CanvasAnimatedControl sender, CanvasCreateResourcesEventArgs args)
