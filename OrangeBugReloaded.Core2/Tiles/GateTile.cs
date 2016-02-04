@@ -39,7 +39,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
             else
             {
-                e.Transaction.Cancel();
+                e.Cancel();
             }
         }
 
@@ -51,31 +51,31 @@ namespace OrangeBugReloaded.Core.Tiles
             }
             else
             {
-                e.Transaction.Cancel();
+                e.Cancel();
             }
         }
 
         internal override async Task OnEntityMoveTransactionCompletedAsync(TileEventArgs e)
         {
             // Check trigger state
-            var trigger = await e.Transaction.GetAsync(TriggerPosition) as ITrigger;
+            var trigger = await e.GetAsync(TriggerPosition) as ITrigger;
 
             if (trigger?.IsOn ?? false)
             {
                 e.Result = Compose(new GateTile(TriggerPosition, true), Entity);
-                if (!IsOpen) e.Transaction.Emit(new GateTileOpenCloseEvent(true));
+                if (!IsOpen) e.Emit(new GateTileOpenCloseEvent(true));
             }
             else
             {
                 if (Entity == Entity.None)
                 {
                     e.Result = new GateTile(TriggerPosition, false);
-                    if (IsOpen) e.Transaction.Emit(new GateTileOpenCloseEvent(false));
+                    if (IsOpen) e.Emit(new GateTileOpenCloseEvent(false));
                 }
                 else
                 {
                     e.Result = Compose(new GateTile(TriggerPosition, true), Entity);
-                    if (!IsOpen) e.Transaction.Emit(new GateTileOpenCloseEvent(true));
+                    if (!IsOpen) e.Emit(new GateTileOpenCloseEvent(true));
                 }
             }
         }

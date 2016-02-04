@@ -23,26 +23,25 @@ namespace OrangeBugReloaded.Core.Tiles
             Color = color;
         }
 
-        internal override async Task AttachEntityAsync(AttachEventArgs e)
+        internal override Task OnEntityMoveTransactionCompletedAsync(TileEventArgs e)
         {
-            if (e.Transaction.CurrentMove.Entity is BalloonEntity)
-            {
-                // Balloons are colored according to the InkTile's color
-                if (Entity != Entity.None)
-                    await Entity.DetachAsync(e, this);
+            var balloon = Entity as BalloonEntity;
 
-                if (!e.Transaction.IsCancelled)
-                {
-                    e.Result = Compose(PathTile.Default, new BalloonEntity(Color));
-                    var oldColor = ((BalloonEntity)e.Transaction.CurrentMove.Entity).Color;
-                    if (Color != oldColor) e.Transaction.Emit(new InkTileConsumeEvent(oldColor, Color));
-                }
+            if (balloon != null)
+            {
+                // Consume the ink to color the balloon
+                e.Result = Compose(PathTile.Default, new BalloonEntity(Color));
+
+                if (Color != balloon.Color)
+                    e.Emit(new InkTileConsumeEvent(balloon.Color, Color));
             }
             else
             {
-                // All other entities may move over the InkTile, use default behavior
-                await base.AttachEntityAsync(e);
+                // Otherwise, nothing changes
+                e.Result = this;
             }
+
+            return Task.CompletedTask;
         }
     }
 

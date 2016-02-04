@@ -22,13 +22,15 @@ namespace OrangeBugReloaded.App.Common
 
             var soundUri = new Func<string, Uri>(s => new Uri($"ms-appx:///Assets/Sounds/{s}"));
 
-            //_sounds["GateTile-Opened"] = soundUri("TODO");
-            //_sounds["GateTile-Opened"] = soundUri("TODO");
+            _sounds["GateTile-Opened"] = soundUri("GateOpen.mp3");
+            _sounds["GateTile-Closed"] = soundUri("GateClose.mp3");
             _sounds["InkTile-Consumed"] = soundUri("SplishSploshSplosh.mp3");
             _sounds["BalloonEntity-Popped"] = soundUri("Balloon Pop.mp3");
             _sounds["ButtonTile-Toggled-On"] = soundUri("Button Click.mp3");
             _sounds["ButtonTile-Toggled-Off"] = soundUri("Button Click Release.mp3");
             _sounds["TeleporterTile-Teleported"] = soundUri("teleport.mp3");
+            _sounds["PistonTile-Extended"] = soundUri("PistonExtend.mp3");
+            _sounds["PistonTile-Retracted"] = soundUri("PistonRetract.mp3");
         }
 
         public void Dispose()

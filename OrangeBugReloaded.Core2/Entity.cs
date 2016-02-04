@@ -40,7 +40,7 @@ namespace OrangeBugReloaded.Core
         public virtual Task DetachAsync(TileEventArgs e, Tile tile)
         {
             // Default behavior: Cancel transaction, entity cannot be pushed or collected
-            e.Transaction.Cancel();
+            e.Cancel();
             return Task.CompletedTask;
         }
 
@@ -54,15 +54,15 @@ namespace OrangeBugReloaded.Core
         /// <returns>Task</returns>
         protected static async Task DetachByPushingAsync(TileEventArgs e, Tile tile)
         {
-            if (e.Transaction.CurrentMove.Entity is IPusher && e.Transaction.CurrentMove.Offset.IsDirection)
+            if (e.CurrentMove.Entity is IPusher && e.CurrentMove.Offset.IsDirection)
             {
-                await e.Transaction.MoveAsync(
-                    e.Transaction.CurrentMove.TargetPosition,
-                    e.Transaction.CurrentMove.TargetPosition + e.Transaction.CurrentMove.Offset);
+                await e.MoveAsync(
+                    e.CurrentMove.TargetPosition,
+                    e.CurrentMove.TargetPosition + e.CurrentMove.Offset);
             }
             else
             {
-                e.Transaction.Cancel();
+                e.Cancel();
             }
         }
 
@@ -76,14 +76,14 @@ namespace OrangeBugReloaded.Core
         /// <returns>Task</returns>
         protected static Task DetachByCollectingAsync(TileEventArgs e, Tile tile)
         {
-            if (e.Transaction.CurrentMove.Entity is PlayerEntity)
+            if (e.CurrentMove.Entity is PlayerEntity)
             {
                 // Player collects the entity
                 e.Result = Tile.WithoutEntity(tile);
             }
             else
             {
-                e.Transaction.Cancel();
+                e.Cancel();
             }
 
             return Task.CompletedTask;

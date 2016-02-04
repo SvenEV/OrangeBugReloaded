@@ -68,10 +68,10 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         /// <param name="sourcePosition">The position from where the entity is moved</param>
         /// <param name="targetPosition">The position to which the entity is moved</param>
-        /// <param name="transaction">The transaction that records the changes made during the move</param>
+        /// <param name="transactionChain">The transaction chain that records the changes made during the move</param>
         /// <returns>
         /// True if the inital move transaction was successful (follow-up transactions might have failed)
         /// </returns>
-        Task<bool> MoveAsync(Point sourcePosition, Point targetPosition, EntityMoveTransaction transaction);
+        Task<bool> MoveAsync(Point sourcePosition, Point targetPosition, ITransactionChainWithMoveSupport transactionChain);
     }
 }

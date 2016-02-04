@@ -35,12 +35,12 @@ namespace OrangeBugReloaded.Core.Tiles
             if (Entity != Entity.None && Sensitivity.Includes(Entity.GetType()))
             {
                 e.Result = Compose(new ButtonTile(true, Sensitivity), Entity);
-                if (!IsOn) e.Transaction.Emit(new ButtonToggleEvent(true));
+                if (!IsOn) e.Emit(new ButtonToggleEvent(true));
             }
             else
             {
                 e.Result = Compose(new ButtonTile(false, Sensitivity), Entity);
-                if (IsOn) e.Transaction.Emit(new ButtonToggleEvent(false));
+                if (IsOn) e.Emit(new ButtonToggleEvent(false));
             }
             return Task.CompletedTask;
         }

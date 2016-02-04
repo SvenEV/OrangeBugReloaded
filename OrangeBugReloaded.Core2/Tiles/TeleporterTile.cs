@@ -28,23 +28,24 @@ namespace OrangeBugReloaded.Core.Tiles
 
         internal override async Task OnFollowUpTransactionAsync(FollowUpEventArgs e, Point position)
         {
+            // Teleport using a new transaction
+            // (because if teleportation fails, we still want every other move
+            // that happened before to apply)
+
             if (Entity != Entity.None && AcceptedEntities.Includes(Entity.GetType()) &&
-                !(e.CompletedTransaction.Initiator is TeleporterTile))
+                !(e.Initiator is TeleporterTile))
             {
-                // Create a new transaction for teleportation
-                // (because if teleportation fails, we still want every other move
-                // that happened before to apply)
-                var teleportTransaction = e.CreateFollowUpTransaction();
 
                 // Now the initiator is the teleporter itself, so
                 // if the target is a teleporter as well the entity
                 // won't end up in an endless loop of teleportations.
-                teleportTransaction.Initiator = this;
-                var isSuccessful = await teleportTransaction.MoveAsync(position, TargetPosition);
+                e.Initiator = this;
+
+                var isSuccessful = await e.MoveAsync(position, TargetPosition);
 
                 // TODO: Events triggered within MoveAsync are emitted before the teleport event
                 if (isSuccessful)
-                    e.CompletedTransaction.Emit(new TeleporterTileTeleportEvent(position, TargetPosition, Entity));
+                    e.Emit(new TeleporterTileTeleportEvent(position, TargetPosition, Entity));
             }
         }
     }

@@ -109,7 +109,7 @@ namespace OrangeBugReloaded.Core
         /// <param name="position">Position of the tile</param>
         public void RemoveDependenciesOf(Tile tile, Point position)
         {
-            var dependencies = MapDependencyAttribute.GetDependencies(tile);
+            var dependencies = MapDependencyAttribute.GetDependencies(tile, position);
 
             foreach (var dependency in dependencies)
                 Remove(position, dependency);
@@ -123,7 +123,7 @@ namespace OrangeBugReloaded.Core
         /// <param name="position">Position of the tile</param>
         public void AddDependenciesOf(Tile tile, Point position)
         {
-            var dependencies = MapDependencyAttribute.GetDependencies(tile);
+            var dependencies = MapDependencyAttribute.GetDependencies(tile, position);
 
             foreach (var dependency in dependencies)
                 Add(position, dependency);
@@ -156,8 +156,10 @@ namespace OrangeBugReloaded.Core
         /// <param name="action">
         /// An action that is executed for each visited point. Depending on the changes
         /// made by the action, this action might also be executed multiple times for the
-        /// same point. A return value of null indicates that the whole algorithm should
-        /// be stopped and no other points should be visited.
+        /// same point.
+        /// Return true to continue visiting points depending on the current point.
+        /// Return false to prevent visiting points depending on the current point.
+        /// Return null to terminate the whole algorithm without visiting any other nodes.
         /// </param>
         public async Task DoAsyncWorkFollowingDependenciesAsync(IEnumerable<Point> initialBag, Func<Point, Task<bool?>> action)
         {
@@ -201,19 +203,31 @@ namespace OrangeBugReloaded.Core
     public class MapDependencyAttribute : Attribute
     {
         /// <summary>
+        /// If true, the value of the annotated <see cref="Point"/> property
+        /// is considered an offset to the position of the tile rather
+        /// than an absolute position.
+        /// </summary>
+        public bool IsRelative { get; set; }
+
+        /// <summary>
         /// Scans the specified object for <see cref="Point"/> properties
         /// annotated with a <see cref="MapDependencyAttribute"/> and
         /// returns a collection of the values of these properties.
         /// </summary>
         /// <param name="o">The object that is scanned for dependencies</param>
+        /// <param name="position">
+        /// The position that is used to compute the absolute position of
+        /// relative dependencies
+        /// </param>
         /// <returns>A collection of points the object depends on</returns>
-        public static Point[] GetDependencies(object o)
+        public static Point[] GetDependencies(object o, Point position)
         {
             return o.GetType()
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                 .Where(prop => prop.PropertyType == typeof(Point) && prop.CanRead)
-                .Where(prop => prop.CustomAttributes.Any(attr => attr.AttributeType == typeof(MapDependencyAttribute)))
-                .Select(prop => (Point)prop.GetValue(o))
+                .Select(prop => new { Property = prop, Attribute = prop.GetCustomAttribute<MapDependencyAttribute>() })
+                .Where(x => x.Attribute != null)
+                .Select(x => (Point)x.Property.GetValue(o) + (x.Attribute.IsRelative ? position : Point.Zero))
                 .Distinct()
                 .ToArray();
         }

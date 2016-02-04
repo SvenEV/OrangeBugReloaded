@@ -16,7 +16,9 @@ namespace OrangeBugReloaded.Core.Transactions
     /// Transactions can be chained together.
     /// This way a transaction can override changes of earlier transactions.
     /// </remarks>
-    public interface IReadOnlyMapTransaction : IReadOnlyMap, IGameEventEmitter
+    /// <typeparam name="T">The type of the transaction in the chain</typeparam>
+    /// <typeparam name="TMap">The type of the underlying map</typeparam>
+    public interface ITransaction
     {
         /// <summary>
         /// Indicates whether the transaction has been cancelled.
@@ -26,34 +28,15 @@ namespace OrangeBugReloaded.Core.Transactions
         /// Follow-up transactions cannot be created for a canclled transaction.
         /// </summary>
         bool IsCancelled { get; }
-        
-        /// <summary>
-        /// An arbitrary tag value that can be used to mark the object that
-        /// has caused the chain of transactions.
-        /// This value is shared across all transactions within a chain.
-        /// </summary>
-        object Initiator { get; set; }
 
-        IEnumerable<KeyValuePair<Point, Tile>> ChangedTiles { get; }
+        IDictionary<Point, Tile> ChangedTiles { get; }
+
+        IList<IGameEvent> Events { get; }
 
         /// <summary>
-        /// Gets the previous transaction in the chain.
+        /// Cancels the transaction.
+        /// <seealso cref="IsCancelled"/>
         /// </summary>
-        IReadOnlyMapTransaction Previous { get; }
-
-        /// <summary>
-        /// Gets the next transaction in the chain.
-        /// </summary>
-        IReadOnlyMapTransaction Next { get; }
-
-        /// <summary>
-        /// Gets the last (latest) transaction in the chain.
-        /// </summary>
-        IReadOnlyMapTransaction Last { get; }
-
-        /// <summary>
-        /// Gets the first (oldest) transaction in the chain.
-        /// </summary>
-        IReadOnlyMapTransaction First { get; }
+        void Cancel();
     }
 }

@@ -68,35 +68,30 @@ namespace OrangeBugReloaded.Core
         /// <inheritdoc/>
         public async Task<bool> MoveAsync(Point sourcePosition, Point targetPosition)
         {
-            var rootTransaction = new EntityMoveTransaction(this);
-            var isSuccessful = await MoveAsync(sourcePosition, targetPosition, rootTransaction);
+            var transactionChain = TransactionChainWithMoveSupport.Create<TransactionWithMoveSupport>(this);
 
-            if (!isSuccessful)
-                return false;
+            var isSuccessful = await MoveAsync(sourcePosition, targetPosition, transactionChain);
 
-            // Commit - apply changes of all transactions to map beginning with the
-            // oldest transaction so that newer ones can overwrite changes of older ones.
-            var currentTransaction = rootTransaction;
-
-            while (currentTransaction != null)
+            if (isSuccessful)
             {
-                foreach (var kvp in currentTransaction.ChangedTiles)
-                    await SetAsync(kvp.Key, kvp.Value);
-
-                currentTransaction.FlushEvents(_eventSource);
-                currentTransaction = (EntityMoveTransaction)currentTransaction.Next;
+                await transactionChain.CommitAsync(_eventSource);
+                return true;
             }
-
-            return true;
+            else
+            {
+                return false;
+            }
         }
 
         /// <inheritdoc/>
-        public async Task<bool> MoveAsync(Point sourcePosition, Point targetPosition, EntityMoveTransaction transaction)
+        public async Task<bool> MoveAsync(Point sourcePosition, Point targetPosition, ITransactionChainWithMoveSupport transactionChain)
         {
             // Execute the actual move.
             // Any changes to the map are "recorded" in the transaction
             // and can later be applied to the map via a commit.
-            await MoveCoreAsync(sourcePosition, targetPosition, transaction);
+            await MoveCoreAsync(sourcePosition, targetPosition, transactionChain);
+
+            var transaction = transactionChain.CurrentTransaction;
 
             if (transaction.IsCancelled)
                 return false;
@@ -104,46 +99,18 @@ namespace OrangeBugReloaded.Core
             // At the end of the recursion...
             if (transaction.Moves.Count == 0)
             {
-                var notifiedPositions = new HashSet<Point>();
-
-                // Tiles that definitely must be notified are the ones that changed
-                // and the ones that depend on any of the changed tiles.
-                var affectedTiles = transaction.ChangedTiles.Select(kvp => kvp.Key)
-                    .Concat(transaction.ChangedTiles.SelectMany(p => Dependencies.GetDependenciesOn(p.Key)));
-
-                // Notify affected tiles and dependent tiles in topological order
-                await Dependencies.DoAsyncWorkFollowingDependenciesAsync(affectedTiles, async p =>
-                {
-                    notifiedPositions.Add(p);
-                    var tile = await transaction.Last.GetAsync(p);
-                    var completionArgs = new TileEventArgs(transaction);
-                    await tile.OnEntityMoveTransactionCompletedAsync(completionArgs);
-                    completionArgs.ValidateResult();
-
-                    if (transaction.IsCancelled)
-                        return null; // Null terminates the loop
-
-                    return await transaction.SetAsync(p, completionArgs.Result);
-                });
-
-                // Trigger follow-up transactions
-                // e.g. a teleporter might initiate a new transaction here to teleport an entity
-                var args = new FollowUpEventArgs(transaction);
-
-                foreach (var p in notifiedPositions)
-                {
-                    var tile = await transaction.Last.GetAsync(p);
-                    await tile.OnFollowUpTransactionAsync(args, p);
-                }
+                // Notify changed tiles and tiles that directly or indirectly depend on changed tiles
+                var affectedTiles = transaction.ChangedTiles.Select(kvp => kvp.Key);
+                await UpdateTilesAsync(affectedTiles, transactionChain);
             }
 
             return true;
         }
 
-        private async Task MoveCoreAsync(Point sourcePosition, Point targetPosition, EntityMoveTransaction transaction)
+        private async Task MoveCoreAsync(Point sourcePosition, Point targetPosition, ITransactionChainWithMoveSupport transactionChain)
         {
-            var source = await transaction.GetAsync(sourcePosition);
-            var target = await transaction.GetAsync(targetPosition);
+            var source = await transactionChain.GetAsync(sourcePosition);
+            var target = await transactionChain.GetAsync(targetPosition);
             var originalEntity = source.Entity;
 
             var move = new EntityMoveInfo
@@ -153,27 +120,29 @@ namespace OrangeBugReloaded.Core
                 Entity = source.Entity
             };
 
+            var transaction = transactionChain.CurrentTransaction;
+
             transaction.Moves.Push(move);
 
             source.Entity.EnsureNotNone();
 
             // OnBeginMove: Notify entity that a move has been initiated
-            var beginMoveArgs = new EntityEventArgs(transaction);
+            var beginMoveArgs = new EntityEventArgs(transactionChain);
             await source.Entity.BeginMoveAsync(beginMoveArgs);
             beginMoveArgs.ValidateResult();
             if (transaction.IsCancelled) return;
             source = Tile.Compose(source, beginMoveArgs.Result);
-            await transaction.SetAsync(sourcePosition, source);
+            await transactionChain.SetAsync(sourcePosition, source);
             move.Entity = beginMoveArgs.Result;
 
             // Detach: Remove the entity from the source tile
-            var detachArgs = new DetachEventArgs(transaction);
+            var detachArgs = new DetachEventArgs(transactionChain);
             await source.DetachEntityAsync(detachArgs);
             detachArgs.ValidateResult();
             if (transaction.IsCancelled) return;
 
             // Attach: Add the entity to the target tile
-            var attachArgs = new AttachEventArgs(transaction);
+            var attachArgs = new AttachEventArgs(transactionChain);
             await target.AttachEntityAsync(attachArgs);
             attachArgs.ValidateResult();
             if (transaction.IsCancelled) return;
@@ -181,40 +150,18 @@ namespace OrangeBugReloaded.Core
             if (!attachArgs.PreventDetach)
             {
                 source = detachArgs.Result;
-                await transaction.SetAsync(sourcePosition, detachArgs.Result);
+                await transactionChain.SetAsync(sourcePosition, detachArgs.Result);
             }
 
             if (!detachArgs.PreventAttach)
             {
                 target = attachArgs.Result;
-                await transaction.SetAsync(targetPosition, attachArgs.Result);
+                await transactionChain.SetAsync(targetPosition, attachArgs.Result);
             }
 
-            transaction.Emit(new EntityMoveEvent(sourcePosition, targetPosition, originalEntity, target.Entity));
+            transactionChain.Emit(new EntityMoveEvent(sourcePosition, targetPosition, originalEntity, target.Entity));
 
             transaction.Moves.Pop();
-        }
-
-        /// <summary>
-        /// Applies changes collected in transactions to the map.
-        /// </summary>
-        /// <param name="transaction">
-        /// A transaction. This can be any transaction within a chain of transactions;
-        /// the method automatically starts with the first transaction in the chain.
-        /// </param>
-        private async Task CommitTransactionAsync(IReadOnlyMapTransaction transaction)
-        {
-            // Commit - apply changes of all transactions to map beginning with the
-            // oldest transaction so that newer ones can overwrite changes of older ones.
-            var currentTransaction = transaction.First;
-
-            while (currentTransaction != null)
-            {
-                foreach (var kvp in currentTransaction.ChangedTiles)
-                    await SetAsync(kvp.Key, kvp.Value);
-
-                currentTransaction = (EntityMoveTransaction)currentTransaction.Next;
-            }
         }
 
         private void OnChunkUnloaded(KeyValuePair<Point, IChunk> kvp)
@@ -223,29 +170,71 @@ namespace OrangeBugReloaded.Core
             {
                 for (var x = 0; x < Chunk.Size; x++)
                 {
-                    var localPoint = new Point(x, y);
-                    var globalPoint = kvp.Value.Index * Chunk.Size + localPoint;
-                    Dependencies.RemoveDependenciesOf(kvp.Value[localPoint, MapLayer.Gameplay], globalPoint);
-                    Dependencies.RemoveDependenciesOn(globalPoint);
+                    var localPosition = new Point(x, y);
+                    var globalPosition = kvp.Value.Index * Chunk.Size + localPosition;
+                    Dependencies.RemoveDependenciesOf(kvp.Value[localPosition, MapLayer.Gameplay], globalPosition);
+                    Dependencies.RemoveDependenciesOn(globalPosition);
                 }
             }
 
             _eventSource.OnNext(new ChunkRemovedEvent(kvp.Value));
         }
 
-        private void OnChunkLoaded(KeyValuePair<Point, IChunk> kvp)
+        private async void OnChunkLoaded(KeyValuePair<Point, IChunk> kvp)
         {
             for (var y = 0; y < Chunk.Size; y++)
             {
                 for (var x = 0; x < Chunk.Size; x++)
                 {
-                    var localPoint = new Point(x, y);
-                    var globalPoint = kvp.Value.Index * Chunk.Size + localPoint;
-                    Dependencies.AddDependenciesOf(kvp.Value[localPoint, MapLayer.Gameplay], globalPoint);
+                    var localPosition = new Point(x, y);
+                    var globalPosition = kvp.Value.Index * Chunk.Size + localPosition;
+                    Dependencies.AddDependenciesOf(kvp.Value[localPosition, MapLayer.Gameplay], globalPosition);
                 }
             }
 
+            // Properly initialize the chunk.
+            // Example scenarios: On chunk loading...
+            // - a button should be activated immediately if there's an entity pressing it
+            // - a balloon should be popped immediately if it is on a pin
+            var chunkPoints = new Rectangle(kvp.Value.Index.X * Chunk.Size, kvp.Value.Index.Y * Chunk.Size, Chunk.Size - 1, Chunk.Size - 1);
+            var transactionChain = TransactionChainWithMoveSupport.Create<TransactionWithMoveSupport>(this);
+            await UpdateTilesAsync(chunkPoints, transactionChain);
             _eventSource.OnNext(new ChunkAddedEvent(kvp.Value));
+            await transactionChain.CommitAsync(_eventSource);
+        }
+
+        private async Task UpdateTilesAsync(IEnumerable<Point> positions, ITransactionChainWithMoveSupport transactionChain)
+        {
+            var initialPoints = new HashSet<Point>(positions);
+            var notifiedPositions = new HashSet<Point>();
+
+            // Notify the initial tiles and tiles that are directly or indirectly
+            // (transitively) dependent on them in topological order
+            await Dependencies.DoAsyncWorkFollowingDependenciesAsync(initialPoints, async p =>
+            {
+                notifiedPositions.Add(p);
+
+                var tile = await transactionChain.GetAsync(p);
+
+                var completionArgs = new TileEventArgs(transactionChain);
+                await tile.OnEntityMoveTransactionCompletedAsync(completionArgs);
+                completionArgs.ValidateResult();
+
+                if (transactionChain.CurrentTransaction.IsCancelled)
+                    return null; // Null terminates the loop
+
+                var hasChanged = await transactionChain.SetAsync(p, completionArgs.Result);
+                return hasChanged || initialPoints.Contains(p);
+            });
+
+            // Trigger follow-up transactions
+            // e.g. a teleporter might initiate a new transaction here to teleport an entity
+            foreach (var p in notifiedPositions)
+            {
+                var args = new FollowUpEventArgs(transactionChain);
+                var tile = await transactionChain.GetAsync(p);
+                await tile.OnFollowUpTransactionAsync(args, p);
+            }
         }
     }
 }

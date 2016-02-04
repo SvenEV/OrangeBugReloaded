@@ -64,7 +64,7 @@ namespace OrangeBugReloaded.App
             _renderer.Plugins.Add<EntityMoveAnimationPlugin>();
             _renderer.Map = _map;
 
-            await _map.ChunkLoader.TryGetAsync(Point.Zero);
+            await _map.ChunkLoader.TryGetAsync(Point.West);
         }
 
         private void canvas_PointerWheelChanged(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)

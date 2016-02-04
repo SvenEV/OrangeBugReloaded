@@ -44,9 +44,9 @@ namespace OrangeBugReloaded.Core
             if (Entity != Entity.None)
                 await Entity.DetachAsync(e, this);
 
-            if (!e.Transaction.IsCancelled)
+            if (!e.IsCancelled)
             {
-                e.Result = Compose(this, e.Transaction.CurrentMove.Entity);
+                e.Result = Compose(this, e.CurrentMove.Entity);
             }
         }
 

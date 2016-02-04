@@ -225,6 +225,10 @@
     </Content>
     <Content Include="Assets\Sounds\Button Click Release.mp3" />
     <Content Include="Assets\Sounds\Button Click.mp3" />
+    <Content Include="Assets\Sounds\GateClose.mp3" />
+    <Content Include="Assets\Sounds\GateOpen.mp3" />
+    <Content Include="Assets\Sounds\PistonExtend.mp3" />
+    <Content Include="Assets\Sounds\PistonRetract.mp3" />
     <Content Include="Assets\Sounds\SplishSploshSplosh.mp3" />
     <Content Include="Assets\Sounds\wood chair scrape on floor, papers,.mp3" />
     <Content Include="Properties\Default.rd.xml" />

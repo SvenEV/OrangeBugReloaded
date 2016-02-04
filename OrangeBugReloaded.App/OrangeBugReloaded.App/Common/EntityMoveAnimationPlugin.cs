@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Numerics;
-using Microsoft.Graphics.Canvas;
 using OrangeBugReloaded.Core;
 using System.Reactive.Linq;
 using OrangeBugReloaded.Core.Events;

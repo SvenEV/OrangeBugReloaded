@@ -13,13 +13,13 @@ namespace OrangeBugReloaded.Core.Tiles
 
         internal override Task AttachEntityAsync(AttachEventArgs e)
         {
-            e.Transaction.Cancel();
+            e.Cancel();
             return Task.CompletedTask;
         }
 
         internal override Task DetachEntityAsync(TileEventArgs e)
         {
-            e.Transaction.Cancel();
+            e.Cancel();
             return Task.CompletedTask;
         }
     }

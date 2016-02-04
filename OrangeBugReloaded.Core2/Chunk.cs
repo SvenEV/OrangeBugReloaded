@@ -2,6 +2,8 @@
 using OrangeBugReloaded.Core.Tiles;
 using System.Linq;
 using System;
+using System.Collections.Generic;
+using System.Collections;
 
 namespace OrangeBugReloaded.Core
 {
@@ -59,7 +61,7 @@ namespace OrangeBugReloaded.Core
             chunk[2, 2, MapLayer.Gameplay] = Tile.Compose(PathTile.Default, BoxEntity.Default);
             chunk[3, 2, MapLayer.Gameplay] = new ButtonTile(false, EntityFilterMode.EntitiesExceptPlayer);
             chunk[4, 2, MapLayer.Gameplay] = new TeleporterTile(new Point(4, 4));
-            //chunk[4, 4, MapLayer.Gameplay] = new TeleporterTile(new Point(4, 2));
+            chunk[4, 4, MapLayer.Gameplay] = new TeleporterTile(new Point(4, 2));
 
             chunk[3, 3, MapLayer.Gameplay] = new GateTile(new Point(3, 2), false);
 
@@ -68,7 +70,7 @@ namespace OrangeBugReloaded.Core
             chunk[6, 3, MapLayer.Gameplay] = new PinTile(InkColor.Green);
 
             chunk[4, 5, MapLayer.Gameplay] = new InkTile(InkColor.Red);
-            chunk[4, 4, MapLayer.Gameplay] = new InkTile(InkColor.Green);
+            chunk[3, 4, MapLayer.Gameplay] = new InkTile(InkColor.Green);
             chunk[6, 5, MapLayer.Gameplay] = new InkTile(InkColor.Blue);
 
             chunk[0, 3, MapLayer.Gameplay] = PathTile.Default;

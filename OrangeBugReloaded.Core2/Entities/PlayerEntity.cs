@@ -25,7 +25,7 @@ namespace OrangeBugReloaded.Core.Entities
 
         public override Task BeginMoveAsync(EntityEventArgs e)
         {
-            var offset = e.Transaction.CurrentMove.Offset;
+            var offset = e.CurrentMove.Offset;
 
             if (offset == Point.North)
                 e.Result = PlayerLookingNorth;

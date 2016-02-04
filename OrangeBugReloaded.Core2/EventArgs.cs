@@ -1,35 +1,68 @@
-﻿using OrangeBugReloaded.Core.Transactions;
+﻿using OrangeBugReloaded.Core.Events;
+using OrangeBugReloaded.Core.Transactions;
 using System;
+using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core
 {
-    public abstract class GameEventArgs<TResult, TTransaction> where TTransaction : IReadOnlyMapTransaction
+    /// <summary>
+    /// A facade for tile and entity events that provides information
+    /// about the current transaction and the current entity move.
+    /// </summary>
+    /// <typeparam name="TResult">Result type</typeparam>
+    public abstract class GameEventArgs<TResult> : IReadOnlyMap, IGameEventEmitter
     {
-        public TTransaction Transaction { get; }
+        protected readonly ITransactionChainWithMoveSupport _transactionChain;
 
         public TResult Result { get; set; }
 
-        public GameEventArgs(TTransaction transaction)
+        public EntityMoveInfo CurrentMove => _transactionChain.CurrentTransaction.CurrentMove;
+
+        public bool IsCancelled => _transactionChain.CurrentTransaction.IsCancelled;
+
+        public object Initiator
         {
-            Transaction = transaction;
+            get { return _transactionChain.Initiator; }
+            set { _transactionChain.Initiator = value; }
         }
+
+        public GameEventArgs(ITransactionChainWithMoveSupport transactionChain)
+        {
+            _transactionChain = transactionChain;
+        }
+
+        public void Cancel() => _transactionChain.CurrentTransaction.Cancel();
+
+        public void Emit(IGameEvent e) => _transactionChain.Emit(e);
+
+        public Task<Tile> GetAsync(Point position, MapLayer layer = MapLayer.Gameplay)
+            => _transactionChain.GetAsync(position, layer);
 
         internal void ValidateResult()
         {
-            if (Result == null && !Transaction.IsCancelled)
+            if (Result == null && !_transactionChain.CurrentTransaction.IsCancelled)
                 throw new InvalidOperationException("Invalid result: No result is provided and the transaction is not cancelled");
 
-            if (Result != null && Transaction.IsCancelled)
+            if (Result != null && _transactionChain.CurrentTransaction.IsCancelled)
                 throw new InvalidOperationException("Invalid result: The transaction is cancelled but a result is provided");
         }
     }
 
-    public class EntityEventArgs : GameEventArgs<Entity, IMapTransactionWithMoveSupport>
+    public class EntityEventArgs : GameEventArgs<Entity>
     {
-        public EntityEventArgs(IMapTransactionWithMoveSupport transaction)
-            : base(transaction)
+        public EntityEventArgs(ITransactionChainWithMoveSupport transactionChain) : base(transactionChain)
         {
         }
+    }
+
+    public class TileEventArgs : GameEventArgs<Tile>, ISupportsMove
+    {
+        public TileEventArgs(ITransactionChainWithMoveSupport transactionChain) : base(transactionChain)
+        {
+        }
+
+        public Task<bool> MoveAsync(Point sourcePosition, Point targetPosition)
+            => _transactionChain.MoveAsync(sourcePosition, targetPosition);
     }
 
     public class AttachEventArgs : TileEventArgs
@@ -41,7 +74,7 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         public bool PreventDetach { get; set; }
 
-        public AttachEventArgs(IMapTransactionWithMoveSupport transaction) : base(transaction)
+        public AttachEventArgs(ITransactionChainWithMoveSupport transactionChain) : base(transactionChain)
         {
         }
     }
@@ -54,33 +87,49 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         public bool PreventAttach { get; set; }
 
-        public DetachEventArgs(IMapTransactionWithMoveSupport transaction) : base(transaction)
+        public DetachEventArgs(ITransactionChainWithMoveSupport transactionChain) : base(transactionChain)
         {
         }
     }
 
-    public class TileEventArgs : GameEventArgs<Tile, IMapTransactionWithMoveSupport>
+    public class FollowUpEventArgs : ISupportsMove, IReadOnlyMap, IGameEventEmitter
     {
-        public TileEventArgs(IMapTransactionWithMoveSupport transaction)
-            : base(transaction)
+        private readonly ITransactionChainWithMoveSupport _transactionChain;
+        private bool _followUpTransactionCreated = false;
+
+        public object Initiator
         {
-        }
-    }
-
-    public class FollowUpEventArgs
-    {
-        private EntityMoveTransaction _completedTransaction;
-
-        public IReadOnlyMapTransaction CompletedTransaction => _completedTransaction;
-
-        public FollowUpEventArgs(EntityMoveTransaction completedTransaction)
-        {
-            _completedTransaction = completedTransaction;
+            get { return _transactionChain.Initiator; }
+            set { _transactionChain.Initiator = value; }
         }
 
-        public IMapTransactionWithMoveSupport CreateFollowUpTransaction()
+        public FollowUpEventArgs(ITransactionChainWithMoveSupport transactionChain)
         {
-            return new EntityMoveTransaction((EntityMoveTransaction)_completedTransaction.Last);
+            _transactionChain = transactionChain;
+        }
+
+        public async Task<bool> MoveAsync(Point sourcePosition, Point targetPosition)
+        {
+            EnsureFollowUpTransactionCreated();
+            return await _transactionChain.MoveAsync(sourcePosition, targetPosition);
+        }
+
+        public void Emit(IGameEvent e)
+        {
+            EnsureFollowUpTransactionCreated();
+            _transactionChain.Emit(e);
+        }
+
+        public Task<Tile> GetAsync(Point position, MapLayer layer = MapLayer.Gameplay)
+            => _transactionChain.GetAsync(position, layer);
+
+        private void EnsureFollowUpTransactionCreated()
+        {
+            if (!_followUpTransactionCreated)
+            {
+                _transactionChain.CreateFollowUpTransaction();
+                _followUpTransactionCreated = true;
+            }
         }
     }
 }

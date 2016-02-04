@@ -25,29 +25,38 @@ namespace OrangeBugReloaded.Core.Tiles
 
         internal override async Task AttachEntityAsync(AttachEventArgs e)
         {
-            if (e.Transaction.CurrentMove.Entity is PlayerEntity)
+            if (e.CurrentMove.Entity is PlayerEntity)
             {
                 // Players may walk over pins, use default behavior
                 await base.AttachEntityAsync(e);
             }
-            else if ((e.Transaction.CurrentMove.Entity as BalloonEntity)?.Color == Color)
+            else if ((e.CurrentMove.Entity as BalloonEntity)?.Color == Color)
             {
-                // Balloons are only allowed if the color matches.
-                // In this case they are destroyed.
-                if (Entity != Entity.None)
-                    await Entity.DetachAsync(e, this);
-
-                if (!e.Transaction.IsCancelled)
-                {
-                    e.Result = this;
-                    e.Transaction.Emit(new BalloonPopEvent(Color));
-                }
+                // Balloons that match the pin's color are allowed
+                e.Result = Compose(this, e.CurrentMove.Entity);
             }
             else
             {
                 // All other entities are rejected
-                e.Transaction.Cancel();
+                e.Cancel();
             }
+        }
+
+        internal override Task OnEntityMoveTransactionCompletedAsync(TileEventArgs e)
+        {
+            if ((Entity as BalloonEntity)?.Color == Color)
+            {
+                // Destroy the balloon
+                e.Result = new PinTile(Color);
+                e.Emit(new BalloonPopEvent(Color));
+            }
+            else
+            {
+                // Otherwise, nothing changes
+                e.Result = this;
+            }
+
+            return Task.CompletedTask;
         }
     }
 

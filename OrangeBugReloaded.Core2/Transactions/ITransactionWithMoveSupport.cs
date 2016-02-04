@@ -3,9 +3,10 @@
 namespace OrangeBugReloaded.Core.Transactions
 {
     /// <summary>
-    /// A transaction with the ability to perform entity move operations.
+    /// A transaction that stores information about entity moves
+    /// that are executed in its context.
     /// </summary>
-    public interface IMapTransactionWithMoveSupport : IReadOnlyMapTransaction, ISupportsMove
+    public interface ITransactionWithMoveSupport : ITransaction
     {
         /// <summary>
         /// Provides information about each move in a recursion of move operations.
@@ -18,11 +19,5 @@ namespace OrangeBugReloaded.Core.Transactions
         /// This is equivalent to the topmost element of <see cref="Moves"/>.
         /// </summary>
         EntityMoveInfo CurrentMove { get; }
-
-        /// <summary>
-        /// Cancels the transaction.
-        /// <seealso cref="IReadOnlyMapTransaction"/>
-        /// </summary>
-        void Cancel();
     }
 }
