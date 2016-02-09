@@ -18,7 +18,7 @@ namespace OrangeBugReloaded.Core
 
         public EntityMoveInfo CurrentMove => _transactionChain.CurrentTransaction.CurrentMove;
 
-        public bool IsCancelled => _transactionChain.CurrentTransaction.IsCancelled;
+        public bool IsCanceled => _transactionChain.CurrentTransaction.IsCanceled;
 
         public object Initiator
         {
@@ -35,15 +35,18 @@ namespace OrangeBugReloaded.Core
 
         public void Emit(IGameEvent e) => _transactionChain.Emit(e);
 
-        public Task<Tile> GetAsync(Point position, MapLayer layer = MapLayer.Gameplay)
-            => _transactionChain.GetAsync(position, layer);
+        public Task<Tile> GetAsync(Point position)
+            => _transactionChain.GetAsync(position);
+
+        Task<TileMetadata> IReadOnlyMap.GetMetadataAsync(Point position)
+            => _transactionChain.GetMetadataAsync(position);
 
         internal void ValidateResult()
         {
-            if (Result == null && !_transactionChain.CurrentTransaction.IsCancelled)
+            if (Result == null && !_transactionChain.CurrentTransaction.IsCanceled)
                 throw new InvalidOperationException("Invalid result: No result is provided and the transaction is not cancelled");
 
-            if (Result != null && _transactionChain.CurrentTransaction.IsCancelled)
+            if (Result != null && _transactionChain.CurrentTransaction.IsCanceled)
                 throw new InvalidOperationException("Invalid result: The transaction is cancelled but a result is provided");
         }
     }
@@ -120,8 +123,11 @@ namespace OrangeBugReloaded.Core
             _transactionChain.Emit(e);
         }
 
-        public Task<Tile> GetAsync(Point position, MapLayer layer = MapLayer.Gameplay)
-            => _transactionChain.GetAsync(position, layer);
+        public Task<Tile> GetAsync(Point position)
+            => _transactionChain.GetAsync(position);
+
+        Task<TileMetadata> IReadOnlyMap.GetMetadataAsync(Point position)
+            => _transactionChain.GetMetadataAsync(position);
 
         private void EnsureFollowUpTransactionCreated()
         {

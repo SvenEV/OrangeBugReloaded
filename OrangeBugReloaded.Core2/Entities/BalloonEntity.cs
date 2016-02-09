@@ -1,5 +1,6 @@
 ﻿using OrangeBugReloaded.Core.Rendering;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace OrangeBugReloaded.Core.Entities
 {
@@ -9,7 +10,7 @@ namespace OrangeBugReloaded.Core.Entities
     /// destroyed by a <see cref="Tiles.PinTile"/>.
     /// </summary>
     [VisualHint("BalloonEntity-{Color}")]
-    class BalloonEntity : Entity
+    public class BalloonEntity : Entity
     {
         /// <summary>
         /// The balloon color.
@@ -23,5 +24,10 @@ namespace OrangeBugReloaded.Core.Entities
 
         public override Task DetachAsync(TileEventArgs e, Tile tile)
             => DetachByPushingAsync(e, tile);
+
+        protected override IEnumerable GetHashProperties()
+        {
+            yield return Color;
+        }
     }
 }

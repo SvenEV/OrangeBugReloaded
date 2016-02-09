@@ -12,13 +12,9 @@ namespace OrangeBugReloaded.Core.Transactions
     /// committed, i.e. applied to the underlying map, in an atomic way.
     /// </para>
     /// </summary>
-    /// <remarks>
-    /// Transactions can be chained together.
-    /// This way a transaction can override changes of earlier transactions.
-    /// </remarks>
-    /// <typeparam name="T">The type of the transaction in the chain</typeparam>
+    /// <typeparam name="T">The type of changes</typeparam>
     /// <typeparam name="TMap">The type of the underlying map</typeparam>
-    public interface ITransaction
+    public interface ITransaction<T>
     {
         /// <summary>
         /// Indicates whether the transaction has been cancelled.
@@ -27,15 +23,15 @@ namespace OrangeBugReloaded.Core.Transactions
         /// Cancelled transactions cannot initiate further move operations.
         /// Follow-up transactions cannot be created for a canclled transaction.
         /// </summary>
-        bool IsCancelled { get; }
+        bool IsCanceled { get; }
 
-        IDictionary<Point, Tile> ChangedTiles { get; }
+        IDictionary<Point, T> Changes { get; }
 
         IList<IGameEvent> Events { get; }
 
         /// <summary>
         /// Cancels the transaction.
-        /// <seealso cref="IsCancelled"/>
+        /// <seealso cref="IsCanceled"/>
         /// </summary>
         void Cancel();
     }

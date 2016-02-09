@@ -14,9 +14,19 @@ namespace OrangeBugReloaded.Core.Rendering
         /// </summary>
         public string Expression { get; }
 
+        /// <summary>
+        /// Refers to a <see cref="Point"/> property that indicates rotation.
+        /// </summary>
+        public string Orientation { get; }
+
         public VisualHintAttribute(string expression)
         {
             Expression = expression;
+        }
+
+        public VisualHintAttribute(string expression, string orientation) : this(expression)
+        {
+            Orientation = orientation;
         }
 
         /// <summary>
@@ -48,6 +58,21 @@ namespace OrangeBugReloaded.Core.Rendering
                         return value.ToString();
                 });
             }
+        }
+
+        public static Point GetOrientation(object o)
+        {
+            var visualHint = o.GetType().GetTypeInfo().GetCustomAttribute<VisualHintAttribute>();
+
+            if (visualHint?.Orientation != null)
+            {
+                var prop = o.GetType().GetProperty(visualHint.Orientation);
+
+                if (prop?.PropertyType == typeof(Point))
+                    return (Point)prop.GetValue(o);
+            }
+
+            return Point.Zero;
         }
     }
 }

@@ -7,7 +7,7 @@ namespace OrangeBugReloaded.Core.Transactions
     /// A transaction that can simulate entity move operations and record changes
     /// caused by such operations.
     /// </summary>
-    public class TransactionWithMoveSupport : Transaction, ITransactionWithMoveSupport
+    public class TransactionWithMoveSupport : TransactionBase<Tile>, ITransactionWithMoveSupport
     {
         /// <inheritdoc/>
         public Stack<EntityMoveInfo> Moves { get; } = new Stack<EntityMoveInfo>();

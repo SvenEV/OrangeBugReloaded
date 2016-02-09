@@ -1,25 +1,26 @@
-﻿using System;
+﻿using OrangeBugReloaded.Core.Rendering;
+using System;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace OrangeBugReloaded.Core.Entities
 {
     /// <summary>
     /// This is Orange Bug!
     /// </summary>
+    [VisualHint("PlayerEntity", nameof(Perspective))]
     public class PlayerEntity : Entity, IPusher
     {
-        public static PlayerEntity PlayerLookingNorth { get; } = new PlayerEntity(Point.North);
-        public static PlayerEntity PlayerLookingEast { get; } = new PlayerEntity(Point.East);
-        public static PlayerEntity PlayerLookingSouth { get; } = new PlayerEntity(Point.South);
-        public static PlayerEntity PlayerLookingWest { get; } = new PlayerEntity(Point.West);
-
         public Point Perspective { get; }
 
-        private PlayerEntity(Point perspective)
+        public string Id { get; }
+
+        public PlayerEntity(string playerId, Point perspective)
         {
             if (!perspective.IsDirection)
                 throw new ArgumentException("Invalid direction", nameof(perspective));
 
+            Id = playerId;
             Perspective = perspective;
         }
 
@@ -28,17 +29,23 @@ namespace OrangeBugReloaded.Core.Entities
             var offset = e.CurrentMove.Offset;
 
             if (offset == Point.North)
-                e.Result = PlayerLookingNorth;
+                e.Result = new PlayerEntity(Id, Point.North);
             else if (offset == Point.East)
-                e.Result = PlayerLookingEast;
+                e.Result = new PlayerEntity(Id, Point.East);
             else if (offset == Point.South)
-                e.Result = PlayerLookingSouth;
+                e.Result = new PlayerEntity(Id, Point.South);
             else if (offset == Point.West)
-                e.Result = PlayerLookingWest;
+                e.Result = new PlayerEntity(Id, Point.West);
             else
                 e.Result = this;
 
             return Task.CompletedTask;
+        }
+
+        protected override IEnumerable GetHashProperties()
+        {
+            yield return Perspective;
+            yield return Id;
         }
     }
 }

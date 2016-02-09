@@ -14,9 +14,15 @@ namespace OrangeBugReloaded.Core
         /// Gets the tile at the specified position.
         /// </summary>
         /// <param name="position">Position</param>
-        /// <param name="layer">Layer</param>
         /// <returns>The <see cref="Tile"/></returns>
-        Task<Tile> GetAsync(Point position, MapLayer layer = MapLayer.Gameplay);
+        Task<Tile> GetAsync(Point position);
+
+        /// <summary>
+        /// Gets the tile metadata at the specified position.
+        /// </summary>
+        /// <param name="position">Position</param>
+        /// <returns>The <see cref="TileMetadata"/></returns>
+        Task<TileMetadata> GetMetadataAsync(Point position);
     }
 
     /// <summary>
@@ -29,9 +35,15 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         /// <param name="position">Position</param>
         /// <param name="tile">Tile</param>
-        /// <param name="layer">Layer</param>
         /// <returns>True if the tile has changed during the call</returns>
-        Task<bool> SetAsync(Point position, Tile tile, MapLayer layer = MapLayer.Gameplay);
+        Task<bool> SetAsync(Point position, Tile tile);
+
+        /// <summary>
+        /// Sets the tile metadata at the specified position.
+        /// </summary>
+        /// <param name="position">Position</param>
+        /// <returns>True if the metadata has changed during this call</returns>
+        Task<bool> SetMetadataAsync(Point position, TileMetadata value);
     }
 
     public interface ISupportsMove

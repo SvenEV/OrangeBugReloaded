@@ -164,16 +164,17 @@ namespace OrangeBugReloaded.Core
         public async Task DoAsyncWorkFollowingDependenciesAsync(IEnumerable<Point> initialBag, Func<Point, Task<bool?>> action)
         {
             var bag = new HashSet<Point>(initialBag);
+            var todoPoints = bag.Where(p => _dependencies.TryGetValue(p, _emptySet).All(q => !bag.Contains(q)));
             var counter = 0;
 
             while (bag.Any())
             {
-                var current = bag.FirstOrDefault(p => _dependencies.TryGetValue(p, _emptySet).All(q => !bag.Contains(q)));
-
                 // Note: This does not fully protect us from cycles, there could still be
                 // cases where P and Q go alternately in and out of the bag
-                if (current == null || counter++ > 1000000)
+                if (!todoPoints.Any() || counter++ > 1000000)
                     throw new InvalidOperationException("Dependency cycle detected");
+
+                var current = todoPoints.First();
 
                 var hasChanged = await action(current);
 

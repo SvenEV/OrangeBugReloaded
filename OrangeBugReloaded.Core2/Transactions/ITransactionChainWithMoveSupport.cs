@@ -1,16 +1,11 @@
 ﻿namespace OrangeBugReloaded.Core.Transactions
 {
-    public interface ITransactionChainWithMoveSupport : ITransactionChain, ISupportsMove
+    public interface ITransactionChainWithMoveSupport : ITransactionChain<Tile>, ISupportsMove, IMap
     {
         /// <summary>
         /// Gets the latest transaction in the chain.
         /// </summary>
         new ITransactionWithMoveSupport CurrentTransaction { get; }
-
-        /// <summary>
-        /// Gets the first/earliest transaction in the chain.
-        /// </summary>
-        new ITransactionWithMoveSupport RootTransaction { get; }
 
         /// <summary>
         /// An arbitrary tag value that can be used to mark the object that

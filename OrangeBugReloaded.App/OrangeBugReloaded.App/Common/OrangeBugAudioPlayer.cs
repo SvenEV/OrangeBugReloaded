@@ -7,7 +7,7 @@ using OrangeBugReloaded.Core.Rendering;
 
 namespace OrangeBugReloaded.App.Common
 {
-    public class OrangeBugAudioPlayer : IRendererPlugin
+    public sealed class OrangeBugAudioPlayer : IRendererPlugin
     {
         private Dictionary<string, Uri> _sounds = new Dictionary<string, Uri>();
         private IDisposable _eventSubscription;

@@ -1,9 +1,6 @@
 ﻿using OrangeBugReloaded.Core.Entities;
 using OrangeBugReloaded.Core.Tiles;
 using System.Linq;
-using System;
-using System.Collections.Generic;
-using System.Collections;
 
 namespace OrangeBugReloaded.Core
 {
@@ -12,32 +9,32 @@ namespace OrangeBugReloaded.Core
         Point Index { get; }
         bool IsEmpty { get; }
         bool HasChanged { get; }
-        Tile this[Point index, MapLayer layer] { get; }
-        Tile this[int x, int y, MapLayer layer] { get; }
+        Tile this[Point position] { get; }
+        Tile this[int x, int y] { get; }
+        TileMetadata GetMetadata(Point position);
         IReadOnlyChunk Clone();
         void OnSaved();
     }
 
     public interface IChunk : IReadOnlyChunk
     {
-        new Tile this[Point index, MapLayer layer] { get; set; }
-        new Tile this[int x, int y, MapLayer layer] { get; set; }
+        new Tile this[Point position] { get; set; }
+        new Tile this[int x, int y] { get; set; }
+        void SetMetadata(Point position, TileMetadata value);
     }
 
     public class Chunk : IChunk
     {
         public const int Size = 8;
 
-        private Tile[] _tiles;
-        private Tile[] _designedTiles;
+        private readonly Tile[] _tiles;
+        private readonly TileMetadata[] _tileMetadata;
 
         public Point Index { get; } = Point.Zero;
 
-        public bool IsEmpty =>
-            _tiles.All(t => t == Tile.Empty) &&
-            _designedTiles.All(t => t == Tile.Empty);
+        public bool IsEmpty => _tileMetadata.All(t => t == TileMetadata.Empty);
 
-        public bool HasChanged { get; internal set; }
+        public bool HasChanged { get; private set; }
 
         public static Chunk SampleChunk { get; } = CreateSampleChunk();
         public static Chunk SampleChunk2 { get; } = CreateSampleChunk2();
@@ -46,7 +43,7 @@ namespace OrangeBugReloaded.Core
         {
             Index = index;
             _tiles = Enumerable.Repeat(Tile.Empty, Size * Size).ToArray();
-            _designedTiles = _tiles.ToArray();
+            _tileMetadata = Enumerable.Repeat(TileMetadata.Empty, Size * Size).ToArray();
         }
 
         private static Chunk CreateSampleChunk()
@@ -55,26 +52,31 @@ namespace OrangeBugReloaded.Core
 
             for (var y = 1; y < Size - 1; y++)
                 for (var x = 1; x < Size - 1; x++)
-                    chunk[x, y, MapLayer.Gameplay] = PathTile.Default;
+                    chunk[x, y] = PathTile.Default;
 
-            chunk[1, 2, MapLayer.Gameplay] = Tile.Compose(PathTile.Default, PlayerEntity.PlayerLookingNorth);
-            chunk[2, 2, MapLayer.Gameplay] = Tile.Compose(PathTile.Default, BoxEntity.Default);
-            chunk[3, 2, MapLayer.Gameplay] = new ButtonTile(false, EntityFilterMode.EntitiesExceptPlayer);
-            chunk[4, 2, MapLayer.Gameplay] = new TeleporterTile(new Point(4, 4));
-            chunk[4, 4, MapLayer.Gameplay] = new TeleporterTile(new Point(4, 2));
+            chunk[1, 2] = Tile.Compose(PathTile.Default, new PlayerEntity("local", Point.North));
+            chunk[2, 2] = Tile.Compose(PathTile.Default, BoxEntity.Default);
+            chunk[3, 2] = new ButtonTile(false, EntityFilterMode.EntitiesExceptPlayer);
+            chunk[4, 2] = new TeleporterTile(new Point(4, 4));
+            chunk[4, 4] = new TeleporterTile(new Point(4, 2));
+                          
+            chunk[3, 3] = new GateTile(new Point(3, 2), false);
+                          
+            chunk[5, 5] = Tile.Compose(PathTile.Default, new BalloonEntity(InkColor.Green));
+            chunk[3, 5] = new PinTile(InkColor.Red);
+            chunk[6, 3] = new PinTile(InkColor.Green);
+                          
+            chunk[4, 5] = new InkTile(InkColor.Red);
+            chunk[3, 4] = new InkTile(InkColor.Green);
+            chunk[6, 5] = new InkTile(InkColor.Blue);
+                          
+            chunk[0, 3] = PathTile.Default;
+            chunk[0, 4] = PathTile.Default;
 
-            chunk[3, 3, MapLayer.Gameplay] = new GateTile(new Point(3, 2), false);
+            for (var y = 1; y < Size - 1; y++)
+                for (var x = 1; x < Size - 1; x++)
+                    chunk.SetMetadata(new Point(x, y), new TileMetadata(chunk[x, y], 0));
 
-            chunk[5, 5, MapLayer.Gameplay] = Tile.Compose(PathTile.Default, new BalloonEntity(InkColor.Green));
-            chunk[3, 5, MapLayer.Gameplay] = new PinTile(InkColor.Red);
-            chunk[6, 3, MapLayer.Gameplay] = new PinTile(InkColor.Green);
-
-            chunk[4, 5, MapLayer.Gameplay] = new InkTile(InkColor.Red);
-            chunk[3, 4, MapLayer.Gameplay] = new InkTile(InkColor.Green);
-            chunk[6, 5, MapLayer.Gameplay] = new InkTile(InkColor.Blue);
-
-            chunk[0, 3, MapLayer.Gameplay] = PathTile.Default;
-            chunk[0, 4, MapLayer.Gameplay] = PathTile.Default;
             return chunk;
         }
 
@@ -84,56 +86,53 @@ namespace OrangeBugReloaded.Core
 
             for (var y = 1; y < Size - 1; y++)
                 for (var x = 1; x < Size - 1; x++)
-                    chunk[x, y, MapLayer.Gameplay] = PathTile.Default;
+                    chunk[x, y] = PathTile.Default;
 
-            chunk[3, 3, MapLayer.Gameplay] = new PistonTile(new Point(3, 2), Point.East);
-            chunk[4, 3, MapLayer.Gameplay] = Tile.Compose(new ButtonTile(false, EntityFilterMode.Entities), BoxEntity.Default);
-            chunk[5, 3, MapLayer.Gameplay] = new InkTile(InkColor.Blue);
+            chunk[7, 3] = PathTile.Default;
+            chunk[7, 4] = PathTile.Default;
 
-            chunk[2, 5, MapLayer.Gameplay] = new PistonTile(new Point(-4, 3), Point.South);
-            chunk[3, 5, MapLayer.Gameplay] = new GateTile(new Point(-4, 3), false);
+            chunk[3, 3] = new PistonTile(new Point(3, 2), Point.East);
+            chunk[4, 3] = Tile.Compose(new ButtonTile(false, EntityFilterMode.Entities), BoxEntity.Default);
+            chunk[5, 3] = new InkTile(InkColor.Blue);
 
-            chunk[7, 3, MapLayer.Gameplay] = PathTile.Default;
-            chunk[7, 4, MapLayer.Gameplay] = PathTile.Default;
+            chunk[2, 5] = new PistonTile(new Point(-4, 3), Point.South);
+            chunk[3, 5] = new GateTile(new Point(-4, 3), false);
+
+            for (var y = 1; y < Size - 1; y++)
+                for (var x = 1; x < Size - 1; x++)
+                    chunk.SetMetadata(new Point(x, y), new TileMetadata(chunk[x, y], 0));
+
             return chunk;
         }
 
-        public Tile this[Point index, MapLayer layer]
+        public Tile this[Point position]
         {
-            get { return this[index.X, index.Y, layer]; }
-            set { this[index.X, index.Y, layer] = value; }
+            get { return this[position.X, position.Y]; }
+            set { this[position.X, position.Y] = value; }
         }
 
-        public Tile this[int x, int y, MapLayer layer]
+        public Tile this[int x, int y]
         {
-            get { return GetTilesForLayer(layer)[Size * y + x]; }
+            get { return _tiles[Size * y + x]; }
             set
             {
-                var tiles = GetTilesForLayer(layer);
-                if (!Equals(tiles[Size * y + x], value))
+                if (!Equals(_tiles[Size * y + x], value))
                 {
-                    tiles[Size * y + x] = value;
+                    _tiles[Size * y + x] = value;
                     HasChanged = true;
                 }
             }
         }
 
+        public TileMetadata GetMetadata(Point position) => _tileMetadata[Size * position.Y + position.X];
+        public void SetMetadata(Point position, TileMetadata value) => _tileMetadata[Size * position.Y + position.X] = value;
+
         private Chunk(Chunk chunk)
         {
             _tiles = chunk._tiles.ToArray();
-            _designedTiles = chunk._designedTiles.ToArray();
+            _tileMetadata = chunk._tileMetadata.ToArray();
             Index = chunk.Index;
             HasChanged = false;
-        }
-
-        private Tile[] GetTilesForLayer(MapLayer layer)
-        {
-            switch (layer)
-            {
-                case MapLayer.Gameplay: return _tiles;
-                case MapLayer.Design: return _designedTiles;
-                default: throw new NotImplementedException();
-            }
         }
 
         public IReadOnlyChunk Clone() => new Chunk(this);

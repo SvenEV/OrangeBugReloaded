@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Numerics;
 using System.Text.RegularExpressions;
 
 namespace OrangeBugReloaded.Core
@@ -139,6 +140,8 @@ namespace OrangeBugReloaded.Core
         {
             return base.GetHashCode();
         }
+
+        public Vector2 ToVector2() => new Vector2(X, Y);
 
         private static int Mod(int x, int m)
         {

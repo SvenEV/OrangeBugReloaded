@@ -9,8 +9,43 @@
     mc:Ignorable="d">
 
     <Grid Background="Black">
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="100"/>
+        </Grid.RowDefinitions>
+        
         <win2d:CanvasAnimatedControl x:Name="canvas"
                                      PointerWheelChanged="canvas_PointerWheelChanged"
                                      PointerPressed="canvas_PointerPressed"/>
+
+        <Border Grid.Row="1" Background="WhiteSmoke" Padding="12">
+            <ListView ItemsSource="{Binding MainVM.TileTemplates}"
+                      SelectedItem="{Binding MainVM.SelectedTileTemplate, Mode=TwoWay}"
+                      SelectionMode="Single">
+
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Padding" Value="4"/>
+                        <Setter Property="MaxWidth" Value="200"/>
+                        <Setter Property="MinWidth" Value="0"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="68" Height="68" Background="SkyBlue">
+                            <TextBlock Text="{Binding}" TextWrapping="Wrap"/>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+                
+            </ListView>
+        </Border>
     </Grid>
 </Page>

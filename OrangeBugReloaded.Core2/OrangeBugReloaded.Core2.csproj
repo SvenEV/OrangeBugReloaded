@@ -46,6 +46,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -134,6 +135,7 @@
     <Compile Include="Map.cs" />
     <Compile Include="MapDependencyTable.cs" />
     <Compile Include="MapLayer.cs" />
+    <Compile Include="MapMetadata.cs" />
     <Compile Include="ObservableCollection.cs" />
     <Compile Include="ObservableDictionary.cs" />
     <Compile Include="Point.cs" />
@@ -145,6 +147,7 @@
     <Compile Include="Rendering\VisualHintAttribute.cs" />
     <Compile Include="TaskEx.cs" />
     <Compile Include="Tile.cs" />
+    <Compile Include="TileMetadata.cs" />
     <Compile Include="Tiles\ButtonTile.cs" />
     <Compile Include="Tiles\GateTile.cs" />
     <Compile Include="Tiles\InkTile.cs" />
@@ -158,10 +161,12 @@
     <Compile Include="Transactions\ITransactionChain.cs" />
     <Compile Include="Transactions\ITransactionChainWithMoveSupport.cs" />
     <Compile Include="Transactions\ITransactionWithMoveSupport.cs" />
+    <Compile Include="Transactions\TransactionChainWithEditSupport.cs" />
+    <Compile Include="Transactions\TransactionWithEditSupport.cs" />
     <Compile Include="Transactions\TransactionWithMoveSupport.cs" />
     <Compile Include="Transactions\ITransaction.cs" />
     <Compile Include="Transactions\Transaction.cs" />
-    <Compile Include="Transactions\TransactionChain.cs" />
+    <Compile Include="Transactions\TransactionChainBase.cs" />
     <Compile Include="Transactions\TransactionChainWithMoveSupport.cs" />
     <EmbeddedResource Include="Properties\OrangeBugReloaded.Core2.rd.xml" />
   </ItemGroup>

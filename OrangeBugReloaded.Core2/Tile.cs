@@ -1,11 +1,15 @@
-﻿using OrangeBugReloaded.Core.Tiles;
+﻿using OrangeBugReloaded.Core.Rendering;
+using OrangeBugReloaded.Core.Tiles;
 using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core
 {
-    public abstract class Tile
+    public abstract class Tile : IEquatable<Tile>
     {
         public static Tile Empty { get; } = WallTile.Default;
 
@@ -44,7 +48,7 @@ namespace OrangeBugReloaded.Core
             if (Entity != Entity.None)
                 await Entity.DetachAsync(e, this);
 
-            if (!e.IsCancelled)
+            if (!e.IsCanceled)
             {
                 e.Result = Compose(this, e.CurrentMove.Entity);
             }
@@ -132,6 +136,44 @@ namespace OrangeBugReloaded.Core
             newTile.Entity = Entity.None;
             return newTile;
         }
+
+        public override bool Equals(object obj) => Equals(obj as Tile);
+
+        public bool Equals(Tile other)
+        {
+            if (GetType() != other?.GetType())
+                return false;
+
+            var selfProps = GetHashProperties().Cast<object>();
+            var otherProps = other.GetHashProperties().Cast<object>();
+
+            return
+                selfProps.Zip(otherProps, Equals).All(b => b) &&
+                Equals(Entity, other.Entity);
+        }
+
+        public override sealed int GetHashCode()
+        {
+            unchecked // Overflow is fine, just wrap
+            {
+                var hash = 17;
+                hash = hash * 23 + GetType().GetHashCode();
+
+                foreach (var prop in GetHashProperties())
+                    hash = hash * 23 + prop.GetHashCode();
+
+                if (Entity != Entity.None)
+                    hash = hash * 23 + Entity.GetHashCode();
+
+                return hash;
+            }
+        }
+
+        protected virtual IEnumerable GetHashProperties() { yield break; }
+
+        public override string ToString() =>
+            VisualHintAttribute.GetVisualName(this) +
+            (Entity != Entity.None ? " + " + VisualHintAttribute.GetVisualName(Entity) : "");
     }
 
     public static class TileExtensions
@@ -146,7 +188,11 @@ namespace OrangeBugReloaded.Core
         public static Tile EnsureNotNull(this Tile tile, [CallerMemberName]string callerMemberName = null)
         {
             if (tile == null)
+            {
+                Debugger.Break();
                 throw new ArgumentException($"Tile is null in '{callerMemberName}'");
+            }
+
             return tile;
         }
     }

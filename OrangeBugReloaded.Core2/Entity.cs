@@ -1,11 +1,14 @@
 ﻿using OrangeBugReloaded.Core.Entities;
 using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core
 {
-    public abstract class Entity
+    public abstract class Entity : IEquatable<Entity>
     {
         public static Entity None { get; } = NullEntity.Default;
 
@@ -91,6 +94,35 @@ namespace OrangeBugReloaded.Core
         
         /// <inheritdoc/>
         public override string ToString() => GetType().Name;
+
+        public override bool Equals(object obj) => Equals(obj as Entity);
+
+        public bool Equals(Entity other)
+        {
+            if (GetType() != other?.GetType())
+                return false;
+
+            var selfProps = GetHashProperties().Cast<object>();
+            var otherProps = other.GetHashProperties().Cast<object>();
+
+            return selfProps.Zip(otherProps, Equals).All(b => b);
+        }
+
+        public override sealed int GetHashCode()
+        {
+            unchecked // Overflow is fine, just wrap
+            {
+                var hash = 17;
+                hash = hash * 23 + GetType().GetHashCode();
+
+                foreach (var prop in GetHashProperties())
+                    hash = hash * 23 + prop.GetHashCode();
+
+                return hash;
+            }
+        }
+
+        protected virtual IEnumerable GetHashProperties() { yield break; }
     }
 
     public static class EntityExtensions
@@ -105,7 +137,11 @@ namespace OrangeBugReloaded.Core
         public static Entity EnsureNotNull(this Entity entity, [CallerMemberName]string callerMemberName = null)
         {
             if (entity == null)
+            {
+                Debugger.Break();
                 throw new ArgumentException($"Entity is null in {callerMemberName}");
+            }
+
             return entity;
         }
 
@@ -120,7 +156,10 @@ namespace OrangeBugReloaded.Core
         public static Entity EnsureNotNone(this Entity entity, [CallerMemberName]string callerMemberName = null)
         {
             if (entity.EnsureNotNull() == Entity.None)
+            {
+                Debugger.Break();
                 throw new ArgumentException($"Entity is null or none in {callerMemberName}");
+            }
             return entity;
         }
     }

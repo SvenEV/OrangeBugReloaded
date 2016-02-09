@@ -4,24 +4,24 @@ using System.Collections.Generic;
 namespace OrangeBugReloaded.Core.Transactions
 {
     /// <summary>
-    /// A basic transaction.
+    /// Implements the base functionality of a transaction.
     /// </summary>
-    public class Transaction : ITransaction
+    public abstract class TransactionBase<T> : ITransaction<T>
     {
         /// <inheritdoc/>
-        public IDictionary<Point, Tile> ChangedTiles { get; } = new Dictionary<Point, Tile>();
+        public IDictionary<Point, T> Changes { get; } = new Dictionary<Point, T>();
 
         /// <inheritdoc/>
         public IList<IGameEvent> Events { get; } = new List<IGameEvent>();
         
         /// <inheritdoc/>
-        public bool IsCancelled { get; private set; }
+        public bool IsCanceled { get; private set; }
         
         /// <inheritdoc/>
         public void Cancel()
         {
-            IsCancelled = true;
-            ChangedTiles.Clear();
+            IsCanceled = true;
+            Changes.Clear();
         }
     }
 }

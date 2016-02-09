@@ -93,13 +93,13 @@ namespace OrangeBugReloaded.Core
         }
 
         /// <summary>
-        /// Tries to obtain the <see cref="Chunk"/> with the specified index.
+        /// Obtains the <see cref="Chunk"/> with the specified index.
         /// If the chunk is already loaded, it is returned.
         /// Otherwise, it is loaded from <see cref="Storage"/>.
         /// </summary>
         /// <param name="index">Chunk index</param>
         /// <returns>The desired chunk. If the chunk could not be loaded, a new empty chunk is returned</returns>
-        public async Task<IChunk> TryGetAsync(Point index)
+        public async Task<IChunk> GetAsync(Point index)
         {
             // If chunk already loaded, return it immediately
             IChunk alreadyLoadedChunk;

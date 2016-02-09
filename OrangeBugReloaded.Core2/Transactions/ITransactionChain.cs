@@ -4,17 +4,12 @@ using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core.Transactions
 {
-    public interface ITransactionChain : IMap, IGameEventEmitter
+    public interface ITransactionChain<T> : IGameEventEmitter
     {
         /// <summary>
         /// Gets the latest transaction in the chain.
         /// </summary>
-        ITransaction CurrentTransaction { get; }
-
-        /// <summary>
-        /// Gets the first/earliest transaction in the chain.
-        /// </summary>
-        ITransaction RootTransaction { get; }
+        ITransaction<T> CurrentTransaction { get; }
 
         /// <summary>
         /// Applies changes collected in transactions to the map.
@@ -29,6 +24,6 @@ namespace OrangeBugReloaded.Core.Transactions
         /// Adds a transaction to the transaction chain.
         /// </summary>
         /// <returns>The new transaction</returns>
-        ITransaction CreateFollowUpTransaction();
+        ITransaction<T> CreateFollowUpTransaction();
     }
 }

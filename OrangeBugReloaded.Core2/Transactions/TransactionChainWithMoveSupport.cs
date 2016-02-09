@@ -1,9 +1,10 @@
-﻿using System;
+﻿using OrangeBugReloaded.Core.Events;
+using System;
 using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core.Transactions
 {
-    public class TransactionChainWithMoveSupport : TransactionChain, ITransactionChainWithMoveSupport
+    public class TransactionChainWithMoveSupport : TransactionChainBase<Tile>, ITransactionChainWithMoveSupport, IMap
     {
         private IGameplayMap _map;
 
@@ -12,9 +13,6 @@ namespace OrangeBugReloaded.Core.Transactions
 
         /// <inheritdoc/>
         ITransactionWithMoveSupport ITransactionChainWithMoveSupport.CurrentTransaction => (ITransactionWithMoveSupport)CurrentTransaction;
-
-        /// <inheritdoc/>
-        ITransactionWithMoveSupport ITransactionChainWithMoveSupport.RootTransaction => (ITransactionWithMoveSupport)RootTransaction;
 
         private TransactionChainWithMoveSupport(IGameplayMap map, Func<ITransactionWithMoveSupport> transactionFactory)
             : base(map, transactionFactory)
@@ -32,7 +30,7 @@ namespace OrangeBugReloaded.Core.Transactions
         /// </typeparam>
         /// <param name="map">The underlying map</param>
         /// <returns>The transaction chain</returns>
-        public static new TransactionChainWithMoveSupport Create<T>(IGameplayMap map) where T : ITransactionWithMoveSupport, new()
+        public static TransactionChainWithMoveSupport Create<T>(IGameplayMap map) where T : ITransactionWithMoveSupport, new()
         {
             return new TransactionChainWithMoveSupport(map, () => new T());
         }
@@ -40,10 +38,64 @@ namespace OrangeBugReloaded.Core.Transactions
         /// <inheritdoc/>
         public async Task<bool> MoveAsync(Point sourcePosition, Point targetPosition)
         {
-            if (CurrentTransaction.IsCancelled)
+            if (CurrentTransaction.IsCanceled)
                 return false;
 
             return await _map.MoveAsync(sourcePosition, targetPosition, this);
+        }
+
+        /// <inheritdoc/>
+        public override async Task CommitAsync(IObserver<IGameEvent> eventSource)
+        {
+            // Apply changes of all transactions to the map beginning with the
+            // oldest transaction so that newer ones can overwrite changes of older ones.
+            foreach (var currentTransaction in Transactions)
+            {
+                // Apply recorded changes to map
+                foreach (var kvp in currentTransaction.Changes)
+                    await _map.SetAsync(kvp.Key, kvp.Value);
+
+                // Flush recorded events
+                foreach (var e in currentTransaction.Events)
+                    eventSource?.OnNext(e);
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<Tile> GetAsync(Point position)
+        {
+            // Get the latest recorded change if one is available,
+            // otherwise get the tile directly from the underlying map
+            return GetLatest(position) ?? await _map.GetAsync(position);
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> SetAsync(Point position, Tile tile)
+        {
+            if (CurrentTransaction.IsCanceled)
+                return false;
+
+            var currentTile = await GetAsync(position);
+
+            if (!Equals(currentTile, tile))
+            {
+                // If tile actually differs from the one in the transactions
+                // or on the map, add it to the list of changed tiles.
+                Set(position, tile);
+                return true;
+            }
+
+            return false;
+        }
+
+        Task<TileMetadata> IReadOnlyMap.GetMetadataAsync(Point position)
+        {
+            throw new NotSupportedException();
+        }
+
+        Task<bool> IMap.SetMetadataAsync(Point position, TileMetadata value)
+        {
+            throw new NotSupportedException();
         }
     }
 }

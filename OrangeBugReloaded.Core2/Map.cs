@@ -14,6 +14,8 @@ namespace OrangeBugReloaded.Core
 
         public ChunkLoader ChunkLoader { get; }
 
+        public IMapMetadata Metadata { get; }
+
         /// <summary>
         /// Stores the dependencies between tiles on the map.
         /// </summary>
@@ -34,31 +36,60 @@ namespace OrangeBugReloaded.Core
             ChunkLoader.Chunks.ItemRemoved += OnChunkUnloaded;
 
             _eventSource = new Subject<IGameEvent>();
+
+            // TODO: For now, just create metadata instead of loading from storage
+            Metadata = new MapMetadata();
+            Metadata.Players["local"] = new PlayerInfo("local", "Local Player");
+            Metadata.Regions[0] = new RegionInfo(0, "Default Region");
         }
 
         /// <inheritdoc/>
-        public async Task<Tile> GetAsync(Point position, MapLayer layer = MapLayer.Gameplay)
+        public async Task<Tile> GetAsync(Point position)
         {
-            var chunk = await ChunkLoader.TryGetAsync(position / Chunk.Size);
-            return chunk[position % Chunk.Size, layer];
+            var chunk = await ChunkLoader.GetAsync(position / Chunk.Size);
+            return chunk[position % Chunk.Size];
         }
 
         /// <inheritdoc/>
-        public async Task<bool> SetAsync(Point position, Tile tile, MapLayer layer = MapLayer.Gameplay)
+        public async Task<TileMetadata> GetMetadataAsync(Point position)
+        {
+            var chunk = await ChunkLoader.GetAsync(position / Chunk.Size);
+            return chunk.GetMetadata(position % Chunk.Size);
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> SetAsync(Point position, Tile tile)
         {
             // TODO: Handle concurrency
-            var chunk = await ChunkLoader.TryGetAsync(position / Chunk.Size);
-            var oldTile = chunk[position % Chunk.Size, layer];
+            var chunk = await ChunkLoader.GetAsync(position / Chunk.Size);
+            var oldTileInfo = chunk[position % Chunk.Size];
 
-            if (!Equals(oldTile, tile))
+            if (!Equals(oldTileInfo, tile))
             {
                 // Update chunk
-                chunk[position % Chunk.Size, layer] = tile;
+                chunk[position % Chunk.Size] = tile;
 
                 // Update dependencies
-                Dependencies.RemoveDependenciesOf(oldTile, position);
+                Dependencies.RemoveDependenciesOf(oldTileInfo, position);
                 Dependencies.AddDependenciesOf(tile, position);
 
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> SetMetadataAsync(Point position, TileMetadata value)
+        {
+            // TODO: Handle concurrency
+            var chunk = await ChunkLoader.GetAsync(position / Chunk.Size);
+            var oldMetadata = chunk.GetMetadata(position % Chunk.Size);
+
+            if (!Equals(oldMetadata, value))
+            {
+                // Update chunk
+                chunk.SetMetadata(position % Chunk.Size, value);
                 return true;
             }
 
@@ -93,14 +124,14 @@ namespace OrangeBugReloaded.Core
 
             var transaction = transactionChain.CurrentTransaction;
 
-            if (transaction.IsCancelled)
+            if (transaction.IsCanceled)
                 return false;
 
             // At the end of the recursion...
             if (transaction.Moves.Count == 0)
             {
                 // Notify changed tiles and tiles that directly or indirectly depend on changed tiles
-                var affectedTiles = transaction.ChangedTiles.Select(kvp => kvp.Key);
+                var affectedTiles = transaction.Changes.Select(kvp => kvp.Key);
                 await UpdateTilesAsync(affectedTiles, transactionChain);
             }
 
@@ -111,7 +142,10 @@ namespace OrangeBugReloaded.Core
         {
             var source = await transactionChain.GetAsync(sourcePosition);
             var target = await transactionChain.GetAsync(targetPosition);
-            var originalSource = source;
+
+            source.Entity.EnsureNotNone();
+
+            var oldSource = source;
 
             var move = new EntityMoveInfo
             {
@@ -121,16 +155,13 @@ namespace OrangeBugReloaded.Core
             };
 
             var transaction = transactionChain.CurrentTransaction;
-
             transaction.Moves.Push(move);
-
-            source.Entity.EnsureNotNone();
 
             // OnBeginMove: Notify entity that a move has been initiated
             var beginMoveArgs = new EntityEventArgs(transactionChain);
             await source.Entity.BeginMoveAsync(beginMoveArgs);
             beginMoveArgs.ValidateResult();
-            if (transaction.IsCancelled) return;
+            if (transaction.IsCanceled) return;
             source = Tile.Compose(source, beginMoveArgs.Result);
             await transactionChain.SetAsync(sourcePosition, source);
             move.Entity = beginMoveArgs.Result;
@@ -139,28 +170,27 @@ namespace OrangeBugReloaded.Core
             var detachArgs = new DetachEventArgs(transactionChain);
             await source.DetachEntityAsync(detachArgs);
             detachArgs.ValidateResult();
-            if (transaction.IsCancelled) return;
+            if (transaction.IsCanceled) return;
 
             // Attach: Add the entity to the target tile
             var attachArgs = new AttachEventArgs(transactionChain);
             await target.AttachEntityAsync(attachArgs);
             attachArgs.ValidateResult();
-            if (transaction.IsCancelled) return;
+            if (transaction.IsCanceled) return;
 
             if (!attachArgs.PreventDetach)
             {
                 source = detachArgs.Result;
-                await transactionChain.SetAsync(sourcePosition, detachArgs.Result);
+                await transactionChain.SetAsync(sourcePosition, source);
             }
 
             if (!detachArgs.PreventAttach)
             {
                 target = attachArgs.Result;
-                await transactionChain.SetAsync(targetPosition, attachArgs.Result);
+                await transactionChain.SetAsync(targetPosition, target);
             }
 
-            transactionChain.Emit(new EntityMoveEvent(sourcePosition, targetPosition, originalSource, target));
-
+            transactionChain.Emit(new EntityMoveEvent(sourcePosition, targetPosition, oldSource, target));
             transaction.Moves.Pop();
         }
 
@@ -172,7 +202,7 @@ namespace OrangeBugReloaded.Core
                 {
                     var localPosition = new Point(x, y);
                     var globalPosition = kvp.Value.Index * Chunk.Size + localPosition;
-                    Dependencies.RemoveDependenciesOf(kvp.Value[localPosition, MapLayer.Gameplay], globalPosition);
+                    Dependencies.RemoveDependenciesOf(kvp.Value[localPosition], globalPosition);
                     Dependencies.RemoveDependenciesOn(globalPosition);
                 }
             }
@@ -188,7 +218,7 @@ namespace OrangeBugReloaded.Core
                 {
                     var localPosition = new Point(x, y);
                     var globalPosition = kvp.Value.Index * Chunk.Size + localPosition;
-                    Dependencies.AddDependenciesOf(kvp.Value[localPosition, MapLayer.Gameplay], globalPosition);
+                    Dependencies.AddDependenciesOf(kvp.Value[localPosition], globalPosition);
                 }
             }
 
@@ -220,7 +250,7 @@ namespace OrangeBugReloaded.Core
                 await tile.OnEntityMoveTransactionCompletedAsync(completionArgs);
                 completionArgs.ValidateResult();
 
-                if (transactionChain.CurrentTransaction.IsCancelled)
+                if (transactionChain.CurrentTransaction.IsCanceled)
                     return null; // Null terminates the loop
 
                 var hasChanged = await transactionChain.SetAsync(p, completionArgs.Result);

@@ -3,6 +3,7 @@ using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Rendering;
 using System;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace OrangeBugReloaded.Core.Tiles
 {
@@ -12,6 +13,7 @@ namespace OrangeBugReloaded.Core.Tiles
     /// When the piston extends it pushes the entity next to it
     /// one tile towards the extension direction.
     /// </summary>
+    [VisualHint("PistonTile", nameof(Direction))]
     public class PistonTile : Tile
     {
         // This defines a dependy 2 tiles towards the piston direction.
@@ -44,7 +46,7 @@ namespace OrangeBugReloaded.Core.Tiles
         public bool IsExtended { get; }
 
         public PistonTile(Point triggerPosition, Point direction, bool isExtended = false)
-            : base(isExtended ? Entity.None : new PistonEntity())
+            : base(isExtended ? Entity.None : new PistonEntity(direction))
         {
             TriggerPosition = triggerPosition;
             Direction = direction.EnsureDirection();
@@ -98,6 +100,13 @@ namespace OrangeBugReloaded.Core.Tiles
             }
 
             // Otherwise do nothing
+        }
+
+        protected override IEnumerable GetHashProperties()
+        {
+            yield return TriggerPosition;
+            yield return IsExtended;
+            yield return Direction;
         }
     }
 

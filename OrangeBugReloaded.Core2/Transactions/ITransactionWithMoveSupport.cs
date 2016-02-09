@@ -6,7 +6,7 @@ namespace OrangeBugReloaded.Core.Transactions
     /// A transaction that stores information about entity moves
     /// that are executed in its context.
     /// </summary>
-    public interface ITransactionWithMoveSupport : ITransaction
+    public interface ITransactionWithMoveSupport : ITransaction<Tile>
     {
         /// <summary>
         /// Provides information about each move in a recursion of move operations.

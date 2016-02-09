@@ -12,7 +12,7 @@
     <DefaultLanguage>de-DE</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
     <TargetPlatformVersion>10.0.10586.0</TargetPlatformVersion>
-    <TargetPlatformMinVersion>10.0.10240.0</TargetPlatformMinVersion>
+    <TargetPlatformMinVersion>10.0.10586.0</TargetPlatformMinVersion>
     <MinimumVisualStudioVersion>14</MinimumVisualStudioVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -96,8 +96,8 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="Common\AudioPlayer.cs" />
-    <Compile Include="Common\EntityMoveAnimationPlugin.cs" />
     <Compile Include="Common\IRendererPlugin.cs" />
+    <Compile Include="Common\MainViewModel.cs" />
     <Compile Include="Common\Mathf.cs" />
     <Compile Include="Common\OrangeBugAudioPlayer.cs" />
     <Compile Include="Common\OrangeBugRenderer.cs" />
@@ -141,6 +141,9 @@
     </Content>
     <Content Include="..\..\Assets\Sprites\Box.png">
       <Link>Assets\Sprites\Box.png</Link>
+    </Content>
+    <Content Include="..\..\Assets\Sprites\BoxingGlove.png">
+      <Link>Assets\Sprites\BoxingGlove.png</Link>
     </Content>
     <Content Include="..\..\Assets\Sprites\BoxTarget.png">
       <Link>Assets\Sprites\BoxTarget.png</Link>

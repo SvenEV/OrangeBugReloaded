@@ -5,6 +5,8 @@ using Windows.UI.Xaml.Controls;
 using System.Numerics;
 using Windows.UI.Xaml;
 using Windows.System;
+using System.Threading.Tasks;
+using Windows.UI.Xaml.Input;
 
 // Die Vorlage "Leere Seite" ist unter http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409 dokumentiert.
 
@@ -15,15 +17,16 @@ namespace OrangeBugReloaded.App
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private Map _map;
-        private OrangeBugRenderer _renderer;
         private Point _playerPosition = new Point(1, 2);
+
+        public MainViewModel MainVM { get; }
 
         public MainPage()
         {
             InitializeComponent();
+            MainVM = new MainViewModel(canvas);
+            DataContext = this;
             Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
-            Init();
         }
 
         private async void CoreWindow_KeyDown(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.KeyEventArgs args)
@@ -31,40 +34,27 @@ namespace OrangeBugReloaded.App
             switch (args.VirtualKey)
             {
                 case VirtualKey.Left:
-                    if (await _map.MoveAsync(_playerPosition, _playerPosition + Point.West))
+                    if (await MainVM.Map.MoveAsync(_playerPosition, _playerPosition + Point.West))
                         _playerPosition += Point.West;
                     break;
 
                 case VirtualKey.Right:
-                    if (await _map.MoveAsync(_playerPosition, _playerPosition + Point.East))
+                    if (await MainVM.Map.MoveAsync(_playerPosition, _playerPosition + Point.East))
                         _playerPosition += Point.East;
                     break;
 
                 case VirtualKey.Up:
-                    if (await _map.MoveAsync(_playerPosition, _playerPosition + Point.North))
+                    if (await MainVM.Map.MoveAsync(_playerPosition, _playerPosition + Point.North))
                         _playerPosition += Point.North;
                     break;
 
                 case VirtualKey.Down:
-                    if (await _map.MoveAsync(_playerPosition, _playerPosition + Point.South))
+                    if (await MainVM.Map.MoveAsync(_playerPosition, _playerPosition + Point.South))
                         _playerPosition += Point.South;
                     break;
             }
 
-            _renderer.CameraPosition = new Vector2(_playerPosition.X, _playerPosition.Y);
-        }
-
-        private async void Init()
-        {
-            _map = new Map(new InMemoryChunkStorage(new[] { Chunk.SampleChunk, Chunk.SampleChunk2 }));
-
-            _renderer = new OrangeBugRenderer();
-            _renderer.Attach(canvas);
-            _renderer.Plugins.Add<OrangeBugAudioPlayer>();
-            _renderer.Plugins.Add<EntityMoveAnimationPlugin>();
-            _renderer.Map = _map;
-
-            await _map.ChunkLoader.TryGetAsync(Point.West);
+            MainVM.Renderer.CameraPosition = new Vector2(_playerPosition.X, _playerPosition.Y);
         }
 
         private void canvas_PointerWheelChanged(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
@@ -73,20 +63,28 @@ namespace OrangeBugReloaded.App
             var normalizedDelta = Mathf.Abs(delta) + 1;
 
             if (delta >= 0)
-                _renderer.ZoomLevel = Mathf.Clamp(_renderer.ZoomLevel * normalizedDelta, 10, 200);
+                MainVM.Renderer.ZoomLevel = Mathf.Clamp(MainVM.Renderer.ZoomLevel * normalizedDelta, 10, 200);
             else
             {
                 var change =
-                _renderer.ZoomLevel = Mathf.Clamp(_renderer.ZoomLevel / normalizedDelta, 10, 200);
+                MainVM.Renderer.ZoomLevel = Mathf.Clamp(MainVM.Renderer.ZoomLevel / normalizedDelta, 10, 200);
             }
         }
 
-        private async void canvas_PointerPressed(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
+        private async void canvas_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
-            var pos = e.GetCurrentPoint(canvas).Position;
+            var currentPoint = e.GetCurrentPoint(canvas);
 
-            var x = pos.X / canvas.Size.Width * 2 - 1;
-            var y = pos.Y / canvas.Size.Height * 2 - 1;
+            if (currentPoint.Properties.IsRightButtonPressed)
+                await MainVM.EditMapAsync(currentPoint.Position.ToVector2());
+            else
+                await PerformBasicTouchNavigation(currentPoint.Position.ToVector2());
+        }
+
+        private async Task PerformBasicTouchNavigation(Vector2 position)
+        {
+            var x = position.X / canvas.Size.Width * 2 - 1;
+            var y = position.Y / canvas.Size.Height * 2 - 1;
             Point direction;
 
             if (Math.Abs(x) < Math.Abs(y))
@@ -98,10 +96,10 @@ namespace OrangeBugReloaded.App
                 direction = x < 0 ? Point.West : Point.East;
             }
 
-            if (await _map.MoveAsync(_playerPosition, _playerPosition + direction))
+            if (await MainVM.Map.MoveAsync(_playerPosition, _playerPosition + direction))
                 _playerPosition += direction;
 
-            _renderer.CameraPosition = new Vector2(_playerPosition.X, _playerPosition.Y);
+            MainVM.Renderer.CameraPosition = new Vector2(_playerPosition.X, _playerPosition.Y);
         }
     }
 }

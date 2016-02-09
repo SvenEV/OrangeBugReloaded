@@ -1,6 +1,7 @@
 ﻿using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Rendering;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace OrangeBugReloaded.Core.Tiles
 {
@@ -47,6 +48,12 @@ namespace OrangeBugReloaded.Core.Tiles
                 if (isSuccessful)
                     e.Emit(new TeleporterTileTeleportEvent(position, TargetPosition, Entity));
             }
+        }
+
+        protected override IEnumerable GetHashProperties()
+        {
+            yield return TargetPosition;
+            yield return AcceptedEntities;
         }
     }
 
