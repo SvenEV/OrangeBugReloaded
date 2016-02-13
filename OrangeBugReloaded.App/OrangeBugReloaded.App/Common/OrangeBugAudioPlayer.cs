@@ -16,7 +16,7 @@ namespace OrangeBugReloaded.App.Common
         {
         }
 
-        public void Initialize(Map map)
+        public void Initialize(IGameplayMap map)
         {
             _eventSubscription = map.Events.OfType<IAudioHint>().Subscribe(PlaySound);
 

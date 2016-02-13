@@ -4,7 +4,8 @@ using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core.Transactions
 {
-    public class TransactionChainWithMoveSupport : TransactionChainBase<Tile>, ITransactionChainWithMoveSupport, IMap
+    /*
+    public class TransactionChainWithMoveSupport : TransactionChainBase<TileInfo>, ITransactionChainWithMoveSupport, IMap
     {
         private IGameplayMap _map;
 
@@ -13,6 +14,8 @@ namespace OrangeBugReloaded.Core.Transactions
 
         /// <inheritdoc/>
         ITransactionWithMoveSupport ITransactionChainWithMoveSupport.CurrentTransaction => (ITransactionWithMoveSupport)CurrentTransaction;
+
+        ITransactionWithMoveSupport ITransactionChainWithMoveSupport.FirstTransaction => (ITransactionWithMoveSupport)FirstTransaction;
 
         private TransactionChainWithMoveSupport(IGameplayMap map, Func<ITransactionWithMoveSupport> transactionFactory)
             : base(map, transactionFactory)
@@ -62,26 +65,29 @@ namespace OrangeBugReloaded.Core.Transactions
         }
 
         /// <inheritdoc/>
-        public async Task<Tile> GetAsync(Point position)
+        public async Task<TileInfo> GetAsync(Point position)
         {
             // Get the latest recorded change if one is available,
             // otherwise get the tile directly from the underlying map
-            return GetLatest(position) ?? await _map.GetAsync(position);
+            var tileInfo = GetLatest(position);
+            if (tileInfo == TileInfo.Empty)
+                tileInfo = await _map.GetAsync(position);
+            return tileInfo;
         }
 
         /// <inheritdoc/>
-        public async Task<bool> SetAsync(Point position, Tile tile)
+        public async Task<bool> SetAsync(Point position, TileInfo tileInfo)
         {
             if (CurrentTransaction.IsCanceled)
                 return false;
 
-            var currentTile = await GetAsync(position);
+            var currentTileInfo = await GetAsync(position);
 
-            if (!Equals(currentTile, tile))
+            if (!Equals(currentTileInfo, tileInfo))
             {
                 // If tile actually differs from the one in the transactions
                 // or on the map, add it to the list of changed tiles.
-                Set(position, tile);
+                Set(position, tileInfo);
                 return true;
             }
 
@@ -98,4 +104,5 @@ namespace OrangeBugReloaded.Core.Transactions
             throw new NotSupportedException();
         }
     }
+    */
 }

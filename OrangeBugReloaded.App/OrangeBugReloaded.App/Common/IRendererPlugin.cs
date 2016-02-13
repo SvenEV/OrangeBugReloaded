@@ -6,7 +6,7 @@ namespace OrangeBugReloaded
 {
     public interface IRendererPlugin : IDisposable
     {
-        void Initialize(Map map);
+        void Initialize(IGameplayMap map);
         void OnDraw(PluginDrawEventArgs e);
         //Task OnCreateResourcesAsync(ICanvasResourceCreatorWithDpi resourceCreator);
     }

@@ -23,8 +23,9 @@ namespace OrangeBugReloaded.Core
         /// If the chunk is already stored, it is replaced.
         /// Otherwise, it is added to the storage.
         /// </summary>
+        /// <param name="index">Chunk index</param>
         /// <param name="chunk">Chunk</param>
-        Task SaveAsync(IChunk chunk);
+        Task SaveAsync(Point index, IChunk chunk);
 
         /// <summary>
         /// Loads metadata.

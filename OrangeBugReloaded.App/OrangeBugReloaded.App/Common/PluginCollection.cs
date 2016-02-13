@@ -45,7 +45,7 @@ namespace OrangeBugReloaded.App.Common
             return true;
         }
 
-        internal void OnMapChanged(Map newMap)
+        internal void OnMapChanged(IGameplayMap newMap)
         {
             foreach (var plugin in _plugins)
                 plugin.Dispose();

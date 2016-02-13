@@ -31,13 +31,13 @@ namespace OrangeBugReloaded.App.Common
 
         private Dictionary<string, CanvasBitmap> _sprites = new Dictionary<string, CanvasBitmap>();
         private CanvasAnimatedControl _canvas;
-        private Map _map;
+        private IGameplayMap _map;
         private float _currentZoomLevel = 40;
         private Vector2 _currentCameraPosition = Vector2.Zero;
-        private Dictionary<Point, Animation> _animations = new Dictionary<Point, Animation>();
+        private Dictionary<Point, EntityInfo> _entities = new Dictionary<Point, EntityInfo>();
         private IDisposable _eventSubscription;
 
-        public Map Map
+        public IGameplayMap Map
         {
             get { return _map; }
             set
@@ -101,57 +101,80 @@ namespace OrangeBugReloaded.App.Common
             _currentCameraPosition = Vector2.Lerp(_currentCameraPosition, CameraPosition, _cameraPositionDamping * deltaTime);
 
             // Draw tiles
-            foreach (var chunk in Map.ChunkLoader.Chunks.Values)
+            foreach (var kvp in Map.ChunkLoader.Chunks)
             {
                 for (var y = 0; y < Chunk.Size; y++)
                 {
                     for (var x = 0; x < Chunk.Size; x++)
                     {
-                        var tile = chunk[x, y];
+                        var tileInfo = kvp.Value[x, y];
 
-                        var position = chunk.Index * Chunk.Size + new Point(x, y);
-                        DrawSprite(g, tile, position.ToVector2());
+                        var position = kvp.Key * Chunk.Size + new Point(x, y);
+                        DrawSprite(g, tileInfo.Tile, position.ToVector2());
+                        if (tileInfo.Tile.Entity != Entity.None)
+                            DrawSprite(g, tileInfo.Tile.Entity, position.ToVector2());
+
+                        g.DrawText(tileInfo.Version.ToString(), TransformGamePosition(position.ToVector2()), Colors.Yellow);
                     }
                 }
+            }
+
+            var finishedAnimations = new List<Point>();
+
+            foreach (var entityInfo in _entities)
+            {
+                var isValid = entityInfo.Value.Advance();
+
+                if (!isValid)
+                    finishedAnimations.Add(entityInfo.Key);
+
+                DrawSprite(g, entityInfo.Value.Entity, entityInfo.Value.CurrentPosition);
+            }
+
+            foreach (var p in finishedAnimations)
+            {
+                var entityInfo = _entities[p];
+                _entities.Remove(p);
+                _entities[new Point((int)entityInfo.TargetPosition.X, (int)entityInfo.TargetPosition.Y)] = entityInfo;
             }
 
             // Draw entities
-            foreach (var chunk in Map.ChunkLoader.Chunks.Values)
-            {
-                for (var y = 0; y < Chunk.Size; y++)
-                {
-                    for (var x = 0; x < Chunk.Size; x++)
-                    {
-                        var position = chunk.Index * Chunk.Size + new Point(x, y);
+            //foreach (var chunk in Map.ChunkLoader.Chunks.Values)
+            //{
+            //    for (var y = 0; y < Chunk.Size; y++)
+            //    {
+            //        for (var x = 0; x < Chunk.Size; x++)
+            //        {
+            //            var position = chunk.Index * Chunk.Size + new Point(x, y);
 
-                        if (_animations.ContainsKey(position))
-                        {
-                            var animation = _animations[position];
-                            var t = (float)((DateTime.Now - animation.StartTime).TotalSeconds / animation.Duration.TotalSeconds);
+            //            if (_animations.ContainsKey(position))
+            //            {
+            //                var animation = _animations[position];
+            //                var t = (float)((DateTime.Now - animation.StartTime).TotalSeconds / animation.Duration.TotalSeconds);
 
-                            var interpolatedPosition = Vector2.Lerp(
-                                animation.Event.SourcePosition.ToVector2(),
-                                animation.Event.TargetPosition.ToVector2(), Mathf.Clamp01(t));
+            //                var interpolatedPosition = Vector2.Lerp(
+            //                    animation.Event.SourcePosition.ToVector2(),
+            //                    animation.Event.TargetPosition.ToVector2(), Mathf.Clamp01(t));
 
-                            var entity = t <= .5 ?
-                                animation.Event.Source.Entity :
-                                animation.Event.Target.Entity;
+            //                var entity = t <= .5 ?
+            //                    animation.Event.Source.Entity :
+            //                    animation.Event.Target.Entity;
 
-                            DrawSprite(g, entity, interpolatedPosition);
+            //                DrawSprite(g, entity, interpolatedPosition);
 
-                            if (t > 1)
-                                _animations.Remove(position);
-                        }
-                        else
-                        {
-                            var entity = chunk[x, y].Entity;
+            //                if (t > 1)
+            //                    _animations.Remove(position);
+            //            }
+            //            else
+            //            {
+            //                var entity = chunk[x, y].Entity;
 
-                            if (entity != Entity.None)
-                                DrawSprite(g, entity, position.ToVector2());
-                        }
-                    }
-                }
-            }
+            //                if (entity != Entity.None)
+            //                    DrawSprite(g, entity, position.ToVector2());
+            //            }
+            //        }
+            //    }
+            //}
 
             var pluginDrawArgs = new PluginDrawEventArgs(args, this);
             Plugins.RaiseOnDraw(pluginDrawArgs);
@@ -250,8 +273,62 @@ namespace OrangeBugReloaded.App.Common
         private void OnEntityMoved(EntityMoveEvent e)
         {
             Debug.WriteLine($"{e.Source.Entity.GetType().Name} at {e.SourcePosition} -> {e.Target.Entity.GetType().Name} at {e.TargetPosition}");
-            _animations[e.TargetPosition] = new Animation(e);
+
+            // TODO
         }
+
+
+
+        class EntityInfo
+        {
+            public Entity Entity { get; private set; }
+
+            public Vector2 SourcePosition { get; private set; }
+
+            public Vector2 TargetPosition { get; private set; }
+
+            public Vector2 CurrentPosition { get; private set; }
+
+            public DateTime AnimationStartTime { get; private set; }
+
+            public TimeSpan AnimationDuration { get; private set; }
+
+            public EntityInfo(Entity entity, Point position)
+            {
+                Entity = entity;
+                SourcePosition = TargetPosition = CurrentPosition = position.ToVector2();
+            }
+
+            public void ApplyMoveEvent(EntityMoveEvent e)
+            {
+                // TODO: Think about animations that should happen one after another
+                SourcePosition = CurrentPosition;
+                TargetPosition = e.TargetPosition.ToVector2();
+                AnimationStartTime = DateTime.Now;
+                AnimationDuration = TimeSpan.FromSeconds(.6);
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="deltaTime"></param>
+            /// <returns>False, if the animation completed</returns>
+            public bool Advance()
+            {
+                var t = (float)((DateTime.Now - AnimationStartTime).TotalSeconds / AnimationDuration.TotalSeconds);
+
+                CurrentPosition = Vector2.Lerp(SourcePosition, TargetPosition, Mathf.Clamp01(t));
+
+                //var entity = t <= .5 ?
+                //    animation.Event.Source.Entity :
+                //    animation.Event.Target.Entity;
+
+                return t <= 1;
+            }
+        }
+
+
+
 
         struct Animation
         {
@@ -263,7 +340,7 @@ namespace OrangeBugReloaded.App.Common
             {
                 Event = e;
                 StartTime = DateTime.Now;
-                Duration = TimeSpan.FromSeconds(.2);
+                Duration = TimeSpan.FromSeconds(.6);
             }
         }
     }

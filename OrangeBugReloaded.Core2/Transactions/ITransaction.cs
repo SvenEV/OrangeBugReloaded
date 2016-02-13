@@ -1,5 +1,7 @@
 ﻿using OrangeBugReloaded.Core.Events;
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core.Transactions
 {
@@ -30,7 +32,12 @@ namespace OrangeBugReloaded.Core.Transactions
         IList<IGameEvent> Events { get; }
 
         /// <summary>
-        /// Cancels the transaction.
+        /// Provides information about the object that caused the move.
+        /// </summary>
+        MoveInitiator Initiator { get; }
+
+        /// <summary>
+        /// Cancels the transaction and clears the list of changes.
         /// <seealso cref="IsCanceled"/>
         /// </summary>
         void Cancel();

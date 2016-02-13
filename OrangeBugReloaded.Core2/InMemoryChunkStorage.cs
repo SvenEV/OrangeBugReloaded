@@ -11,11 +11,10 @@ namespace OrangeBugReloaded.Core
     public class InMemoryChunkStorage : IChunkStorage
     {
         private readonly IMapMetadata _meta;
-        private readonly Dictionary<Point, IChunk> _chunks;
+        private readonly Dictionary<Point, IChunk> _chunks = new Dictionary<Point, IChunk>();
 
-        public InMemoryChunkStorage(IEnumerable<IChunk> chunks = null)
+        public InMemoryChunkStorage()
         {
-            _chunks = chunks?.ToDictionary(o => o.Index) ?? new Dictionary<Point, IChunk>();
             _meta = null;
         }
 
@@ -36,10 +35,10 @@ namespace OrangeBugReloaded.Core
         }
 
         /// <inheritdoc/>
-        public Task SaveAsync(IChunk chunk)
+        public Task SaveAsync(Point index, IChunk chunk)
         {
-            if (!_chunks.ContainsKey(chunk.Index))
-                _chunks[chunk.Index] = chunk;
+            if (!_chunks.ContainsKey(index))
+                _chunks[index] = chunk;
 
             return Task.CompletedTask;
         }

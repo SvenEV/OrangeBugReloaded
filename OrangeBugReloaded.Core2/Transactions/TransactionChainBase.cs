@@ -13,6 +13,7 @@ namespace OrangeBugReloaded.Core.Transactions
 
         protected IList<ITransaction<T>> Transactions { get; }
         public ITransaction<T> CurrentTransaction => Transactions.Last();
+        public ITransaction<T> FirstTransaction => Transactions.First();
 
         protected TransactionChainBase(IMap map, Func<ITransaction<T>> transactionFactory)
         {

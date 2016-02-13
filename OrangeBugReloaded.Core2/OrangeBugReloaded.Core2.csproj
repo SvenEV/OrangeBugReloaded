@@ -110,6 +110,15 @@
   <ItemGroup>
     <Compile Include="Chunk.cs" />
     <Compile Include="ChunkLoader.cs" />
+    <Compile Include="ClientServer\ClientConnection.cs" />
+    <Compile Include="ClientServer\ClientConnectRequest.cs" />
+    <Compile Include="ClientServer\ConnectResult.cs" />
+    <Compile Include="ClientServer\GameClient.cs" />
+    <Compile Include="ClientServer\IGameClient.cs" />
+    <Compile Include="ClientServer\IGameServer.cs" />
+    <Compile Include="ClientServer\RemoteMoveRequest.cs" />
+    <Compile Include="ClientServer\RemoteMoveResult.cs" />
+    <Compile Include="ClientServer\VersionedPoint.cs" />
     <Compile Include="Entities\BalloonEntity.cs" />
     <Compile Include="Entities\BoxEntity.cs" />
     <Compile Include="Entities\CoinEntity.cs" />
@@ -126,6 +135,7 @@
     <Compile Include="Events\IGameEvent.cs" />
     <Compile Include="Events\IGameEventEmitter.cs" />
     <Compile Include="ExtensionMethods.cs" />
+    <Compile Include="ClientServer\GameServer.cs" />
     <Compile Include="IChunkStorage.cs" />
     <Compile Include="IMap.cs" />
     <Compile Include="IMapMetadata.cs" />
@@ -136,6 +146,7 @@
     <Compile Include="MapDependencyTable.cs" />
     <Compile Include="MapLayer.cs" />
     <Compile Include="MapMetadata.cs" />
+    <Compile Include="MoveResult.cs" />
     <Compile Include="ObservableCollection.cs" />
     <Compile Include="ObservableDictionary.cs" />
     <Compile Include="Point.cs" />
@@ -145,8 +156,10 @@
     <Compile Include="Rendering\IAudioHint.cs" />
     <Compile Include="Rendering\IVisualHint.cs" />
     <Compile Include="Rendering\VisualHintAttribute.cs" />
+    <Compile Include="ScheduledMove.cs" />
     <Compile Include="TaskEx.cs" />
     <Compile Include="Tile.cs" />
+    <Compile Include="TileInfo.cs" />
     <Compile Include="TileMetadata.cs" />
     <Compile Include="Tiles\ButtonTile.cs" />
     <Compile Include="Tiles\GateTile.cs" />
@@ -161,6 +174,7 @@
     <Compile Include="Transactions\ITransactionChain.cs" />
     <Compile Include="Transactions\ITransactionChainWithMoveSupport.cs" />
     <Compile Include="Transactions\ITransactionWithMoveSupport.cs" />
+    <Compile Include="Transactions\MoveInitiator.cs" />
     <Compile Include="Transactions\TransactionChainWithEditSupport.cs" />
     <Compile Include="Transactions\TransactionWithEditSupport.cs" />
     <Compile Include="Transactions\TransactionWithMoveSupport.cs" />

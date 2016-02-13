@@ -1,6 +1,7 @@
 ﻿using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Transactions;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core
@@ -12,60 +13,67 @@ namespace OrangeBugReloaded.Core
     /// <typeparam name="TResult">Result type</typeparam>
     public abstract class GameEventArgs<TResult> : IReadOnlyMap, IGameEventEmitter
     {
-        protected readonly ITransactionChainWithMoveSupport _transactionChain;
+        protected readonly ITransactionWithMoveSupport _transaction;
+        protected readonly IMap _map;
 
         public TResult Result { get; set; }
 
-        public EntityMoveInfo CurrentMove => _transactionChain.CurrentTransaction.CurrentMove;
+        public EntityMoveInfo CurrentMove => _transaction.CurrentMove;
 
-        public bool IsCanceled => _transactionChain.CurrentTransaction.IsCanceled;
+        public bool IsCanceled => _transaction.IsCanceled;
 
-        public object Initiator
+        public object Initiator => _transaction.Initiator;
+
+        public GameEventArgs(ITransactionWithMoveSupport transaction, IMap map)
         {
-            get { return _transactionChain.Initiator; }
-            set { _transactionChain.Initiator = value; }
+            _transaction = transaction;
+            _map = map;
         }
 
-        public GameEventArgs(ITransactionChainWithMoveSupport transactionChain)
+        public void Cancel() => _transaction.Cancel();
+
+        public void Emit(IGameEvent e)
         {
-            _transactionChain = transactionChain;
+            // TODO
+            //_transaction.Emit(e);
         }
 
-        public void Cancel() => _transactionChain.CurrentTransaction.Cancel();
-
-        public void Emit(IGameEvent e) => _transactionChain.Emit(e);
-
-        public Task<Tile> GetAsync(Point position)
-            => _transactionChain.GetAsync(position);
+        public Task<TileInfo> GetAsync(Point position)
+            => _map.GetAsync(position);
 
         Task<TileMetadata> IReadOnlyMap.GetMetadataAsync(Point position)
-            => _transactionChain.GetMetadataAsync(position);
+            => _map.GetMetadataAsync(position);
 
         internal void ValidateResult()
         {
-            if (Result == null && !_transactionChain.CurrentTransaction.IsCanceled)
+            if (Result == null && !_transaction.IsCanceled)
                 throw new InvalidOperationException("Invalid result: No result is provided and the transaction is not cancelled");
 
-            if (Result != null && _transactionChain.CurrentTransaction.IsCanceled)
+            if (Result != null && _transaction.IsCanceled)
                 throw new InvalidOperationException("Invalid result: The transaction is cancelled but a result is provided");
         }
     }
 
     public class EntityEventArgs : GameEventArgs<Entity>
     {
-        public EntityEventArgs(ITransactionChainWithMoveSupport transactionChain) : base(transactionChain)
+        public EntityEventArgs(ITransactionWithMoveSupport transaction, IMap map)
+            : base(transaction, map)
         {
         }
     }
 
     public class TileEventArgs : GameEventArgs<Tile>, ISupportsMove
     {
-        public TileEventArgs(ITransactionChainWithMoveSupport transactionChain) : base(transactionChain)
+        private readonly new IGameplayMap _map;
+
+        public TileEventArgs(ITransactionWithMoveSupport transaction, IGameplayMap map)
+            : base(transaction, map)
         {
+            _map = map;
         }
 
-        public Task<bool> MoveAsync(Point sourcePosition, Point targetPosition)
-            => _transactionChain.MoveAsync(sourcePosition, targetPosition);
+        public Task<MoveResult> MoveAsync(Point sourcePosition, Point targetPosition)
+            => _map.MoveAsync(sourcePosition, targetPosition, _transaction);
     }
 
     public class AttachEventArgs : TileEventArgs
@@ -77,7 +85,8 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         public bool PreventDetach { get; set; }
 
-        public AttachEventArgs(ITransactionChainWithMoveSupport transactionChain) : base(transactionChain)
+        public AttachEventArgs(ITransactionWithMoveSupport transaction, IGameplayMap map)
+            : base(transaction, map)
         {
         }
     }
@@ -90,52 +99,43 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         public bool PreventAttach { get; set; }
 
-        public DetachEventArgs(ITransactionChainWithMoveSupport transactionChain) : base(transactionChain)
+        public DetachEventArgs(ITransactionWithMoveSupport transaction, IGameplayMap map)
+            : base(transaction, map)
         {
         }
     }
 
-    public class FollowUpEventArgs : ISupportsMove, IReadOnlyMap, IGameEventEmitter
+    public class FollowUpEventArgs : IReadOnlyMap, IGameEventEmitter
     {
-        private readonly ITransactionChainWithMoveSupport _transactionChain;
-        private bool _followUpTransactionCreated = false;
+        private List<ScheduledMove> _followUpMoves = new List<ScheduledMove>();
+        private readonly IGameplayMap _map;
 
-        public object Initiator
+        public MoveInitiator Initiator { get; }
+        public IReadOnlyCollection<ScheduledMove> FollowUpMoves => _followUpMoves;
+
+        public FollowUpEventArgs(IGameplayMap map, MoveInitiator initiator)
         {
-            get { return _transactionChain.Initiator; }
-            set { _transactionChain.Initiator = value; }
+            _map = map;
+            Initiator = initiator;
         }
-
-        public FollowUpEventArgs(ITransactionChainWithMoveSupport transactionChain)
+        
+        public void ScheduleMove(MoveInitiator initiator, Point sourcePosition, Point targetPosition, DateTimeOffset executionTime)
         {
-            _transactionChain = transactionChain;
-        }
+            if (executionTime < DateTimeOffset.Now)
+                throw new ArgumentException("Cannot schedule a move in the past");
 
-        public async Task<bool> MoveAsync(Point sourcePosition, Point targetPosition)
-        {
-            EnsureFollowUpTransactionCreated();
-            return await _transactionChain.MoveAsync(sourcePosition, targetPosition);
+            _followUpMoves.Add(new ScheduledMove(initiator, sourcePosition, targetPosition, executionTime));
         }
 
         public void Emit(IGameEvent e)
         {
-            EnsureFollowUpTransactionCreated();
-            _transactionChain.Emit(e);
+            //_followUpTransaction.Emit(e); // TODO
         }
 
-        public Task<Tile> GetAsync(Point position)
-            => _transactionChain.GetAsync(position);
+        public Task<TileInfo> GetAsync(Point position)
+            => _map.GetAsync(position);
 
         Task<TileMetadata> IReadOnlyMap.GetMetadataAsync(Point position)
-            => _transactionChain.GetMetadataAsync(position);
-
-        private void EnsureFollowUpTransactionCreated()
-        {
-            if (!_followUpTransactionCreated)
-            {
-                _transactionChain.CreateFollowUpTransaction();
-                _followUpTransactionCreated = true;
-            }
-        }
+            => _map.GetMetadataAsync(position);
     }
 }

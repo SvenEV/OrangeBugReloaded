@@ -42,23 +42,25 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         public async Task SaveChangesAsync()
         {
-            var tasks = Chunks.Values.Select(chunk => SaveChangesOrDeleteIfEmptyAsync(chunk)).ToArray();
+            var tasks = Chunks.Select(kvp => SaveChangesOrDeleteIfEmptyAsync(kvp.Key)).ToArray();
             await TaskEx.WhenAll(tasks);
         }
 
-        private async Task<bool> SaveChangesOrDeleteIfEmptyAsync(IChunk chunk)
+        private async Task<bool> SaveChangesOrDeleteIfEmptyAsync(Point index)
         {
+            var chunk = Chunks[index];
+
             if (chunk.IsEmpty)
             {
-                await Storage.DeleteAsync(chunk.Index);
-                Chunks.Remove(chunk.Index);
+                await Storage.DeleteAsync(index);
+                Chunks.Remove(index);
                 return true;
             }
             else if (chunk.HasChanged)
             {
                 // Save a clone of the chunk so that any further changes to
                 // the chunk do not propagate to the cache of the storage.
-                await Storage.SaveAsync((IChunk)chunk.Clone());
+                await Storage.SaveAsync(index, chunk.Clone());
                 chunk.OnSaved();
             }
             return false;
@@ -85,7 +87,7 @@ namespace OrangeBugReloaded.Core
             {
                 // Chunk is already loaded. Remove it!
                 if (saveChanges)
-                    if (await SaveChangesOrDeleteIfEmptyAsync(chunk))
+                    if (await SaveChangesOrDeleteIfEmptyAsync(index))
                         return; // Chunk was empty and has already been removed
 
                 Chunks.Remove(index);
@@ -143,7 +145,7 @@ namespace OrangeBugReloaded.Core
                 // The storage might have its own caching strategies and
                 // reuse chunks it has once loaded, so we need to work with
                 // a copy of the loaded chunk.
-                chunk = (IChunk)chunk.Clone();
+                chunk = chunk.Clone();
             }
 
             ChunksLoading.Remove(index);

@@ -64,12 +64,12 @@ namespace OrangeBugReloaded.Core.Transactions
             return false;
         }
 
-        Task<Tile> IReadOnlyMap.GetAsync(Point position)
+        Task<TileInfo> IReadOnlyMap.GetAsync(Point position)
         {
             throw new NotSupportedException();
         }
 
-        Task<bool> IMap.SetAsync(Point position, Tile tile)
+        Task<bool> IMap.SetAsync(Point position, TileInfo tile)
         {
             throw new NotSupportedException();
         }

@@ -15,7 +15,7 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         /// <param name="position">Position</param>
         /// <returns>The <see cref="Tile"/></returns>
-        Task<Tile> GetAsync(Point position);
+        Task<TileInfo> GetAsync(Point position);
 
         /// <summary>
         /// Gets the tile metadata at the specified position.
@@ -36,7 +36,7 @@ namespace OrangeBugReloaded.Core
         /// <param name="position">Position</param>
         /// <param name="tile">Tile</param>
         /// <returns>True if the tile has changed during the call</returns>
-        Task<bool> SetAsync(Point position, Tile tile);
+        Task<bool> SetAsync(Point position, TileInfo tile);
 
         /// <summary>
         /// Sets the tile metadata at the specified position.
@@ -54,10 +54,8 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         /// <param name="sourcePosition">The position from where the entity is moved</param>
         /// <param name="targetPosition">The position to which the entity is moved</param>
-        /// <returns>
-        /// True if the inital move transaction was successful (follow-up transactions might have failed)
-        /// </returns>
-        Task<bool> MoveAsync(Point sourcePosition, Point targetPosition);
+        /// <returns>Move result</returns>
+        Task<MoveResult> MoveAsync(Point sourcePosition, Point targetPosition);
     }
 
     /// <summary>
@@ -67,11 +65,26 @@ namespace OrangeBugReloaded.Core
     public interface IGameplayMap : IMap, ISupportsMove
     {
         /// <summary>
+        /// Provides metadata about the map.
+        /// </summary>
+        IMapMetadata Metadata { get; }
+
+        /// <summary>
         /// Provides a stream of events related to the game.
         /// These events provide information about chunks being loaded
         /// or unloaded, entity moves that are executed etc.
         /// </summary>
         IObservable<IGameEvent> Events { get; }
+
+        /// <summary>
+        /// Stores the dependencies between tiles on the map.
+        /// </summary>
+        MapDependencyTable Dependencies { get; }
+
+        /// <summary>
+        /// The object responsible for loading and unloading chunks.
+        /// </summary>
+        ChunkLoader ChunkLoader { get; }
 
         /// <summary>
         /// Tries to move the <see cref="Entity"/> at the specified
@@ -80,10 +93,19 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         /// <param name="sourcePosition">The position from where the entity is moved</param>
         /// <param name="targetPosition">The position to which the entity is moved</param>
-        /// <param name="transactionChain">The transaction chain that records the changes made during the move</param>
-        /// <returns>
-        /// True if the inital move transaction was successful (follow-up transactions might have failed)
-        /// </returns>
-        Task<bool> MoveAsync(Point sourcePosition, Point targetPosition, ITransactionChainWithMoveSupport transactionChain);
+        /// <param name="transaction">The transaction that records the changes made during the move</param>
+        /// <returns>Move result</returns>
+        Task<MoveResult> MoveAsync(Point sourcePosition, Point targetPosition, ITransactionWithMoveSupport transaction);
+
+        /// <summary>
+        /// Tries to spawn the specified entity at the specified position.
+        /// </summary>
+        /// <remarks>
+        /// Spawning entities without executing a move is useful for e.g. spawning players.
+        /// </remarks>
+        /// <param name="entity">The entity that is spawned</param>
+        /// <param name="position">The position of the tile where the entity is attached</param>
+        /// <returns>Spawn result</returns>
+        Task<MoveResult> SpawnAsync(Entity entity, Point position);
     }
 }

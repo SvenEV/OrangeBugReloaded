@@ -4,6 +4,7 @@ using OrangeBugReloaded.Core.Rendering;
 using System;
 using System.Threading.Tasks;
 using System.Collections;
+using OrangeBugReloaded.Core.Transactions;
 
 namespace OrangeBugReloaded.Core.Tiles
 {
@@ -83,20 +84,24 @@ namespace OrangeBugReloaded.Core.Tiles
 
         internal override async Task OnFollowUpTransactionAsync(FollowUpEventArgs e, Point position)
         {
-            var trigger = await e.GetAsync(TriggerPosition) as ITrigger;
+            var trigger = (await e.GetAsync(TriggerPosition)).Tile as ITrigger;
             var isTriggerOn = trigger?.IsOn ?? false;
+
+            var initiator = new MoveInitiator(this, position);
 
             if (!IsExtended && isTriggerOn)
             {
                 // Extend piston
-                if (await e.MoveAsync(position, position + Direction))
-                    e.Emit(new PistonExtendRetractEvent(true));
+                e.ScheduleMove(initiator, position, position + Direction, DateTimeOffset.Now + TimeSpan.FromSeconds(1));
+                //if (await e.MoveAsync(position, position + Direction))
+                //    e.Emit(new PistonExtendRetractEvent(true));
             }
             else if (IsExtended && !isTriggerOn)
             {
                 // Retract piston
-                if (await e.MoveAsync(position + Direction, position))
-                    e.Emit(new PistonExtendRetractEvent(false));
+                e.ScheduleMove(initiator, position + Direction, position, DateTimeOffset.Now + TimeSpan.FromSeconds(1));
+                //if (await e.MoveAsync(position + Direction, position))
+                //    e.Emit(new PistonExtendRetractEvent(false));
             }
 
             // Otherwise do nothing

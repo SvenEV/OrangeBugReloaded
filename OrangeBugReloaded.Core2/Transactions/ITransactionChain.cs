@@ -12,6 +12,11 @@ namespace OrangeBugReloaded.Core.Transactions
         ITransaction<T> CurrentTransaction { get; }
 
         /// <summary>
+        /// Gets the first transaction in the chain.
+        /// </summary>
+        ITransaction<T> FirstTransaction { get; }
+
+        /// <summary>
         /// Applies changes collected in transactions to the map.
         /// </summary>
         /// <param name="transaction">

@@ -13,39 +13,78 @@
             <RowDefinition/>
             <RowDefinition Height="100"/>
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="8"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
         
-        <win2d:CanvasAnimatedControl x:Name="canvas"
+        <win2d:CanvasAnimatedControl x:Name="canvasClient"
+                                     Grid.Column="0"
                                      PointerWheelChanged="canvas_PointerWheelChanged"
                                      PointerPressed="canvas_PointerPressed"/>
 
-        <Border Grid.Row="1" Background="WhiteSmoke" Padding="12">
-            <ListView ItemsSource="{Binding MainVM.TileTemplates}"
-                      SelectedItem="{Binding MainVM.SelectedTileTemplate, Mode=TwoWay}"
-                      SelectionMode="Single">
+        <TextBlock Text="Client" Grid.Column="0"
+                   FontSize="16" Margin="12"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Foreground="WhiteSmoke"/>
 
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="Padding" Value="4"/>
-                        <Setter Property="MaxWidth" Value="200"/>
-                        <Setter Property="MinWidth" Value="0"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
+        <Border Background="WhiteSmoke" Grid.Column="1"/>
 
-                <ListView.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal"/>
-                    </ItemsPanelTemplate>
-                </ListView.ItemsPanel>
+        <win2d:CanvasAnimatedControl x:Name="canvasServer"
+                                     Grid.Column="2"
+                                     PointerWheelChanged="canvas_PointerWheelChanged"
+                                     PointerPressed="canvas_PointerPressed"/>
 
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <Border Width="68" Height="68" Background="SkyBlue">
-                            <TextBlock Text="{Binding}" TextWrapping="Wrap"/>
-                        </Border>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
+        <TextBlock Text="Server" Grid.Column="2"
+                   FontSize="16" Margin="12"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Foreground="WhiteSmoke"/>
+
+        <Border Grid.Row="1" Grid.ColumnSpan="3" Background="WhiteSmoke" Padding="12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+
+                <ToggleSwitch x:Name="editToggle" Header="Edit Mode" MinWidth="100"/>
+
+                <ListView ItemsSource="{Binding MainVM.TileTemplates}"
+                          SelectedItem="{Binding MainVM.SelectedTileTemplate, Mode=TwoWay}"
+                          SelectionMode="Single" Grid.Column="1"
+                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                          ScrollViewer.HorizontalScrollMode="Enabled"
+                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                          ScrollViewer.VerticalScrollMode="Disabled">
+
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="4"/>
+                            <Setter Property="MaxWidth" Value="200"/>
+                            <Setter Property="MinWidth" Value="0"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
+
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Width="68" Height="68" Background="SkyBlue">
+                                <TextBlock Text="{Binding}" TextWrapping="Wrap"/>
+                            </Border>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
                 
-            </ListView>
+                </ListView>
+
+            </Grid>
         </Border>
     </Grid>
 </Page>

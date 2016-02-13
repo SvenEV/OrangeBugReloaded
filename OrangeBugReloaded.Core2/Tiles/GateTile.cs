@@ -59,7 +59,7 @@ namespace OrangeBugReloaded.Core.Tiles
         internal override async Task OnEntityMoveTransactionCompletedAsync(TileEventArgs e)
         {
             // Check trigger state
-            var trigger = await e.GetAsync(TriggerPosition) as ITrigger;
+            var trigger = (await e.GetAsync(TriggerPosition)).Tile as ITrigger;
 
             if (trigger?.IsOn ?? false)
             {

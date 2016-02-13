@@ -2,6 +2,8 @@
 using OrangeBugReloaded.Core.Rendering;
 using System.Threading.Tasks;
 using System.Collections;
+using System;
+using OrangeBugReloaded.Core.Transactions;
 
 namespace OrangeBugReloaded.Core.Tiles
 {
@@ -27,27 +29,30 @@ namespace OrangeBugReloaded.Core.Tiles
             AcceptedEntities = acceptedEntities;
         }
 
-        internal override async Task OnFollowUpTransactionAsync(FollowUpEventArgs e, Point position)
+        internal override Task OnFollowUpTransactionAsync(FollowUpEventArgs e, Point position)
         {
             // Teleport using a new transaction
             // (because if teleportation fails, we still want every other move
             // that happened before to apply)
 
             if (Entity != Entity.None && AcceptedEntities.Includes(Entity.GetType()) &&
-                !(e.Initiator is TeleporterTile))
+                !(e.Initiator.Object is TeleporterTile))
             {
 
                 // Now the initiator is the teleporter itself, so
                 // if the target is a teleporter as well the entity
                 // won't end up in an endless loop of teleportations.
-                e.Initiator = this;
+                var initiator = new MoveInitiator(this, position);
+                e.ScheduleMove(initiator, position, TargetPosition, DateTimeOffset.Now + TimeSpan.FromSeconds(1));
 
-                var isSuccessful = await e.MoveAsync(position, TargetPosition);
+                //var isSuccessful = await e.MoveAsync(position, TargetPosition);
 
                 // TODO: Events triggered within MoveAsync are emitted before the teleport event
-                if (isSuccessful)
-                    e.Emit(new TeleporterTileTeleportEvent(position, TargetPosition, Entity));
+                //if (isSuccessful)
+                //    e.Emit(new TeleporterTileTeleportEvent(position, TargetPosition, Entity));
             }
+
+            return Task.CompletedTask;
         }
 
         protected override IEnumerable GetHashProperties()
