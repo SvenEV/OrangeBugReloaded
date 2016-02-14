@@ -50,7 +50,7 @@ namespace OrangeBugReloaded.App.Common
             storage.SaveAsync(new Point(-1, 0), Chunk.SampleChunk2.Clone()).Wait();
             var map = new Map(storage);
 
-            Server = new GameServer(map);
+            Server = new DelayedServerFacade(new GameServer(map));
             Client = new GameClient(Server, "local", "Local Player");
 
             RendererClient = new OrangeBugRenderer();

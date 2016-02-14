@@ -29,7 +29,7 @@ namespace OrangeBugReloaded.Core.Tiles
             AcceptedEntities = acceptedEntities;
         }
 
-        internal override Task OnFollowUpTransactionAsync(FollowUpEventArgs e, Point position)
+        internal override async Task OnFollowUpTransactionAsync(FollowUpEventArgs e, Point position)
         {
             // Teleport using a new transaction
             // (because if teleportation fails, we still want every other move
@@ -43,16 +43,13 @@ namespace OrangeBugReloaded.Core.Tiles
                 // if the target is a teleporter as well the entity
                 // won't end up in an endless loop of teleportations.
                 var initiator = new MoveInitiator(this, position);
-                e.ScheduleMove(initiator, position, TargetPosition, DateTimeOffset.Now + TimeSpan.FromSeconds(1));
 
-                //var isSuccessful = await e.MoveAsync(position, TargetPosition);
+                var isSuccessful = await e.MoveAsync(position, TargetPosition);
 
                 // TODO: Events triggered within MoveAsync are emitted before the teleport event
-                //if (isSuccessful)
-                //    e.Emit(new TeleporterTileTeleportEvent(position, TargetPosition, Entity));
+                if (isSuccessful)
+                    e.Emit(new TeleporterTileTeleportEvent(position, TargetPosition, Entity));
             }
-
-            return Task.CompletedTask;
         }
 
         protected override IEnumerable GetHashProperties()

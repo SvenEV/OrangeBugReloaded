@@ -15,6 +15,12 @@ namespace OrangeBugReloaded.Core
 
         public Entity Entity { get; private set; } = Entity.None;
 
+        /// <summary>
+        /// The delay between updates of the tile and
+        /// its follow up transactions.
+        /// </summary>
+        public virtual TimeSpan FollowUpDelay => TimeSpan.FromSeconds(1);
+
         public Tile()
         {
         }

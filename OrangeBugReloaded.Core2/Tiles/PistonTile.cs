@@ -84,6 +84,9 @@ namespace OrangeBugReloaded.Core.Tiles
 
         internal override async Task OnFollowUpTransactionAsync(FollowUpEventArgs e, Point position)
         {
+            if (e.Initiator.Object is PistonTile)
+                return;
+
             var trigger = (await e.GetAsync(TriggerPosition)).Tile as ITrigger;
             var isTriggerOn = trigger?.IsOn ?? false;
 
@@ -92,16 +95,14 @@ namespace OrangeBugReloaded.Core.Tiles
             if (!IsExtended && isTriggerOn)
             {
                 // Extend piston
-                e.ScheduleMove(initiator, position, position + Direction, DateTimeOffset.Now + TimeSpan.FromSeconds(1));
-                //if (await e.MoveAsync(position, position + Direction))
-                //    e.Emit(new PistonExtendRetractEvent(true));
+                if (await e.MoveAsync(position, position + Direction))
+                    e.Emit(new PistonExtendRetractEvent(true));
             }
             else if (IsExtended && !isTriggerOn)
             {
                 // Retract piston
-                e.ScheduleMove(initiator, position + Direction, position, DateTimeOffset.Now + TimeSpan.FromSeconds(1));
-                //if (await e.MoveAsync(position + Direction, position))
-                //    e.Emit(new PistonExtendRetractEvent(false));
+                if (await e.MoveAsync(position + Direction, position))
+                    e.Emit(new PistonExtendRetractEvent(false));
             }
 
             // Otherwise do nothing

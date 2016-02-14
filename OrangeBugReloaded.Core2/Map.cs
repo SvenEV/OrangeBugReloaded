@@ -130,11 +130,11 @@ namespace OrangeBugReloaded.Core
             {
                 // Notify changed tiles and tiles that directly or indirectly depend on changed tiles
                 var affectedTiles = transaction.Changes.Select(kvp => kvp.Key);
-                var scheduledMoves = await UpdateTilesAsync(affectedTiles, transaction);
-                return new MoveResult(transaction, scheduledMoves);
+                var followUpEvents = await UpdateTilesAsync(affectedTiles, transaction);
+                return new MoveResult(transaction, followUpEvents);
             }
 
-            return new MoveResult(transaction, Enumerable.Empty<ScheduledMove>());
+            return new MoveResult(transaction, Enumerable.Empty<FollowUpEvent>());
         }
 
         /// <inheritdoc/>
@@ -158,15 +158,15 @@ namespace OrangeBugReloaded.Core
             attachArgs.ValidateResult();
 
             if (attachArgs.IsCanceled)
-                return new MoveResult(transaction, Enumerable.Empty<ScheduledMove>());
+                return new MoveResult(transaction, Enumerable.Empty<FollowUpEvent>());
 
             var newTileInfo = tileInfo.WithTile(attachArgs.Result);
             transaction.Changes[position] = newTileInfo;
 
             // Update tile (note that this cannot cancel the transaction)
-            var scheduledMoves = await UpdateTilesAsync(new[] { position }, transaction);
+            var followUpEvents = await UpdateTilesAsync(new[] { position }, transaction);
 
-            return new MoveResult(transaction, scheduledMoves);
+            return new MoveResult(transaction, followUpEvents);
         }
 
         private async Task MoveCoreAsync(Point sourcePosition, Point targetPosition, ITransactionWithMoveSupport transaction)
@@ -262,9 +262,9 @@ namespace OrangeBugReloaded.Core
             await UpdateTilesAsync(chunkPoints, transaction);
             _eventSource.OnNext(new ChunkAddedEvent(kvp.Value));
 
-            // TODO: Is this problematic? A commit is done directly on the map
-            // bypassing the GameServer, but on the other hand this is not a commit
-            // we want to push to EVERY client... but to some, probably...
+            // TODO: This is problematic! A commit is done directly on the map
+            // bypassing the GameServer. We might have to forward the new chunk
+            // to some of the players.
             await transaction.CommitAsync(this, Metadata.NextVersion(), _eventSource);
         }
 
@@ -284,18 +284,21 @@ namespace OrangeBugReloaded.Core
             _eventSource.OnNext(new ChunkRemovedEvent(kvp.Value));
         }
 
-        private async Task<IReadOnlyCollection<ScheduledMove>> UpdateTilesAsync(IEnumerable<Point> positions, ITransactionWithMoveSupport transaction)
+        private async Task<IReadOnlyCollection<FollowUpEvent>> UpdateTilesAsync(IEnumerable<Point> positions, ITransactionWithMoveSupport transaction)
         {
             var initialPoints = new HashSet<Point>(positions);
-            var notifiedPositions = new HashSet<Point>();
+            var followUpEvents = new List<FollowUpEvent>();
+            var now = DateTimeOffset.Now;
 
             // Notify the initial tiles and tiles that are directly or indirectly
             // (transitively) dependent on them in topological order
             await Dependencies.DoAsyncWorkFollowingDependenciesAsync(initialPoints, async p =>
             {
-                notifiedPositions.Add(p);
+                // Try to get from transaction first; if that fails get from map
+                var tileInfo = transaction.Changes.TryGetValue(p);
+                if (tileInfo == TileInfo.Empty) tileInfo = await GetAsync(p);
 
-                var tileInfo = await GetAsync(p);
+                followUpEvents.Add(new FollowUpEvent(p, transaction.Initiator, now + tileInfo.Tile.FollowUpDelay));
 
                 var completionArgs = new TileEventArgs(transaction, this);
                 await tileInfo.Tile.OnEntityMoveTransactionCompletedAsync(completionArgs);
@@ -315,19 +318,17 @@ namespace OrangeBugReloaded.Core
                 return initialPoints.Contains(p);
             });
 
-            var followUpMoves = new List<ScheduledMove>();
-
             // Trigger follow-up transactions
             // e.g. a teleporter might initiate a new transaction here to teleport an entity
-            foreach (var p in notifiedPositions)
-            {
-                var args = new FollowUpEventArgs(this, transaction.Initiator);
-                var tileInfo = await GetAsync(p);
-                await tileInfo.Tile.OnFollowUpTransactionAsync(args, p);
-                followUpMoves.AddRange(args.FollowUpMoves);
-            }
+            //foreach (var p in notifiedPositions)
+            //{
+            //    var args = new FollowUpEventArgs(this, transaction);
+            //    var tileInfo = await GetAsync(p);
+            //    await tileInfo.Tile.OnFollowUpTransactionAsync(args, p);
+            //    followUpEvents.AddRange(args.FollowUpMoves);
+            //}
 
-            return followUpMoves;
+            return followUpEvents;
         }
     }
 }

@@ -8,6 +8,7 @@ using OrangeBugReloaded.Core.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
@@ -101,7 +102,7 @@ namespace OrangeBugReloaded.App.Common
             _currentCameraPosition = Vector2.Lerp(_currentCameraPosition, CameraPosition, _cameraPositionDamping * deltaTime);
 
             // Draw tiles
-            foreach (var kvp in Map.ChunkLoader.Chunks)
+            foreach (var kvp in Map.ChunkLoader.Chunks.ToArray())
             {
                 for (var y = 0; y < Chunk.Size; y++)
                 {

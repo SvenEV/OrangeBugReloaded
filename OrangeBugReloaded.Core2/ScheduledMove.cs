@@ -1,9 +1,9 @@
 ﻿using OrangeBugReloaded.Core.Transactions;
 using System;
-using System.Collections.Generic;
 
 namespace OrangeBugReloaded.Core
 {
+    [Obsolete("Use FollowUpEvent instead", true)]
     public class ScheduledMove
     {
         /// <summary>
@@ -22,6 +22,20 @@ namespace OrangeBugReloaded.Core
             Initiator = initiator;
             SourcePosition = sourcePosition;
             TargetPosition = targetPosition;
+            ExecutionTime = executionTime;
+        }
+    }
+
+    public class FollowUpEvent
+    {
+        public Point Position { get; }
+        public MoveInitiator Initiator { get; }
+        public DateTimeOffset ExecutionTime { get; }
+
+        public FollowUpEvent(Point position, MoveInitiator initiator, DateTimeOffset executionTime)
+        {
+            Position = position;
+            Initiator = initiator;
             ExecutionTime = executionTime;
         }
     }

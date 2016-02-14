@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 
 namespace OrangeBugReloaded.Core.ClientServer
 {
@@ -11,6 +12,8 @@ namespace OrangeBugReloaded.Core.ClientServer
         public string PlayerDisplayName { get; }
 
         public HashSet<Point> LoadedChunks { get; } = new HashSet<Point>();
+
+        public SemaphoreSlim MoveSemaphore { get; } = new SemaphoreSlim(1);
 
         public ClientConnection(string connectionId, ClientConnectRequest connectRequest)
         {

@@ -9,9 +9,9 @@ namespace OrangeBugReloaded.Core.ClientServer
         /// <summary>
         /// Establishes a connection from a client to the server.
         /// </summary>
-        /// <param name="client">Client information</param>
+        /// <param name="clientInfo">Client information</param>
         /// <returns>Result</returns>
-        Task<ConnectResult> ConnectAsync(ClientConnectRequest client);
+        Task<ConnectResult> ConnectAsync(ClientConnectRequest clientInfo);
 
         /// <summary>
         /// Disconnects a client from the server.

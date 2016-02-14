@@ -113,6 +113,7 @@
     <Compile Include="ClientServer\ClientConnection.cs" />
     <Compile Include="ClientServer\ClientConnectRequest.cs" />
     <Compile Include="ClientServer\ConnectResult.cs" />
+    <Compile Include="ClientServer\DelayedServerFacade.cs" />
     <Compile Include="ClientServer\GameClient.cs" />
     <Compile Include="ClientServer\IGameClient.cs" />
     <Compile Include="ClientServer\IGameServer.cs" />

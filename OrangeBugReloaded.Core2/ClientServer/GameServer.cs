@@ -2,6 +2,7 @@
 using OrangeBugReloaded.Core.Transactions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -23,8 +24,8 @@ namespace OrangeBugReloaded.Core.ClientServer
         private Dictionary<Point, List<ClientConnection>> _connectionsByChunk = new Dictionary<Point, List<ClientConnection>>();
 
         // Stores moves that must be executed in the future
-        private SortedList<DateTimeOffset, ScheduledMove> _scheduledMoves = new SortedList<DateTimeOffset, ScheduledMove>();
-        
+        private List<FollowUpEvent> _scheduledFollowUpEvents = new List<FollowUpEvent>();
+
         // The task that executes scheduled moves
         private readonly Task _updateTask;
 
@@ -70,10 +71,10 @@ namespace OrangeBugReloaded.Core.ClientServer
             {
                 // Unknown player: Spawn player somewhere in global spawn area, add to list of known players
                 var spawnResult = await Map.SpawnAsync(playerEntity, Map.Metadata.RootRegion.SpawnArea);
-                
+
                 if (spawnResult != null)
                 {
-                    await spawnResult.Item1.Transaction.CommitAsync(Map, Map.Metadata.NextVersion(), null);                    
+                    await spawnResult.Item1.Transaction.CommitAsync(Map, Map.Metadata.NextVersion(), null);
                     var playerInfo = new PlayerInfo(clientInfo.PlayerId, clientInfo.PlayerDisplayName, spawnResult.Item2);
                     Map.Metadata.Players.Add(playerInfo);
                     _connectedClients.Add(connection.ConnectionId, connection);
@@ -147,55 +148,74 @@ namespace OrangeBugReloaded.Core.ClientServer
         {
             // TODO: Test, test, test!
 
-            var transaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
-            var moveResult = await Map.MoveAsync(move.SourcePosition, move.TargetPosition, transaction);
+            var connection = GetConnection(connectionId);
+            await connection.MoveSemaphore.WaitAsync();
 
-            var clientAffectedTiles = move.AffectedPositions;
-            var serverAffectedTiles = moveResult.Transaction.Changes.Select(c => new VersionedPoint(c.Key, c.Value.Version)).ToList();
-
-            var versions = serverAffectedTiles.FullOuterJoin(clientAffectedTiles,
-                vp => vp.Position,
-                vp => vp.Position,
-                (serverVP, clientVP, p) => new { Position = p, ServerVersion = serverVP.Version, ClientVersion = clientVP.Version },
-                VersionedPoint.Empty,
-                VersionedPoint.Empty);
-
-            if (versions.Any(v => v.ClientVersion > v.ServerVersion))
-                throw new NotImplementedException("This should not happen. Clients must not have a newer version than the server");
-
-            if (versions.Where(v => v.ClientVersion != -1 && v.ServerVersion != -1).All(v => v.ClientVersion == v.ServerVersion) &&
-                clientAffectedTiles.Count != serverAffectedTiles.Count)
-                throw new NotImplementedException("This should not happen. If client and server share the same versions for affected tiles, the sets of affected tiles must not differ");
-
-            var conflictingVersions = versions.Where(v => v.ClientVersion < v.ServerVersion);
-
-            if (conflictingVersions.Any())
+            try
             {
-                // Client not up to date => Cancel move request and send up-to-date chunks
-                var chunks = await Task.WhenAll(conflictingVersions
-                    .Select(v => v.Position / Chunk.Size).Distinct()
-                    .Select(async index => new KeyValuePair<Point, IChunk>(index, await Map.ChunkLoader.GetAsync(index))));
+                var transaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
 
-                return RemoteMoveResult.CreateFaulted(chunks);
-            }
-            else
-            {
-                // Client and server are on the same version (regarding affected tiles)
-                // => Commit and schedule follow-up transactions
-                if (moveResult.IsSuccessful)
+                // Make sure there actually exists an entity to be moved
+                var source = await Map.GetAsync(move.SourcePosition);
+                var target = await Map.GetAsync(move.TargetPosition);
+                if (source.Tile.Entity == Entity.None)
+                    return RemoteMoveResult.CreateFaulted(Enumerable.Empty<KeyValuePair<Point, IChunk>>());
+
+                var moveResult = await Map.MoveAsync(move.SourcePosition, move.TargetPosition, transaction);
+
+                var clientAffectedTiles = move.AffectedPositions;
+                var serverAffectedTiles = moveResult.Transaction.IsCanceled ?
+                    new[] { new VersionedPoint(move.SourcePosition, source.Version), new VersionedPoint(move.TargetPosition, target.Version) }.ToList() :
+                    moveResult.Transaction.Changes.Select(c => new VersionedPoint(c.Key, c.Value.Version)).ToList();
+
+                var versions = serverAffectedTiles.FullOuterJoin(clientAffectedTiles,
+                    vp => vp.Position,
+                    vp => vp.Position,
+                    (serverVP, clientVP, p) => new { Position = p, ServerVersion = serverVP.Version, ClientVersion = clientVP.Version },
+                    VersionedPoint.Empty,
+                    VersionedPoint.Empty);
+
+                if (versions.Any(v => v.ClientVersion != -1 && v.ServerVersion != -1 && v.ClientVersion > v.ServerVersion))
+                    throw new NotImplementedException("This should not happen. Clients must not have a newer version than the server");
+
+                if (versions.Where(v => v.ClientVersion != -1 && v.ServerVersion != -1).All(v => v.ClientVersion == v.ServerVersion) &&
+                    clientAffectedTiles.Count != serverAffectedTiles.Count)
+                    throw new NotImplementedException("This should not happen. If client and server share the same versions for affected tiles, the sets of affected tiles must not differ");
+
+                var conflictingVersions = versions.Where(v => v.ClientVersion < v.ServerVersion);
+
+                if (conflictingVersions.Any())
                 {
-                    var newVersion = Map.Metadata.NextVersion();
-                    await moveResult.Transaction.CommitAsync(Map, newVersion, null); // TODO: Emit events
+                    // Client not up to date => Cancel move request and send up-to-date chunks
+                    var chunks = await Task.WhenAll(conflictingVersions
+                        .Select(v => v.Position / Chunk.Size).Distinct()
+                        .Select(async index => new KeyValuePair<Point, IChunk>(index, await Map.ChunkLoader.GetAsync(index))));
 
-                    foreach (var scheduledMove in moveResult.ScheduledMoves)
-                        _scheduledMoves.Add(scheduledMove.ExecutionTime, scheduledMove);
-
-                    return RemoteMoveResult.CreateSuccessful(newVersion);
+                    return RemoteMoveResult.CreateFaulted(chunks);
                 }
                 else
                 {
-                    return RemoteMoveResult.CreateSuccessful(-1);
+                    // Client and server are on the same version (regarding affected tiles)
+                    // => Commit and schedule follow-up transactions
+                    if (moveResult.IsSuccessful)
+                    {
+                        var newVersion = Map.Metadata.NextVersion();
+                        await moveResult.Transaction.CommitAsync(Map, newVersion, null); // TODO: Emit events
+
+                        foreach (var scheduledMove in moveResult.FollowUpEvents)
+                            _scheduledFollowUpEvents.Add(scheduledMove);
+
+                        return RemoteMoveResult.CreateSuccessful(newVersion);
+                    }
+                    else
+                    {
+                        return RemoteMoveResult.CreateSuccessful(-1);
+                    }
                 }
+            }
+            finally
+            {
+                connection.MoveSemaphore.Release();
             }
         }
 
@@ -207,17 +227,35 @@ namespace OrangeBugReloaded.Core.ClientServer
                 var now = DateTimeOffset.Now;
 
                 // Run all scheduled moves that should have run until now
-                while (_scheduledMoves.Any() && _scheduledMoves.First().Value.ExecutionTime <= now)
+                while (_scheduledFollowUpEvents.Any() && _scheduledFollowUpEvents.First().ExecutionTime <= now)
                 {
-                    var move = _scheduledMoves.First().Value;
-                    _scheduledMoves.RemoveAt(0);
+                    var followUpEvent = _scheduledFollowUpEvents.OrderBy(e => e.ExecutionTime).First();
+                    _scheduledFollowUpEvents.Remove(followUpEvent);
 
-                    var transaction = new TransactionWithMoveSupport(move.Initiator);
-                    var moveResult = await Map.MoveAsync(move.SourcePosition, move.TargetPosition, transaction);
+                    var tileInfo = await Map.GetAsync(followUpEvent.Position);
 
+                    // Trigger follow-up transactions
+                    // e.g. a teleporter might use this to teleport an entity
+                    // (which can result in further follow-up events).
+                    var transaction = new TransactionWithMoveSupport(followUpEvent.Initiator);
+                    var args = new FollowUpEventArgs(Map, transaction);
+                    await tileInfo.Tile.OnFollowUpTransactionAsync(args, followUpEvent.Position);
+                    
+                    if (!transaction.IsCanceled)
+                    {
+                        // Commit transaction
+                        await transaction.CommitAsync(Map, Map.Metadata.NextVersion(), null);
+                        _scheduledFollowUpEvents.AddRange(args.FollowUpEvents);
+                        
+                        //Debug.WriteLine($"RUNASYNC MOVED {move.SourcePosition} to {move.TargetPosition}", "GameServer");
+                    }
+                    else
+                    {
+                        //Debug.WriteLine($"RUNASYNC FAILED TO MOVE {move.SourcePosition} to {move.TargetPosition}", "GameServer");
+                    }
                 }
 
-                await Task.Delay(100);
+                await Task.Delay(200);
             }
         }
 

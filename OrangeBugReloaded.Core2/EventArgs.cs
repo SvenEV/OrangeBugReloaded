@@ -38,8 +38,13 @@ namespace OrangeBugReloaded.Core
             //_transaction.Emit(e);
         }
 
-        public Task<TileInfo> GetAsync(Point position)
-            => _map.GetAsync(position);
+        public async Task<TileInfo> GetAsync(Point position)
+        {
+            // Try to get from transaction first.
+            // If that fails, load directly from map.
+            var tileInfo = _transaction.Changes.TryGetValue(position);
+            return (tileInfo != TileInfo.Empty) ? tileInfo : await _map.GetAsync(position);
+        }
 
         Task<TileMetadata> IReadOnlyMap.GetMetadataAsync(Point position)
             => _map.GetMetadataAsync(position);
@@ -107,24 +112,33 @@ namespace OrangeBugReloaded.Core
 
     public class FollowUpEventArgs : IReadOnlyMap, IGameEventEmitter
     {
-        private List<ScheduledMove> _followUpMoves = new List<ScheduledMove>();
+        private List<FollowUpEvent> _followUpEvents = new List<FollowUpEvent>();
+        private readonly ITransactionWithMoveSupport _transaction;
         private readonly IGameplayMap _map;
 
-        public MoveInitiator Initiator { get; }
-        public IReadOnlyCollection<ScheduledMove> FollowUpMoves => _followUpMoves;
+        public MoveInitiator Initiator => _transaction.Initiator;
+        public IReadOnlyCollection<FollowUpEvent> FollowUpEvents => _followUpEvents;
 
-        public FollowUpEventArgs(IGameplayMap map, MoveInitiator initiator)
+        public FollowUpEventArgs(IGameplayMap map, ITransactionWithMoveSupport transaction)
         {
             _map = map;
-            Initiator = initiator;
+            _transaction = transaction;
         }
         
+        [Obsolete("Use MoveAsync instead", true)]
         public void ScheduleMove(MoveInitiator initiator, Point sourcePosition, Point targetPosition, DateTimeOffset executionTime)
         {
-            if (executionTime < DateTimeOffset.Now)
-                throw new ArgumentException("Cannot schedule a move in the past");
+            //if (executionTime < DateTimeOffset.Now)
+            //    throw new ArgumentException("Cannot schedule a move in the past");
 
-            _followUpMoves.Add(new ScheduledMove(initiator, sourcePosition, targetPosition, executionTime));
+            //_followUpMoves.Add(new ScheduledMove(initiator, sourcePosition, targetPosition, executionTime));
+        }
+
+        public async Task<bool> MoveAsync(Point sourcePosition, Point targetPosition)
+        {
+            var result = await _map.MoveAsync(sourcePosition, targetPosition, _transaction);
+            _followUpEvents.AddRange(result.FollowUpEvents); // TODO: Could we get duplicates here?
+            return result.IsSuccessful;
         }
 
         public void Emit(IGameEvent e)
@@ -132,8 +146,13 @@ namespace OrangeBugReloaded.Core
             //_followUpTransaction.Emit(e); // TODO
         }
 
-        public Task<TileInfo> GetAsync(Point position)
-            => _map.GetAsync(position);
+        public async Task<TileInfo> GetAsync(Point position)
+        {
+            // Try to get from transaction first.
+            // If that fails, load directly from map.
+            var tileInfo = _transaction.Changes.TryGetValue(position);
+            return (tileInfo != TileInfo.Empty) ? tileInfo : await _map.GetAsync(position);
+        }
 
         Task<TileMetadata> IReadOnlyMap.GetMetadataAsync(Point position)
             => _map.GetMetadataAsync(position);
