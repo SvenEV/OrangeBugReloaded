@@ -45,11 +45,23 @@ namespace OrangeBugReloaded.App.Common
         public OrangeBugRenderer RendererClient2 { get; }
         public OrangeBugRenderer RendererServer { get; }
 
+        public bool AreVersionsVisible
+        {
+            get { return RendererServer.DisplayDebugInfo; }
+            set
+            {
+                RendererServer.DisplayDebugInfo = value;
+                RendererClient1.DisplayDebugInfo = value;
+                RendererClient2.DisplayDebugInfo = value;
+            }
+        }
+
         public MainViewModel(CanvasAnimatedControl canvasClient1, CanvasAnimatedControl canvasClient2, CanvasAnimatedControl canvasServer)
         {
             var storage = new InMemoryChunkStorage();
-            storage.SaveAsync(new Point(0, 0), Chunk.SampleChunk.Clone()).Wait();
-            storage.SaveAsync(new Point(-1, 0), Chunk.SampleChunk2.Clone()).Wait();
+            storage.SaveAsync(new Point(0, 0), SampleChunks.Chunk1.Clone()).Wait();
+            storage.SaveAsync(new Point(-1, 0), SampleChunks.Chunk2.Clone()).Wait();
+            storage.SaveAsync(new Point(-1, -1), SampleChunks.Chunk3.Clone()).Wait();
             var map = new Map(storage);
 
             Server = new DelayedServerFacade(new GameServer(map));
@@ -59,19 +71,25 @@ namespace OrangeBugReloaded.App.Common
             RendererClient1 = new OrangeBugRenderer();
             RendererClient1.Attach(canvasClient1);
             RendererClient1.Plugins.Add<OrangeBugAudioPlayer>();
-            RendererClient1.Map = Client1.Map;
 
             RendererClient2 = new OrangeBugRenderer();
             RendererClient2.Attach(canvasClient2);
             RendererClient2.Plugins.Add<OrangeBugAudioPlayer>();
-            RendererClient2.Map = Client2.Map;
 
             RendererServer = new OrangeBugRenderer();
             RendererServer.Attach(canvasServer);
             RendererServer.Map = Server.Map;
 
-            Client1.ConnectAsync(Server);
-            Client2.ConnectAsync(Server);
+            InitAsync();
+        }
+
+        private async Task InitAsync()
+        {
+            await Client1.ConnectAsync(Server);
+            await Client2.ConnectAsync(Server);
+
+            RendererClient1.Map = Client1.Map;
+            RendererClient2.Map = Client2.Map;
         }
 
         public async Task EditMapAsync(Vector2 canvasPosition)

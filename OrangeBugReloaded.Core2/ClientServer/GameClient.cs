@@ -16,13 +16,12 @@ namespace OrangeBugReloaded.Core.ClientServer
         public string PlayerId { get; }
         public string PlayerDisplayName { get; }
 
-        public IGameplayMap Map { get; }
+        public IGameplayMap Map { get; private set; }
 
         public GameClient(string playerId, string playerDisplayName)
         {
             PlayerId = playerId;
             PlayerDisplayName = playerDisplayName;
-            Map = new Map(new InMemoryChunkStorage()); // Initialize empty map
         }
 
         public async Task ConnectAsync(IGameServer server)
@@ -37,15 +36,18 @@ namespace OrangeBugReloaded.Core.ClientServer
                 _connectionId = result.ConnectionId;
                 PlayerPosition = result.SpawnPosition;
 
+                Map = new Map(new RemoteChunkStorage(result.ConnectionId, _server));
+
                 // Load chunks around spawn position
                 var spawnChunkIndex = result.SpawnPosition / Chunk.Size;
                 var offsets = new[] { Point.Zero, Point.North, Point.East, Point.South, Point.West };
 
-                foreach (var offset in offsets)
-                {
-                    var chunk = await _server.LoadChunkAsync(_connectionId, spawnChunkIndex + offset);
-                    await ApplyChunkAsync(chunk, spawnChunkIndex + offset);
-                }
+                await Map.GetAsync(result.SpawnPosition);
+                //foreach (var offset in offsets)
+                //{
+                //    var chunk = await _server.LoadChunkAsync(_connectionId, spawnChunkIndex + offset);
+                //    await ApplyChunkAsync(chunk, spawnChunkIndex + offset);
+                //}
             }
             else
             {
@@ -122,13 +124,8 @@ namespace OrangeBugReloaded.Core.ClientServer
 
         public async Task OnTileUpdates(IEnumerable<TileUpdate> tileUpdates)
         {
-            if (_random.NextDouble() < .75)
-                return;
-
             foreach (var change in tileUpdates)
                 await Map.SetAsync(change.Position, change.TileInfo);
         }
-
-        private static readonly Random _random = new Random();
     }
 }

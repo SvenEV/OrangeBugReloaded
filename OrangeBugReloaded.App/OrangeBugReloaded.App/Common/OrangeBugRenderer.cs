@@ -30,6 +30,13 @@ namespace OrangeBugReloaded.App.Common
             { Point.East, Mathf.PI / 2 },
         };
 
+        private static CanvasTextFormat _textFormat = new CanvasTextFormat
+        {
+            HorizontalAlignment = CanvasHorizontalAlignment.Center,
+            VerticalAlignment = CanvasVerticalAlignment.Center,
+            FontSize = 8
+        };
+
         private Dictionary<string, CanvasBitmap> _sprites = new Dictionary<string, CanvasBitmap>();
         private CanvasAnimatedControl _canvas;
         private IGameplayMap _map;
@@ -60,6 +67,8 @@ namespace OrangeBugReloaded.App.Common
         public PluginCollection Plugins { get; }
 
         public IReadOnlyDictionary<string, CanvasBitmap> Sprites => _sprites;
+
+        public bool DisplayDebugInfo { get; set; } = false;
 
         public float ZoomLevel { get; set; }
 
@@ -115,7 +124,14 @@ namespace OrangeBugReloaded.App.Common
                         if (tileInfo.Tile.Entity != Entity.None)
                             DrawSprite(g, tileInfo.Tile.Entity, position.ToVector2());
 
-                        g.DrawText(tileInfo.Version.ToString(), TransformGamePosition(position.ToVector2()), Colors.Yellow);
+                        if (DisplayDebugInfo)
+                        {
+                            // Draw tile version for testing purposes
+                            var textPosition = TransformGamePosition(position.ToVector2());
+                            var textRect = new F.Rect(textPosition.X, textPosition.Y, _currentZoomLevel, _currentZoomLevel);
+
+                            g.DrawText(tileInfo.Version.ToString(), textRect, Colors.Yellow, _textFormat);
+                        }
                     }
                 }
             }
@@ -261,6 +277,7 @@ namespace OrangeBugReloaded.App.Common
             _sprites["InkTile-Green"] = await loadSpriteAsync("GreenInk");
             _sprites["InkTile-Blue"] = await loadSpriteAsync("BlueInk");
             _sprites["PistonTile"] = await loadSpriteAsync("Piston");
+            _sprites["CornerTile"] = await loadSpriteAsync("Corner");
 
             // Entity sprites
             _sprites["PlayerEntity"] = await loadSpriteAsync("PlayerRight");

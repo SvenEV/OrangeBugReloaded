@@ -269,26 +269,28 @@ namespace OrangeBugReloaded.Core.ClientServer
 
         private async Task<int> CommitAndBroadcastAsync(ITransactionWithMoveSupport transaction, IEnumerable<FollowUpEvent> followUpEvents, ClientConnection excludedConnection = null)
         {
+            var newVersion = -1;
+
             if (!transaction.IsCanceled/* && transaction.Changes.Any()*/)
             {
                 // TODO: Emit events
+                if (transaction.Changes.Any())
+                {
+                    // Get new version number for the tiles that changed
+                    newVersion = Map.Metadata.NextVersion();
 
-                // Get new version number for the tiles that changed
-                var newVersion = Map.Metadata.NextVersion();
+                    // Apply changes to the server's map (using the version number above)
+                    await transaction.CommitAsync(Map, newVersion, null);
 
-                // Apply changes to the server's map (using the version number above)
-                await transaction.CommitAsync(Map, newVersion, null);
-                
-                // Send the updated tiles to clients that have loaded the corresponding map area
-                await BroadcastChangesAsync(transaction, newVersion, excludedConnection);
+                    // Send the updated tiles to clients that have loaded the corresponding map area
+                    await BroadcastChangesAsync(transaction, newVersion, excludedConnection);
+                }
 
                 // Schedule follow-up events that might have been created during e.g. a move
                 _scheduledFollowUpEvents.AddRange(followUpEvents);
-
-                return newVersion;
             }
 
-            return -1;
+            return newVersion;
         }
 
         /// <summary>

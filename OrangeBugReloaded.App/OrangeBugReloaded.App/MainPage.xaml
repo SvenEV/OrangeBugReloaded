@@ -58,6 +58,15 @@
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top"
                    Foreground="WhiteSmoke"/>
+        
+        <!-- Versions toggle -->
+        <CheckBox IsChecked="{Binding MainVM.AreVersionsVisible, Mode=TwoWay}"
+                  Grid.RowSpan="99" Grid.ColumnSpan="99"
+                  Margin="8.5"
+                  RequestedTheme="Dark"
+                  Content="Display Versions"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Top"/>
 
         <!-- Separators -->
         <Border Background="WhiteSmoke" Grid.Column="1" Grid.RowSpan="99"/>

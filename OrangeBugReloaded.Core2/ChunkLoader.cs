@@ -138,7 +138,7 @@ namespace OrangeBugReloaded.Core
             {
                 // If chunk loading fails, create an empty chunk
                 // (empty chunks won't be saved)
-                chunk = new Chunk(index);
+                chunk = new Chunk();
             }
             else
             {

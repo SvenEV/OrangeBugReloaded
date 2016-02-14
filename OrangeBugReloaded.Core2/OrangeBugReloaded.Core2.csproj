@@ -117,6 +117,7 @@
     <Compile Include="ClientServer\GameClient.cs" />
     <Compile Include="ClientServer\IGameClient.cs" />
     <Compile Include="ClientServer\IGameServer.cs" />
+    <Compile Include="ClientServer\RemoteChunkStorage.cs" />
     <Compile Include="ClientServer\RemoteMoveRequest.cs" />
     <Compile Include="ClientServer\RemoteMoveResult.cs" />
     <Compile Include="ClientServer\TileUpdate.cs" />
@@ -158,12 +159,14 @@
     <Compile Include="Rendering\IAudioHint.cs" />
     <Compile Include="Rendering\IVisualHint.cs" />
     <Compile Include="Rendering\VisualHintAttribute.cs" />
+    <Compile Include="SampleChunks.cs" />
     <Compile Include="ScheduledMove.cs" />
     <Compile Include="TaskEx.cs" />
     <Compile Include="Tile.cs" />
     <Compile Include="TileInfo.cs" />
     <Compile Include="TileMetadata.cs" />
     <Compile Include="Tiles\ButtonTile.cs" />
+    <Compile Include="Tiles\CornerTile.cs" />
     <Compile Include="Tiles\GateTile.cs" />
     <Compile Include="Tiles\InkTile.cs" />
     <Compile Include="Tiles\ITrigger.cs" />

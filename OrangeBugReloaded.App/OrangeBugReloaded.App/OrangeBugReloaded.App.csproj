@@ -157,6 +157,9 @@
     <Content Include="..\..\Assets\Sprites\Coin.png">
       <Link>Assets\Sprites\Coin.png</Link>
     </Content>
+    <Content Include="..\..\Assets\Sprites\Corner.png">
+      <Link>Assets\Sprites\Corner.png</Link>
+    </Content>
     <Content Include="..\..\Assets\Sprites\Cursor.png">
       <Link>Assets\Sprites\Cursor.png</Link>
     </Content>

@@ -28,10 +28,7 @@ namespace OrangeBugReloaded.Core
         /// <inheritdoc/>
         public Task<IChunk> LoadAsync(Point index, CancellationToken cancellation)
         {
-            if (!_chunks.ContainsKey(index))
-                _chunks[index] = new Chunk(index);
-
-            return Task.FromResult(_chunks[index]);
+            return Task.FromResult(_chunks.TryGetValue(index));
         }
 
         /// <inheritdoc/>
