@@ -176,9 +176,13 @@ namespace OrangeBugReloaded.Core
 
             source.Tile.EnsureNotNull();
             target.Tile.EnsureNotNull();
-            source.Tile.Entity.EnsureNotNone();
 
-            var oldSource = source;
+            if (source.Tile.Entity == Entity.None)
+            {
+                // Cancel if there's no entity to move
+                transaction.Cancel();
+                return;
+            }
 
             var move = new EntityMoveInfo
             {
@@ -284,7 +288,7 @@ namespace OrangeBugReloaded.Core
             _eventSource.OnNext(new ChunkRemovedEvent(kvp.Value));
         }
 
-        private async Task<IReadOnlyCollection<FollowUpEvent>> UpdateTilesAsync(IEnumerable<Point> positions, ITransactionWithMoveSupport transaction)
+        public async Task<IReadOnlyCollection<FollowUpEvent>> UpdateTilesAsync(IEnumerable<Point> positions, ITransactionWithMoveSupport transaction)
         {
             var initialPoints = new HashSet<Point>(positions);
             var followUpEvents = new List<FollowUpEvent>();

@@ -61,8 +61,8 @@ namespace OrangeBugReloaded.Core
             //chunk[1, 2] = v0(Tile.Compose(PathTile.Default, new PlayerEntity("local", Point.North)));
             chunk[2, 2] = v0(Tile.Compose(PathTile.Default, BoxEntity.Default));
             chunk[3, 2] = v0(new ButtonTile(false, EntityFilterMode.EntitiesExceptPlayer));
-            chunk[4, 2] = v0(new TeleporterTile(new Point(4, 4)));
-            chunk[4, 4] = v0(new TeleporterTile(new Point(4, 2)));
+            chunk[4, 2] = v0(new TeleporterTile(new Point(4, 4), EntityFilterMode.Entities));
+            chunk[4, 4] = v0(new TeleporterTile(new Point(4, 2), EntityFilterMode.Entities));
                           
             chunk[3, 3] = v0(new GateTile(new Point(3, 2), false));
                           

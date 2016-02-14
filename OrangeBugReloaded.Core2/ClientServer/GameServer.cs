@@ -11,22 +11,19 @@ namespace OrangeBugReloaded.Core.ClientServer
     /// <summary>
     /// Hosts an Orange Bug Map and allows multiple players to
     /// connect and play.
-    /// 
-    /// TODO: How to get notified about transaction chain commits?
-    ///       We have to forward the changes to the clients (which have loaded the affected chunks).
     /// </summary>
     public class GameServer : IGameServer
     {
-        // Maps connection IDs to ClientInfos
-        private Dictionary<string, ClientConnection> _connectedClients = new Dictionary<string, ClientConnection>();
+        // Maps connection IDs to ClientConnections
+        private Dictionary<string, ClientConnection> _connections = new Dictionary<string, ClientConnection>();
 
         // Maps chunk indices to lists of client connections that have currently loaded that chunk
         private Dictionary<Point, List<ClientConnection>> _connectionsByChunk = new Dictionary<Point, List<ClientConnection>>();
 
-        // Stores moves that must be executed in the future
+        // Stores follow-up events that must be executed in the future
         private List<FollowUpEvent> _scheduledFollowUpEvents = new List<FollowUpEvent>();
 
-        // The task that executes scheduled moves
+        // The task that executes scheduled follow-up events
         private readonly Task _updateTask;
 
         public IGameplayMap Map { get; }
@@ -34,29 +31,46 @@ namespace OrangeBugReloaded.Core.ClientServer
         public GameServer(IGameplayMap map)
         {
             Map = map;
+            map.ChunkLoader.Chunks.ItemAdded += OnChunkLoaded;
             _updateTask = RunAsync();
         }
 
-        /// <inheritdoc/>
-        public async Task<ConnectResult> ConnectAsync(ClientConnectRequest clientInfo)
+        private async void OnChunkLoaded(KeyValuePair<Point, IChunk> kvp)
         {
-            if (_connectedClients.Any(client => client.Value.PlayerId == clientInfo.PlayerId))
-                return new ConnectResult(false, null, Point.Zero, "Another client has already connected using the same player ID");
+            // TODO: Decide to what extent chunk loading should be
+            //       handled in Map and in GameServer.
 
-            var connection = new ClientConnection(Guid.NewGuid().ToString(), clientInfo);
-            var playerEntity = new PlayerEntity(clientInfo.PlayerId, Point.North);
+            // Properly initialize the chunk.
+            // Example scenarios: On chunk loading...
+            // - a button should be activated immediately if there's an entity pressing it
+            // - a piston should extend immediately if its trigger is on
+            // - a balloon should be popped immediately if it is on a pin
+            var chunkPoints = new Rectangle(kvp.Key.X * Chunk.Size, kvp.Key.Y * Chunk.Size, Chunk.Size - 1, Chunk.Size - 1);
+            var transaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
+            var followUpEvents = await ((Map)Map).UpdateTilesAsync(chunkPoints, transaction);
+            await CommitAndBroadcastAsync(transaction, followUpEvents);
+        }
+
+        /// <inheritdoc/>
+        public async Task<ConnectResult> ConnectAsync(IGameClient client)
+        {
+            if (_connections.Values.Any(conn => conn.Client.PlayerId == client.PlayerId))
+                return new ConnectResult(false, null, Point.Zero, "Another client is already connected using the same player ID");
+
+            var connection = new ClientConnection(Guid.NewGuid().ToString(), client);
+            var playerEntity = new PlayerEntity(client.PlayerId, Point.North);
 
             // Check if the player is playing this map the first time
-            if (Map.Metadata.Players.IsKnown(clientInfo.PlayerId))
+            if (Map.Metadata.Players.IsKnown(client.PlayerId))
             {
                 // Try to spawn player at its last known position.
-                var playerInfo = Map.Metadata.Players[clientInfo.PlayerId];
+                var playerInfo = Map.Metadata.Players[client.PlayerId];
                 var spawnResult = await Map.SpawnAsync(playerEntity, playerInfo.Position);
 
                 if (spawnResult.IsSuccessful)
                 {
                     // TODO: What if a player spawns within a level some others are currently trying to solve?
-                    _connectedClients.Add(connection.ConnectionId, connection);
+                    _connections.Add(connection.ConnectionId, connection);
                     return new ConnectResult(true, connection.ConnectionId, playerInfo.Position);
                 }
                 else
@@ -74,11 +88,11 @@ namespace OrangeBugReloaded.Core.ClientServer
 
                 if (spawnResult != null)
                 {
-                    await spawnResult.Item1.Transaction.CommitAsync(Map, Map.Metadata.NextVersion(), null);
-                    var playerInfo = new PlayerInfo(clientInfo.PlayerId, clientInfo.PlayerDisplayName, spawnResult.Item2);
+                    await spawnResult.Transaction.CommitAsync(Map, Map.Metadata.NextVersion(), null);
+                    var playerInfo = new PlayerInfo(client.PlayerId, client.PlayerDisplayName, spawnResult.SpawnPosition);
                     Map.Metadata.Players.Add(playerInfo);
-                    _connectedClients.Add(connection.ConnectionId, connection);
-                    return new ConnectResult(true, connection.ConnectionId, spawnResult.Item2);
+                    _connections.Add(connection.ConnectionId, connection);
+                    return new ConnectResult(true, connection.ConnectionId, spawnResult.SpawnPosition);
                 }
                 else
                 {
@@ -99,7 +113,7 @@ namespace OrangeBugReloaded.Core.ClientServer
             foreach (var index in connection.LoadedChunks)
                 await UnloadChunkAsync(connectionId, index);
 
-            _connectedClients.Remove(connectionId);
+            _connections.Remove(connectionId);
         }
 
         /// <inheritdoc/>
@@ -158,11 +172,10 @@ namespace OrangeBugReloaded.Core.ClientServer
                 // Make sure there actually exists an entity to be moved
                 var source = await Map.GetAsync(move.SourcePosition);
                 var target = await Map.GetAsync(move.TargetPosition);
-                if (source.Tile.Entity == Entity.None)
-                    return RemoteMoveResult.CreateFaulted(Enumerable.Empty<KeyValuePair<Point, IChunk>>());
 
                 var moveResult = await Map.MoveAsync(move.SourcePosition, move.TargetPosition, transaction);
 
+                // Compare affected tiles of the client and those of the server
                 var clientAffectedTiles = move.AffectedPositions;
                 var serverAffectedTiles = moveResult.Transaction.IsCanceled ?
                     new[] { new VersionedPoint(move.SourcePosition, source.Version), new VersionedPoint(move.TargetPosition, target.Version) }.ToList() :
@@ -178,11 +191,10 @@ namespace OrangeBugReloaded.Core.ClientServer
                 if (versions.Any(v => v.ClientVersion != -1 && v.ServerVersion != -1 && v.ClientVersion > v.ServerVersion))
                     throw new NotImplementedException("This should not happen. Clients must not have a newer version than the server");
 
-                if (versions.Where(v => v.ClientVersion != -1 && v.ServerVersion != -1).All(v => v.ClientVersion == v.ServerVersion) &&
-                    clientAffectedTiles.Count != serverAffectedTiles.Count)
-                    throw new NotImplementedException("This should not happen. If client and server share the same versions for affected tiles, the sets of affected tiles must not differ");
-
-                var conflictingVersions = versions.Where(v => v.ClientVersion < v.ServerVersion);
+                var conflictingVersions = versions.Where(v =>
+                    (v.ClientVersion == -1 && v.ServerVersion != -1) ||
+                    (v.ClientVersion != -1 && v.ServerVersion == -1) ||
+                    (v.ClientVersion != -1 && v.ServerVersion != -1 && v.ClientVersion < v.ServerVersion));
 
                 if (conflictingVersions.Any())
                 {
@@ -197,18 +209,17 @@ namespace OrangeBugReloaded.Core.ClientServer
                 {
                     // Client and server are on the same version (regarding affected tiles)
                     // => Commit and schedule follow-up transactions
+                    // => Notify other clients about the changes
+
                     if (moveResult.IsSuccessful)
                     {
-                        var newVersion = Map.Metadata.NextVersion();
-                        await moveResult.Transaction.CommitAsync(Map, newVersion, null); // TODO: Emit events
-
-                        foreach (var scheduledMove in moveResult.FollowUpEvents)
-                            _scheduledFollowUpEvents.Add(scheduledMove);
-
+                        var newVersion = await CommitAndBroadcastAsync(moveResult.Transaction, moveResult.FollowUpEvents, connection);
                         return RemoteMoveResult.CreateSuccessful(newVersion);
                     }
                     else
                     {
+                        // The move produced a cancelled transaction on both, client and server
+                        // => the move request is successful, but no changes have to be committed
                         return RemoteMoveResult.CreateSuccessful(-1);
                     }
                 }
@@ -219,7 +230,6 @@ namespace OrangeBugReloaded.Core.ClientServer
             }
         }
 
-
         private async Task RunAsync()
         {
             while (true)
@@ -229,6 +239,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                 // Run all scheduled moves that should have run until now
                 while (_scheduledFollowUpEvents.Any() && _scheduledFollowUpEvents.First().ExecutionTime <= now)
                 {
+                    // Get the "oldest" follow-up event
                     var followUpEvent = _scheduledFollowUpEvents.OrderBy(e => e.ExecutionTime).First();
                     _scheduledFollowUpEvents.Remove(followUpEvent);
 
@@ -240,13 +251,10 @@ namespace OrangeBugReloaded.Core.ClientServer
                     var transaction = new TransactionWithMoveSupport(followUpEvent.Initiator);
                     var args = new FollowUpEventArgs(Map, transaction);
                     await tileInfo.Tile.OnFollowUpTransactionAsync(args, followUpEvent.Position);
-                    
+
                     if (!transaction.IsCanceled)
                     {
-                        // Commit transaction
-                        await transaction.CommitAsync(Map, Map.Metadata.NextVersion(), null);
-                        _scheduledFollowUpEvents.AddRange(args.FollowUpEvents);
-                        
+                        await CommitAndBroadcastAsync(transaction, args.FollowUpEvents);
                         //Debug.WriteLine($"RUNASYNC MOVED {move.SourcePosition} to {move.TargetPosition}", "GameServer");
                     }
                     else
@@ -259,9 +267,58 @@ namespace OrangeBugReloaded.Core.ClientServer
             }
         }
 
+        private async Task<int> CommitAndBroadcastAsync(ITransactionWithMoveSupport transaction, IEnumerable<FollowUpEvent> followUpEvents, ClientConnection excludedConnection = null)
+        {
+            if (!transaction.IsCanceled/* && transaction.Changes.Any()*/)
+            {
+                // TODO: Emit events
+
+                // Get new version number for the tiles that changed
+                var newVersion = Map.Metadata.NextVersion();
+
+                // Apply changes to the server's map (using the version number above)
+                await transaction.CommitAsync(Map, newVersion, null);
+                
+                // Send the updated tiles to clients that have loaded the corresponding map area
+                await BroadcastChangesAsync(transaction, newVersion, excludedConnection);
+
+                // Schedule follow-up events that might have been created during e.g. a move
+                _scheduledFollowUpEvents.AddRange(followUpEvents);
+
+                return newVersion;
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// Sends tile updates to all clients that currently have loaded the respective chunks.
+        /// </summary>
+        /// <param name="transaction">The transaction that contains the changes that are broadcasted</param>
+        /// <param name="newVersion">The version to be used for the updates tiles</param>
+        /// <param name="excludedConnection">An optional connection that is excluded and does not receive the tile updates</param>
+        /// <returns></returns>
+        private async Task BroadcastChangesAsync(ITransactionWithMoveSupport transaction, int newVersion, ClientConnection excludedConnection = null)
+        {
+            // Notify clients that have loaded the affected chunks
+            foreach (var conn in _connections.Values)
+            {
+                if (conn == excludedConnection)
+                    continue; // Skip calling client
+
+                var relevantChanges = transaction.Changes
+                    .Where(change => conn.LoadedChunks.Contains(change.Key / Chunk.Size))
+                    .Select(change => new TileUpdate(change.Key, change.Value.WithVersion(newVersion)))
+                    .ToArray();
+
+                if (relevantChanges.Any())
+                    await conn.Client.OnTileUpdates(relevantChanges);
+            }
+        }
+
         private ClientConnection GetConnection(string connectionId)
         {
-            var connection = _connectedClients.TryGetValue(connectionId);
+            var connection = _connections.TryGetValue(connectionId);
 
             if (connection == null)
                 throw new ArgumentException($"There is no connection with ID '{connectionId}'");

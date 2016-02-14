@@ -42,6 +42,9 @@ namespace OrangeBugReloaded.Core.Entities
             return Task.CompletedTask;
         }
 
+        public override Task DetachAsync(TileEventArgs e, Tile tile)
+            => DetachByPushingAsync(e, tile);
+
         protected override IEnumerable GetHashProperties()
         {
             yield return Perspective;

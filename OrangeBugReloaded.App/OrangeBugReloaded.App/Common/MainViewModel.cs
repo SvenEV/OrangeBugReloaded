@@ -37,13 +37,15 @@ namespace OrangeBugReloaded.App.Common
             set { Set(ref _selectedTileTemplate, value); }
         }
 
-        public IGameClient Client { get; }
+        public IGameClient Client1 { get; }
+        public IGameClient Client2 { get; }
         public IGameServer Server { get; }
 
-        public OrangeBugRenderer RendererClient { get; }
+        public OrangeBugRenderer RendererClient1 { get; }
+        public OrangeBugRenderer RendererClient2 { get; }
         public OrangeBugRenderer RendererServer { get; }
 
-        public MainViewModel(CanvasAnimatedControl canvasClient, CanvasAnimatedControl canvasServer)
+        public MainViewModel(CanvasAnimatedControl canvasClient1, CanvasAnimatedControl canvasClient2, CanvasAnimatedControl canvasServer)
         {
             var storage = new InMemoryChunkStorage();
             storage.SaveAsync(new Point(0, 0), Chunk.SampleChunk.Clone()).Wait();
@@ -51,18 +53,25 @@ namespace OrangeBugReloaded.App.Common
             var map = new Map(storage);
 
             Server = new DelayedServerFacade(new GameServer(map));
-            Client = new GameClient(Server, "local", "Local Player");
+            Client1 = new GameClient("player1", "Player A");
+            Client2 = new GameClient("player2", "Player B");
 
-            RendererClient = new OrangeBugRenderer();
-            RendererClient.Attach(canvasClient);
-            RendererClient.Plugins.Add<OrangeBugAudioPlayer>();
-            RendererClient.Map = Client.Map;
+            RendererClient1 = new OrangeBugRenderer();
+            RendererClient1.Attach(canvasClient1);
+            RendererClient1.Plugins.Add<OrangeBugAudioPlayer>();
+            RendererClient1.Map = Client1.Map;
+
+            RendererClient2 = new OrangeBugRenderer();
+            RendererClient2.Attach(canvasClient2);
+            RendererClient2.Plugins.Add<OrangeBugAudioPlayer>();
+            RendererClient2.Map = Client2.Map;
 
             RendererServer = new OrangeBugRenderer();
             RendererServer.Attach(canvasServer);
             RendererServer.Map = Server.Map;
 
-            Client.ConnectAsync();
+            Client1.ConnectAsync(Server);
+            Client2.ConnectAsync(Server);
         }
 
         public async Task EditMapAsync(Vector2 canvasPosition)

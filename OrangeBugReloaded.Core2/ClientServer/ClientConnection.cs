@@ -7,19 +7,16 @@ namespace OrangeBugReloaded.Core.ClientServer
     {
         public string ConnectionId { get; }
 
-        public string PlayerId { get; }
-
-        public string PlayerDisplayName { get; }
-
+        public IGameClient Client { get; }
+        
         public HashSet<Point> LoadedChunks { get; } = new HashSet<Point>();
 
         public SemaphoreSlim MoveSemaphore { get; } = new SemaphoreSlim(1);
 
-        public ClientConnection(string connectionId, ClientConnectRequest connectRequest)
+        public ClientConnection(string connectionId, IGameClient client)
         {
+            Client = client;
             ConnectionId = connectionId;
-            PlayerId = connectRequest.PlayerId;
-            PlayerDisplayName = connectRequest.PlayerDisplayName;
         }
     }
 }

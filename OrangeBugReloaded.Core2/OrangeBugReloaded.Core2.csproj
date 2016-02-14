@@ -119,6 +119,7 @@
     <Compile Include="ClientServer\IGameServer.cs" />
     <Compile Include="ClientServer\RemoteMoveRequest.cs" />
     <Compile Include="ClientServer\RemoteMoveResult.cs" />
+    <Compile Include="ClientServer\TileUpdate.cs" />
     <Compile Include="ClientServer\VersionedPoint.cs" />
     <Compile Include="Entities\BalloonEntity.cs" />
     <Compile Include="Entities\BoxEntity.cs" />

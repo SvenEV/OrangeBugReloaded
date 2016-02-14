@@ -38,5 +38,7 @@ namespace OrangeBugReloaded.Core
             Initiator = initiator;
             ExecutionTime = executionTime;
         }
+
+        public override string ToString() => $"{Position} scheduled for {ExecutionTime}";
     }
 }

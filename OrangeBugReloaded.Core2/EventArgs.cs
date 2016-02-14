@@ -125,15 +125,6 @@ namespace OrangeBugReloaded.Core
             _transaction = transaction;
         }
         
-        [Obsolete("Use MoveAsync instead", true)]
-        public void ScheduleMove(MoveInitiator initiator, Point sourcePosition, Point targetPosition, DateTimeOffset executionTime)
-        {
-            //if (executionTime < DateTimeOffset.Now)
-            //    throw new ArgumentException("Cannot schedule a move in the past");
-
-            //_followUpMoves.Add(new ScheduledMove(initiator, sourcePosition, targetPosition, executionTime));
-        }
-
         public async Task<bool> MoveAsync(Point sourcePosition, Point targetPosition)
         {
             var result = await _map.MoveAsync(sourcePosition, targetPosition, _transaction);

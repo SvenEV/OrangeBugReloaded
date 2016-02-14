@@ -10,7 +10,7 @@ namespace OrangeBugReloaded.Core.ClientServer
     {
         private const int _connectDelay = 500;
         private const int _disconnectDelay = 500;
-        private const int _moveDelay = 250;
+        private const int _moveDelay = 0;
         private const int _loadChunkDelay = 200;
         private const int _unloadChunkDelay = 200;
 
@@ -23,10 +23,10 @@ namespace OrangeBugReloaded.Core.ClientServer
             _server = server;
         }
 
-        public async Task<ConnectResult> ConnectAsync(ClientConnectRequest clientInfo)
+        public async Task<ConnectResult> ConnectAsync(IGameClient client)
         {
             await Task.Delay(_connectDelay);
-            var result = await _server.ConnectAsync(clientInfo);
+            var result = await _server.ConnectAsync(client);
             await Task.Delay(_connectDelay);
             return result;
         }

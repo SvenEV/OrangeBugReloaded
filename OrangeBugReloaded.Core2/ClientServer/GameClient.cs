@@ -1,5 +1,6 @@
 ﻿using OrangeBugReloaded.Core.Transactions;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,7 +9,7 @@ namespace OrangeBugReloaded.Core.ClientServer
 {
     public class GameClient : IGameClient
     {
-        private readonly IGameServer _server;
+        private IGameServer _server;
         private string _connectionId;
 
         public Point PlayerPosition { get; private set; }
@@ -17,18 +18,19 @@ namespace OrangeBugReloaded.Core.ClientServer
 
         public IGameplayMap Map { get; }
 
-        public GameClient(IGameServer server, string playerId, string playerDisplayName)
+        public GameClient(string playerId, string playerDisplayName)
         {
-            _server = server;
             PlayerId = playerId;
             PlayerDisplayName = playerDisplayName;
             Map = new Map(new InMemoryChunkStorage()); // Initialize empty map
         }
 
-        public async Task ConnectAsync()
+        public async Task ConnectAsync(IGameServer server)
         {
+            _server = server;
+
             var request = new ClientConnectRequest(PlayerId, PlayerDisplayName);
-            var result = await _server.ConnectAsync(request);
+            var result = await _server.ConnectAsync(this);
 
             if (result.IsSuccessful)
             {
@@ -83,13 +85,8 @@ namespace OrangeBugReloaded.Core.ClientServer
             else
             {
                 // Apply updated chunks
-                var updateTransaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
-
-                // TODO: It would be better to directly replace the chunk via ChunkLoader
                 foreach (var kvp in remoteMoveResult.ChunkUpdates)
-                {
                     await ApplyChunkAsync(kvp.Value, kvp.Key);
-                }
             }
 
             return false;
@@ -122,5 +119,16 @@ namespace OrangeBugReloaded.Core.ClientServer
                 }
             }
         }
+
+        public async Task OnTileUpdates(IEnumerable<TileUpdate> tileUpdates)
+        {
+            if (_random.NextDouble() < .75)
+                return;
+
+            foreach (var change in tileUpdates)
+                await Map.SetAsync(change.Position, change.TileInfo);
+        }
+
+        private static readonly Random _random = new Random();
     }
 }

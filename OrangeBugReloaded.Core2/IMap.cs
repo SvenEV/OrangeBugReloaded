@@ -1,6 +1,7 @@
 ﻿using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Transactions;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core

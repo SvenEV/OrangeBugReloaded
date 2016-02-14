@@ -11,6 +11,8 @@
     <Grid Background="Black">
         <Grid.RowDefinitions>
             <RowDefinition/>
+            <RowDefinition Height="8"/>
+            <RowDefinition/>
             <RowDefinition Height="100"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -19,19 +21,33 @@
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         
-        <win2d:CanvasAnimatedControl x:Name="canvasClient"
-                                     Grid.Column="0"
+        <!-- Client 1 -->
+        <win2d:CanvasAnimatedControl x:Name="canvasClient1"
+                                     Grid.Row="0" Grid.Column="0"
                                      PointerWheelChanged="canvas_PointerWheelChanged"
                                      PointerPressed="canvas_PointerPressed"/>
 
-        <TextBlock Text="Client" Grid.Column="0"
+        <TextBlock Text="Client 1"
+                   Grid.Row="0" Grid.Column="0"
                    FontSize="16" Margin="12"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top"
                    Foreground="WhiteSmoke"/>
 
-        <Border Background="WhiteSmoke" Grid.Column="1"/>
+        <!-- Client 2 -->
+        <win2d:CanvasAnimatedControl x:Name="canvasClient2"
+                                     Grid.Row="2" Grid.Column="0"
+                                     PointerWheelChanged="canvas_PointerWheelChanged"
+                                     PointerPressed="canvas_PointerPressed"/>
 
+        <TextBlock Text="Client 2"
+                   Grid.Row="2" Grid.Column="0"
+                   FontSize="16" Margin="12"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Foreground="WhiteSmoke"/>
+
+        <!-- Server -->
         <win2d:CanvasAnimatedControl x:Name="canvasServer"
                                      Grid.Column="2"
                                      PointerWheelChanged="canvas_PointerWheelChanged"
@@ -43,7 +59,12 @@
                    VerticalAlignment="Top"
                    Foreground="WhiteSmoke"/>
 
-        <Border Grid.Row="1" Grid.ColumnSpan="3" Background="WhiteSmoke" Padding="12">
+        <!-- Separators -->
+        <Border Background="WhiteSmoke" Grid.Column="1" Grid.RowSpan="99"/>
+        <Border Background="WhiteSmoke" Grid.Row="1" Grid.Column="0"/>
+
+        <!-- Editor -->
+        <Border Grid.Row="99" Grid.ColumnSpan="99" Background="WhiteSmoke" Padding="12">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>

@@ -30,7 +30,7 @@ namespace OrangeBugReloaded.Core
                 _random.Next(rectangle.Bottom, rectangle.Top));
         }
 
-        public static async Task<Tuple<MoveResult, Point>> SpawnAsync(this IGameplayMap map, Entity entity, Rectangle area)
+        public static async Task<AreaSpawnResult> SpawnAsync(this IGameplayMap map, Entity entity, Rectangle area)
         {
             var availableSpawnPoints = area.Shuffle().ToQueue();
 
@@ -40,7 +40,7 @@ namespace OrangeBugReloaded.Core
                 var result = await map.SpawnAsync(entity, spawnPosition);
 
                 if (result.IsSuccessful)
-                    return new Tuple<MoveResult, Point>(result, spawnPosition);
+                    return new AreaSpawnResult(result.Transaction, result.FollowUpEvents, spawnPosition);
             }
 
             return null;
