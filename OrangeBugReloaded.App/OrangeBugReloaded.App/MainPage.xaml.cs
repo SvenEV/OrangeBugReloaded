@@ -48,6 +48,15 @@ namespace OrangeBugReloaded.App
                     await MainVM.Client1.MovePlayerAsync(Point.South);
                     break;
 
+                case VirtualKey.Escape:
+                    await MainVM.Client1.DisconnectAsync();
+                    break;
+
+                case VirtualKey.F5:
+                    await MainVM.Client1.ConnectAsync(MainVM.Server);
+                    MainVM.RendererClient1.Map = MainVM.Client1.Map;
+                    break;
+
                 case VirtualKey.A:
                     await MainVM.Client2.MovePlayerAsync(Point.West);
                     break;

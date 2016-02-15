@@ -141,7 +141,6 @@ namespace OrangeBugReloaded.Core
         public async Task<MoveResult> SpawnAsync(Entity entity, Point position)
         {
             var tileInfo = await GetAsync(position);
-
             tileInfo.Tile.EnsureNotNull();
 
             var transaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
@@ -161,6 +160,40 @@ namespace OrangeBugReloaded.Core
                 return new MoveResult(transaction, Enumerable.Empty<FollowUpEvent>());
 
             var newTileInfo = tileInfo.WithTile(attachArgs.Result);
+            transaction.Changes[position] = newTileInfo;
+
+            // Update tile (note that this cannot cancel the transaction)
+            var followUpEvents = await UpdateTilesAsync(new[] { position }, transaction);
+
+            return new MoveResult(transaction, followUpEvents);
+        }
+
+        public async Task<MoveResult> DespawnAsync(Point position)
+        {
+            var tileInfo = await GetAsync(position);
+            tileInfo.Tile.EnsureNotNull();
+
+            // No entity => nothing to despawn
+            if (tileInfo.Tile.Entity == Entity.None)
+                return new MoveResult(TransactionWithMoveSupport.CanceledTransaction, Enumerable.Empty<FollowUpEvent>());
+
+            var transaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
+            transaction.Moves.Push(new EntityMoveInfo
+            {
+                Entity = tileInfo.Tile.Entity,
+                SourcePosition = position,
+                TargetPosition = position
+            });
+
+            // Try to detach entity
+            var detachArgs = new DetachEventArgs(transaction, this);
+            await tileInfo.Tile.DetachEntityAsync(detachArgs);
+            detachArgs.ValidateResult();
+
+            if (detachArgs.IsCanceled)
+                return new MoveResult(transaction, Enumerable.Empty<FollowUpEvent>());
+
+            var newTileInfo = tileInfo.WithTile(detachArgs.Result);
             transaction.Changes[position] = newTileInfo;
 
             // Update tile (note that this cannot cancel the transaction)

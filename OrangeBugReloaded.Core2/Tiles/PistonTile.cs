@@ -68,7 +68,7 @@ namespace OrangeBugReloaded.Core.Tiles
             return Task.CompletedTask;
         }
 
-        internal override Task DetachEntityAsync(TileEventArgs e)
+        internal override Task DetachEntityAsync(DetachEventArgs e)
         {
             if (!IsExtended && e.CurrentMove.Entity is PistonEntity)
             {

@@ -39,7 +39,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
         }
 
-        internal override Task DetachEntityAsync(TileEventArgs e)
+        internal override Task DetachEntityAsync(DetachEventArgs e)
         {
             if (e.CurrentMove.Offset.IsDirection && !GetOutDirections().Contains(e.CurrentMove.Offset))
             {

@@ -70,6 +70,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                 if (spawnResult.IsSuccessful)
                 {
                     // TODO: What if a player spawns within a level some others are currently trying to solve?
+                    await CommitAndBroadcastAsync(spawnResult.Transaction, spawnResult.FollowUpEvents, connection);
                     _connections.Add(connection.ConnectionId, connection);
                     return new ConnectResult(true, connection.ConnectionId, playerInfo.Position);
                 }
@@ -88,7 +89,7 @@ namespace OrangeBugReloaded.Core.ClientServer
 
                 if (spawnResult != null)
                 {
-                    await spawnResult.Transaction.CommitAsync(Map, Map.Metadata.NextVersion(), null);
+                    await CommitAndBroadcastAsync(spawnResult.Transaction, spawnResult.FollowUpEvents, connection);
                     var playerInfo = new PlayerInfo(client.PlayerId, client.PlayerDisplayName, spawnResult.SpawnPosition);
                     Map.Metadata.Players.Add(playerInfo);
                     _connections.Add(connection.ConnectionId, connection);
@@ -106,14 +107,26 @@ namespace OrangeBugReloaded.Core.ClientServer
         public async Task DisconnectAsync(string connectionId)
         {
             var connection = GetConnection(connectionId);
+            var player = Map.Metadata.Players[connection.Client.PlayerId];
 
             // TODO: Remove PlayerEntity from Map (despawn)
+            var despawnResult = await Map.DespawnAsync(player.Position);
 
-            // Unload all the chunks currently loaded by the client
-            foreach (var index in connection.LoadedChunks)
-                await UnloadChunkAsync(connectionId, index);
+            if (despawnResult.IsSuccessful)
+            {
+                await CommitAndBroadcastAsync(despawnResult.Transaction, despawnResult.FollowUpEvents, connection);
 
-            _connections.Remove(connectionId);
+                // Unload all the chunks currently loaded by the client
+                while (connection.LoadedChunks.Any())
+                    await UnloadChunkAsync(connectionId, connection.LoadedChunks.First());
+
+                _connections.Remove(connectionId);
+            }
+            else
+            {
+                // TODO: What now? We could not despawn the player!
+                throw new NotImplementedException();
+            }
         }
 
         /// <inheritdoc/>
@@ -174,7 +187,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                 var target = await Map.GetAsync(move.TargetPosition);
 
                 var moveResult = await Map.MoveAsync(move.SourcePosition, move.TargetPosition, transaction);
-
+                
                 // Compare affected tiles of the client and those of the server
                 var clientAffectedTiles = move.AffectedPositions;
                 var serverAffectedTiles = moveResult.Transaction.IsCanceled ?
@@ -271,7 +284,7 @@ namespace OrangeBugReloaded.Core.ClientServer
         {
             var newVersion = -1;
 
-            if (!transaction.IsCanceled/* && transaction.Changes.Any()*/)
+            if (!transaction.IsCanceled)
             {
                 // TODO: Emit events
                 if (transaction.Changes.Any())

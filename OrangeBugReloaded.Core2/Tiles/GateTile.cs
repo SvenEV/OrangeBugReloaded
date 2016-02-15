@@ -44,7 +44,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
         }
 
-        internal override async Task DetachEntityAsync(TileEventArgs e)
+        internal override async Task DetachEntityAsync(DetachEventArgs e)
         {
             if (IsOpen)
             {

@@ -44,6 +44,8 @@ namespace OrangeBugReloaded.Core
 
             chunk[0, 3] = v0(PathTile.Default);
             chunk[0, 4] = v0(PathTile.Default);
+            chunk[0, 5] = v0(PathTile.Default);
+            chunk[0, 6] = v0(new CornerTile(Point.South));
 
             for (var y = 1; y < Chunk.Size - 1; y++)
                 for (var x = 1; x < Chunk.Size - 1; x++)
@@ -58,6 +60,8 @@ namespace OrangeBugReloaded.Core
 
             chunk[7, 3] = v0(PathTile.Default);
             chunk[7, 4] = v0(PathTile.Default);
+            chunk[7, 5] = v0(PathTile.Default);
+            chunk[7, 6] = v0(new CornerTile(Point.West));
 
             chunk[3, 3] = v0(new PistonTile(new Point(3, 2), Point.East));
             chunk[4, 3] = v0(Tile.Compose(new ButtonTile(false, EntityFilterMode.Entities), BoxEntity.Default));

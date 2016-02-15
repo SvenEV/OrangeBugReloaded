@@ -50,6 +50,7 @@
         <!-- Server -->
         <win2d:CanvasAnimatedControl x:Name="canvasServer"
                                      Grid.Column="2"
+                                     Grid.RowSpan="3"
                                      PointerWheelChanged="canvas_PointerWheelChanged"
                                      PointerPressed="canvas_PointerPressed"/>
 

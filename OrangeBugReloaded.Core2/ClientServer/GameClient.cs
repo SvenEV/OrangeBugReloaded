@@ -38,22 +38,26 @@ namespace OrangeBugReloaded.Core.ClientServer
 
                 Map = new Map(new RemoteChunkStorage(result.ConnectionId, _server));
 
-                // Load chunks around spawn position
-                var spawnChunkIndex = result.SpawnPosition / Chunk.Size;
-                var offsets = new[] { Point.Zero, Point.North, Point.East, Point.South, Point.West };
-
+                // Load chunk at spawn position
                 await Map.GetAsync(result.SpawnPosition);
-                //foreach (var offset in offsets)
-                //{
-                //    var chunk = await _server.LoadChunkAsync(_connectionId, spawnChunkIndex + offset);
-                //    await ApplyChunkAsync(chunk, spawnChunkIndex + offset);
-                //}
             }
             else
             {
                 Debugger.Break();
                 throw new Exception(result.Message);
             }
+        }
+
+        public async Task DisconnectAsync()
+        {
+            if (_server == null)
+                return;
+
+            await _server.DisconnectAsync(_connectionId);
+            _server = null;
+            _connectionId = null;
+            PlayerPosition = Point.Zero;
+            Map = null;
         }
 
         public async Task<bool> MoveAsync(Point sourcePosition, Point targetPosition)
@@ -86,7 +90,7 @@ namespace OrangeBugReloaded.Core.ClientServer
             }
             else
             {
-                // Apply updated chunks
+                // Our map was not up to date => apply updated chunks
                 foreach (var kvp in remoteMoveResult.ChunkUpdates)
                     await ApplyChunkAsync(kvp.Value, kvp.Key);
             }

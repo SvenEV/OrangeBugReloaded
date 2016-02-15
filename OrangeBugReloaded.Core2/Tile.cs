@@ -74,7 +74,7 @@ namespace OrangeBugReloaded.Core
         /// </remarks>
         /// <param name="e">Event arguments</param>
         /// <returns>Task</returns>
-        internal virtual Task DetachEntityAsync(TileEventArgs e)
+        internal virtual Task DetachEntityAsync(DetachEventArgs e)
         {
             // Default behavior: Entities are correctly detached from the tile
             e.Result = WithoutEntity(this);

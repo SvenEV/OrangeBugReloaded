@@ -17,7 +17,7 @@ namespace OrangeBugReloaded.Core.Tiles
             return Task.CompletedTask;
         }
 
-        internal override Task DetachEntityAsync(TileEventArgs e)
+        internal override Task DetachEntityAsync(DetachEventArgs e)
         {
             e.Cancel();
             return Task.CompletedTask;

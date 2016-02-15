@@ -10,7 +10,15 @@ namespace OrangeBugReloaded.Core.Transactions
     /// caused by such operations.
     /// </summary>
     public class TransactionWithMoveSupport : TransactionBase<TileInfo>, ITransactionWithMoveSupport
-    { 
+    {
+        public static TransactionWithMoveSupport CanceledTransaction { get; }
+
+        static TransactionWithMoveSupport()
+        {
+            CanceledTransaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
+            CanceledTransaction.Cancel();
+        }
+
         /// <inheritdoc/>
         public Stack<EntityMoveInfo> Moves { get; } = new Stack<EntityMoveInfo>();
 
