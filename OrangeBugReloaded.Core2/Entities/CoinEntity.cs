@@ -10,7 +10,7 @@ namespace OrangeBugReloaded.Core.Entities
     {
         public static CoinEntity Default { get; } = new CoinEntity();
 
-        public override Task DetachAsync(TileEventArgs e, Tile tile)
-            => DetachByCollectingAsync(e, tile);
+        public override Task DetachAsync(EntityDetachArgs e)
+            => DetachByCollectingAsync(e);
     }
 }

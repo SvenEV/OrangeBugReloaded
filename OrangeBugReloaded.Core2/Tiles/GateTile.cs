@@ -32,7 +32,7 @@ namespace OrangeBugReloaded.Core.Tiles
             IsOpen = isOpen;
         }
 
-        internal override async Task AttachEntityAsync(AttachEventArgs e)
+        internal override async Task AttachEntityAsync(AttachArgs e)
         {
             if (IsOpen)
             {
@@ -44,7 +44,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
         }
 
-        internal override async Task DetachEntityAsync(DetachEventArgs e)
+        internal override async Task DetachEntityAsync(DetachArgs e)
         {
             if (IsOpen)
             {

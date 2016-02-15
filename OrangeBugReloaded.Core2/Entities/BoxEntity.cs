@@ -11,7 +11,7 @@ namespace OrangeBugReloaded.Core.Entities
 
         private BoxEntity() { }
 
-        public override Task DetachAsync(TileEventArgs e, Tile tile)
-            => DetachByPushingAsync(e, tile);
+        public override Task DetachAsync(EntityDetachArgs e)
+            => DetachByPushingAsync(e);
     }
 }

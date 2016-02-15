@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace OrangeBugReloaded.Core.Tiles
 {
@@ -16,7 +17,7 @@ namespace OrangeBugReloaded.Core.Tiles
             Orientation = orientation;
         }
 
-        internal override async Task AttachEntityAsync(AttachEventArgs e)
+        internal override async Task AttachEntityAsync(AttachArgs e)
         {
             var inDirection = e.CurrentMove.Offset;
             var outDirection = _outDirections.TryGetValue(new Tuple<Point, Point>(Orientation, inDirection));
@@ -24,10 +25,7 @@ namespace OrangeBugReloaded.Core.Tiles
             if (outDirection.IsDirection)
             {
                 if (Entity != Entity.None)
-                {
-                    // TODO: We have to incorporate Entity.DetachAsync(...) here because not every entity can be "pushed" like this
-                    await e.MoveAsync(e.CurrentMove.TargetPosition, e.CurrentMove.TargetPosition + outDirection);
-                }
+                    await Entity.DetachAsync(e.CreateEntityDetachArgs(this, outDirection));
 
                 if (!e.IsCanceled)
                     e.Result = Compose(this, e.CurrentMove.Entity);
@@ -39,7 +37,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
         }
 
-        internal override Task DetachEntityAsync(DetachEventArgs e)
+        internal override Task DetachEntityAsync(DetachArgs e)
         {
             if (e.CurrentMove.Offset.IsDirection && !GetOutDirections().Contains(e.CurrentMove.Offset))
             {
@@ -77,5 +75,10 @@ namespace OrangeBugReloaded.Core.Tiles
             { new Tuple<Point, Point>(Point.West, Point.East), Point.South },
             { new Tuple<Point, Point>(Point.West, Point.North), Point.West }
         };
+
+        protected override IEnumerable GetHashProperties()
+        {
+            yield return Orientation;
+        }
     }
 }

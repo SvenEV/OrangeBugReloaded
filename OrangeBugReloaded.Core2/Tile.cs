@@ -49,10 +49,13 @@ namespace OrangeBugReloaded.Core
         /// </remarks>
         /// <param name="e">Event arguments</param>
         /// <returns>Task</returns>
-        internal virtual async Task AttachEntityAsync(AttachEventArgs e)
+        internal virtual async Task AttachEntityAsync(AttachArgs e)
         {
             if (Entity != Entity.None)
-                await Entity.DetachAsync(e, this);
+            {
+                var detachArgs = e.CreateEntityDetachArgs(this, e.CurrentMove.Offset.IsDirection ? e.CurrentMove.Offset : Point.Zero);
+                await Entity.DetachAsync(detachArgs);
+            }
 
             if (!e.IsCanceled)
             {
@@ -74,7 +77,7 @@ namespace OrangeBugReloaded.Core
         /// </remarks>
         /// <param name="e">Event arguments</param>
         /// <returns>Task</returns>
-        internal virtual Task DetachEntityAsync(DetachEventArgs e)
+        internal virtual Task DetachEntityAsync(DetachArgs e)
         {
             // Default behavior: Entities are correctly detached from the tile
             e.Result = WithoutEntity(this);

@@ -152,7 +152,7 @@ namespace OrangeBugReloaded.Core
             });
 
             // Try to attach entity
-            var attachArgs = new AttachEventArgs(transaction, this);
+            var attachArgs = new AttachArgs(transaction, this);
             await tileInfo.Tile.AttachEntityAsync(attachArgs);
             attachArgs.ValidateResult();
 
@@ -186,7 +186,7 @@ namespace OrangeBugReloaded.Core
             });
 
             // Try to detach entity
-            var detachArgs = new DetachEventArgs(transaction, this);
+            var detachArgs = new DetachArgs(transaction, this);
             await tileInfo.Tile.DetachEntityAsync(detachArgs);
             detachArgs.ValidateResult();
 
@@ -227,7 +227,7 @@ namespace OrangeBugReloaded.Core
             transaction.Moves.Push(move);
 
             // OnBeginMove: Notify entity that a move has been initiated
-            var beginMoveArgs = new EntityEventArgs(transaction, this);
+            var beginMoveArgs = new EntityBeginMoveArgs(transaction, this);
             await source.Tile.Entity.BeginMoveAsync(beginMoveArgs);
             beginMoveArgs.ValidateResult();
             if (transaction.IsCanceled) return;
@@ -239,13 +239,13 @@ namespace OrangeBugReloaded.Core
             move.Entity = beginMoveArgs.Result;
 
             // Detach: Remove the entity from the source tile
-            var detachArgs = new DetachEventArgs(transaction, this);
+            var detachArgs = new DetachArgs(transaction, this);
             await source.Tile.DetachEntityAsync(detachArgs);
             detachArgs.ValidateResult();
             if (transaction.IsCanceled) return;
 
             // Attach: Add the entity to the target tile
-            var attachArgs = new AttachEventArgs(transaction, this);
+            var attachArgs = new AttachArgs(transaction, this);
             if (!detachArgs.PreventAttach)
             {
                 await target.Tile.AttachEntityAsync(attachArgs);

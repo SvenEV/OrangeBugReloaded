@@ -24,7 +24,7 @@ namespace OrangeBugReloaded.Core.Entities
             Perspective = perspective;
         }
 
-        public override Task BeginMoveAsync(EntityEventArgs e)
+        public override Task BeginMoveAsync(EntityBeginMoveArgs e)
         {
             var offset = e.CurrentMove.Offset;
 
@@ -42,8 +42,8 @@ namespace OrangeBugReloaded.Core.Entities
             return Task.CompletedTask;
         }
 
-        public override Task DetachAsync(TileEventArgs e, Tile tile)
-            => DetachByPushingAsync(e, tile);
+        public override Task DetachAsync(EntityDetachArgs e)
+            => DetachByPushingAsync(e);
 
         protected override IEnumerable GetHashProperties()
         {

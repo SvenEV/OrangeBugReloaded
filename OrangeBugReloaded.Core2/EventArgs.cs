@@ -59,9 +59,9 @@ namespace OrangeBugReloaded.Core
         }
     }
 
-    public class EntityEventArgs : GameEventArgs<Entity>
+    public class EntityBeginMoveArgs : GameEventArgs<Entity>
     {
-        public EntityEventArgs(ITransactionWithMoveSupport transaction, IMap map)
+        public EntityBeginMoveArgs(ITransactionWithMoveSupport transaction, IMap map)
             : base(transaction, map)
         {
         }
@@ -69,7 +69,7 @@ namespace OrangeBugReloaded.Core
 
     public class TileEventArgs : GameEventArgs<Tile>, ISupportsMove
     {
-        private readonly new IGameplayMap _map;
+        protected readonly new IGameplayMap _map;
 
         public TileEventArgs(ITransactionWithMoveSupport transaction, IGameplayMap map)
             : base(transaction, map)
@@ -81,7 +81,7 @@ namespace OrangeBugReloaded.Core
             => _map.MoveAsync(sourcePosition, targetPosition, _transaction);
     }
 
-    public class AttachEventArgs : TileEventArgs
+    public class AttachArgs : TileEventArgs
     {
         /// <summary>
         /// If set to true, the detachment of the entity from the source tile
@@ -90,13 +90,16 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         public bool PreventDetach { get; set; }
 
-        public AttachEventArgs(ITransactionWithMoveSupport transaction, IGameplayMap map)
+        public AttachArgs(ITransactionWithMoveSupport transaction, IGameplayMap map)
             : base(transaction, map)
         {
         }
+
+        public EntityDetachArgs CreateEntityDetachArgs(Tile tile, Point pushDirection)
+            => new EntityDetachArgs(_transaction, _map, tile, pushDirection);
     }
 
-    public class DetachEventArgs : TileEventArgs
+    public class DetachArgs : TileEventArgs
     {
         /// <summary>
         /// If set to true, the attachment of the entity to the target tile
@@ -104,9 +107,29 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         public bool PreventAttach { get; set; }
 
-        public DetachEventArgs(ITransactionWithMoveSupport transaction, IGameplayMap map)
+        public DetachArgs(ITransactionWithMoveSupport transaction, IGameplayMap map)
             : base(transaction, map)
         {
+        }
+    }
+
+    public class EntityDetachArgs : TileEventArgs
+    {
+        /// <summary>
+        /// The tile with the entity to be detached.
+        /// </summary>
+        public Tile Tile { get; }
+
+        /// <summary>
+        /// The push direction that is suggested for pushable entities.
+        /// </summary>
+        public Point SuggestedPushDirection { get; }
+
+        public EntityDetachArgs(ITransactionWithMoveSupport transaction, IGameplayMap map, Tile tile, Point pushDirection)
+            : base(transaction, map)
+        {
+            Tile = tile;
+            SuggestedPushDirection = pushDirection.EnsureDirection();
         }
     }
 
@@ -124,7 +147,7 @@ namespace OrangeBugReloaded.Core
             _map = map;
             _transaction = transaction;
         }
-        
+
         public async Task<bool> MoveAsync(Point sourcePosition, Point targetPosition)
         {
             var result = await _map.MoveAsync(sourcePosition, targetPosition, _transaction);

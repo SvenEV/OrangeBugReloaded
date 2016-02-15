@@ -22,8 +22,8 @@ namespace OrangeBugReloaded.Core.Entities
             Color = color;
         }
 
-        public override Task DetachAsync(TileEventArgs e, Tile tile)
-            => DetachByPushingAsync(e, tile);
+        public override Task DetachAsync(EntityDetachArgs e)
+            => DetachByPushingAsync(e);
 
         protected override IEnumerable GetHashProperties()
         {

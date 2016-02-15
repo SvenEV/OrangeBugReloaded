@@ -23,7 +23,7 @@ namespace OrangeBugReloaded.Core
         /// * Initiate another move
         /// </remarks>
         /// <param name="e">Event arguments</param>
-        public virtual Task BeginMoveAsync(EntityEventArgs e)
+        public virtual Task BeginMoveAsync(EntityBeginMoveArgs e)
         {
             e.Result = this;
             return Task.CompletedTask;
@@ -38,9 +38,8 @@ namespace OrangeBugReloaded.Core
         /// * Making the entity collectable using the helper method <see cref="DetachByCollectingAsync(TileEventArgs, Tile)"/>
         /// </remarks>
         /// <param name="e">Event arguments</param>
-        /// <param name="tile">The tile</param>
         /// <returns>Task</returns>
-        public virtual Task DetachAsync(TileEventArgs e, Tile tile)
+        public virtual Task DetachAsync(EntityDetachArgs e)
         {
             // Default behavior: Cancel transaction, entity cannot be pushed or collected
             e.Cancel();
@@ -53,15 +52,14 @@ namespace OrangeBugReloaded.Core
         /// Can be used in <see cref="DetachAsync(TileEventArgs, Tile)"/>.
         /// </summary>
         /// <param name="e">Event arguments</param>
-        /// <param name="tile">The tile</param>
         /// <returns>Task</returns>
-        protected static async Task DetachByPushingAsync(TileEventArgs e, Tile tile)
+        protected static async Task DetachByPushingAsync(EntityDetachArgs e)
         {
-            if (e.CurrentMove.Entity is IPusher && e.CurrentMove.Offset.IsDirection)
+            if (e.CurrentMove.Entity is IPusher && e.SuggestedPushDirection.IsDirection)
             {
                 await e.MoveAsync(
                     e.CurrentMove.TargetPosition,
-                    e.CurrentMove.TargetPosition + e.CurrentMove.Offset);
+                    e.CurrentMove.TargetPosition + e.SuggestedPushDirection);
             }
             else
             {
@@ -75,14 +73,13 @@ namespace OrangeBugReloaded.Core
         /// Can be used in <see cref="DetachAsync(TileEventArgs, Tile)"/>.
         /// </summary>
         /// <param name="e">Event arguments</param>
-        /// <param name="tile">The tile</param>
         /// <returns>Task</returns>
-        protected static Task DetachByCollectingAsync(TileEventArgs e, Tile tile)
+        protected static Task DetachByCollectingAsync(EntityDetachArgs e)
         {
             if (e.CurrentMove.Entity is PlayerEntity)
             {
                 // Player collects the entity
-                e.Result = Tile.WithoutEntity(tile);
+                e.Result = Tile.WithoutEntity(e.Tile);
             }
             else
             {
