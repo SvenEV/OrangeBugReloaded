@@ -62,11 +62,11 @@ namespace OrangeBugReloaded.Core.ClientServer
 
         public async Task<bool> MoveAsync(Point sourcePosition, Point targetPosition)
         {
-            var transaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
-            var result = await Map.MoveAsync(sourcePosition, targetPosition, transaction);
-
             var source = await Map.GetAsync(sourcePosition);
             var target = await Map.GetAsync(targetPosition);
+            var initiator = new MoveInitiator(source.Tile.Entity, sourcePosition);
+            var transaction = new TransactionWithMoveSupport(initiator);
+            var result = await Map.MoveAsync(sourcePosition, targetPosition, transaction);
 
             var request = result.IsSuccessful ?
                 RemoteMoveRequest.CreateSuccessful(

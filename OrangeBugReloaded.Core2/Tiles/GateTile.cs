@@ -32,7 +32,7 @@ namespace OrangeBugReloaded.Core.Tiles
             IsOpen = isOpen;
         }
 
-        internal override async Task AttachEntityAsync(AttachArgs e)
+        internal override async Task AttachEntityAsync(IAttachArgs e)
         {
             if (IsOpen)
             {
@@ -44,7 +44,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
         }
 
-        internal override async Task DetachEntityAsync(DetachArgs e)
+        internal override async Task DetachEntityAsync(IDetachArgs e)
         {
             if (IsOpen)
             {
@@ -56,7 +56,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
         }
 
-        internal override async Task OnEntityMoveTransactionCompletedAsync(TileEventArgs e)
+        internal override async Task OnEntityMoveTransactionCompletedAsync(IMovesCompletedArgs e)
         {
             // Check trigger state
             var trigger = (await e.GetAsync(TriggerPosition)).Tile as ITrigger;

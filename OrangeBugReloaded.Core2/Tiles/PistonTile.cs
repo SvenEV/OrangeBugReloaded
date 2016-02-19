@@ -54,7 +54,7 @@ namespace OrangeBugReloaded.Core.Tiles
             IsExtended = isExtended;
         }
 
-        internal override Task AttachEntityAsync(AttachArgs e)
+        internal override Task AttachEntityAsync(IAttachArgs e)
         {
             if (IsExtended && e.CurrentMove.Entity is PistonEntity)
             {
@@ -68,7 +68,7 @@ namespace OrangeBugReloaded.Core.Tiles
             return Task.CompletedTask;
         }
 
-        internal override Task DetachEntityAsync(DetachArgs e)
+        internal override Task DetachEntityAsync(IDetachArgs e)
         {
             if (!IsExtended && e.CurrentMove.Entity is PistonEntity)
             {
@@ -82,7 +82,7 @@ namespace OrangeBugReloaded.Core.Tiles
             return Task.CompletedTask;
         }
 
-        internal override async Task OnFollowUpTransactionAsync(FollowUpEventArgs e, Point position)
+        internal override async Task OnFollowUpTransactionAsync(IFollowUpArgs e, Point position)
         {
             if (e.Initiator.Object is PistonTile)
                 return;

@@ -1,5 +1,6 @@
 ﻿using OrangeBugReloaded.Core.Entities;
 using System;
+using System.Reflection;
 
 namespace OrangeBugReloaded.Core
 {
@@ -49,6 +50,9 @@ namespace OrangeBugReloaded.Core
         /// <returns>True if included, false otherwise</returns>
         public static bool Includes(this EntityFilterMode filterMode, Type entityType)
         {
+            if (!typeof(Entity).IsAssignableFrom(entityType))
+                throw new ArgumentException($"The specified type does not derive from {nameof(Entity)}");
+
             switch (filterMode)
             {
                 case EntityFilterMode.Entities:

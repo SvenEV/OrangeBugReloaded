@@ -95,29 +95,6 @@ namespace OrangeBugReloaded.Core
         }
 
         /// <inheritdoc/>
-        [Obsolete("Use MoveAsync(Point, Point, ITransactionWithMoveSupport) instead", true)]
-        public async Task<MoveResult> MoveAsync(Point sourcePosition, Point targetPosition)
-        {
-            throw new NotImplementedException();
-            //var transactionChain = TransactionChainWithMoveSupport.Create<TransactionWithMoveSupport>(this);
-
-            //var moveResult = await MoveAsync(sourcePosition, targetPosition, transactionChain);
-
-            // TODO: Move the responsibility of committing transactions outside the map
-            // Clients should only use (and eventually commit) the first transaction in the chain
-            // Follow-up transactions should be triggered by the server, changes are pushed to clients.
-            //if (moveResult.IsSuccessful)
-            //{
-            //    await transactionChain.CommitAsync(_eventSource);
-            //    return new MoveResult(transactionChain);
-            //}
-            //else
-            //{
-            //    return new MoveResult(transactionChain);
-            //}
-        }
-
-        /// <inheritdoc/>
         public async Task<MoveResult> MoveAsync(Point sourcePosition, Point targetPosition, ITransactionWithMoveSupport transaction)
         {
             // Execute the actual move.
@@ -152,7 +129,7 @@ namespace OrangeBugReloaded.Core
             });
 
             // Try to attach entity
-            var attachArgs = new AttachArgs(transaction, this);
+            var attachArgs = new GameplayArgs(transaction, this);
             await tileInfo.Tile.AttachEntityAsync(attachArgs);
             attachArgs.ValidateResult();
 
@@ -186,7 +163,7 @@ namespace OrangeBugReloaded.Core
             });
 
             // Try to detach entity
-            var detachArgs = new DetachArgs(transaction, this);
+            var detachArgs = new GameplayArgs(transaction, this);
             await tileInfo.Tile.DetachEntityAsync(detachArgs);
             detachArgs.ValidateResult();
 
@@ -207,6 +184,9 @@ namespace OrangeBugReloaded.Core
             var source = await GetAsync(sourcePosition);
             var target = await GetAsync(targetPosition);
 
+            var oldSource = source;
+            var oldTarget = target;
+
             source.Tile.EnsureNotNull();
             target.Tile.EnsureNotNull();
 
@@ -226,26 +206,27 @@ namespace OrangeBugReloaded.Core
 
             transaction.Moves.Push(move);
 
+            IBeginMoveArgs beginMoveArgs = new GameplayArgs(transaction, this);
+            IDetachArgs detachArgs = new GameplayArgs(transaction, this);
+            IAttachArgs attachArgs = new GameplayArgs(transaction, this);
+
             // OnBeginMove: Notify entity that a move has been initiated
-            var beginMoveArgs = new EntityBeginMoveArgs(transaction, this);
             await source.Tile.Entity.BeginMoveAsync(beginMoveArgs);
             beginMoveArgs.ValidateResult();
             if (transaction.IsCanceled) return;
-            if (!Equals(source.Tile, beginMoveArgs.Result))
+            if (!Equals(source.Tile, beginMoveArgs.ResultingEntity))
             {
-                source = source.WithTile(Tile.Compose(source.Tile, beginMoveArgs.Result));
+                source = source.WithTile(Tile.Compose(source.Tile, beginMoveArgs.ResultingEntity));
                 transaction.Changes[sourcePosition] = source;
             }
-            move.Entity = beginMoveArgs.Result;
+            move.Entity = beginMoveArgs.ResultingEntity;
 
             // Detach: Remove the entity from the source tile
-            var detachArgs = new DetachArgs(transaction, this);
             await source.Tile.DetachEntityAsync(detachArgs);
             detachArgs.ValidateResult();
             if (transaction.IsCanceled) return;
 
             // Attach: Add the entity to the target tile
-            var attachArgs = new AttachArgs(transaction, this);
             if (!detachArgs.PreventAttach)
             {
                 await target.Tile.AttachEntityAsync(attachArgs);
@@ -271,9 +252,32 @@ namespace OrangeBugReloaded.Core
                 }
             }
 
+            // TODO: Implement PreventDetach & PreventAttach
+            //       or find a good reason to not implement them.
+            if (attachArgs.PreventDetach || detachArgs.PreventAttach)
+                throw new NotImplementedException("PreventDetach & PreventAttach are not fully supported yet");
 
-            // TODO: This event is not correct if PreventAttach/PreventDetach are used
-            //transaction.Emit(new EntityMoveEvent(sourcePosition, targetPosition, oldSource.Tile, target.Tile));
+
+            // Emit events
+            // TODO: This needs further thinking
+
+            // At this point the move has successfully been executed
+            var moveEvent = new EntityMoveEvent(sourcePosition, targetPosition, oldSource.Tile, target.Tile);
+            transaction.Events.Add(moveEvent);
+
+            if (source.Tile.Entity != Entity.None)
+            {
+                // A new entity has been created at source position
+                var spawnEvent = new EntitySpawnEvent(sourcePosition, source.Tile.Entity);
+                transaction.Events.Add(spawnEvent);
+            }
+
+            if (oldTarget.Tile.Entity != Entity.None)
+            {
+                // The entity at target position has been replaced
+                var despawnEvent = new EntityDespawnEvent(targetPosition, oldTarget.Tile.Entity);
+                transaction.Events.Add(despawnEvent);
+            }
 
             transaction.Moves.Pop();
         }
@@ -337,7 +341,7 @@ namespace OrangeBugReloaded.Core
 
                 followUpEvents.Add(new FollowUpEvent(p, transaction.Initiator, now + tileInfo.Tile.FollowUpDelay));
 
-                var completionArgs = new TileEventArgs(transaction, this);
+                var completionArgs = new GameplayArgs(transaction, this);
                 await tileInfo.Tile.OnEntityMoveTransactionCompletedAsync(completionArgs);
                 completionArgs.ValidateResult();
 

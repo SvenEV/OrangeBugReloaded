@@ -2,7 +2,6 @@
 using OrangeBugReloaded.Core.Transactions;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -180,12 +179,10 @@ namespace OrangeBugReloaded.Core.ClientServer
 
             try
             {
-                var transaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
-
-                // Make sure there actually exists an entity to be moved
                 var source = await Map.GetAsync(move.SourcePosition);
                 var target = await Map.GetAsync(move.TargetPosition);
-
+                var initiator = new MoveInitiator(source.Tile.Entity, move.SourcePosition);
+                var transaction = new TransactionWithMoveSupport(initiator);
                 var moveResult = await Map.MoveAsync(move.SourcePosition, move.TargetPosition, transaction);
                 
                 // Compare affected tiles of the client and those of the server
@@ -262,7 +259,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                     // e.g. a teleporter might use this to teleport an entity
                     // (which can result in further follow-up events).
                     var transaction = new TransactionWithMoveSupport(followUpEvent.Initiator);
-                    var args = new FollowUpEventArgs(Map, transaction);
+                    var args = new GameplayArgs(transaction, Map) as IFollowUpArgs;
                     await tileInfo.Tile.OnFollowUpTransactionAsync(args, followUpEvent.Position);
 
                     if (!transaction.IsCanceled)

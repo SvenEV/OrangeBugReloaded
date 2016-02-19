@@ -24,25 +24,25 @@ namespace OrangeBugReloaded.Core.Entities
             Perspective = perspective;
         }
 
-        public override Task BeginMoveAsync(EntityBeginMoveArgs e)
+        public override Task BeginMoveAsync(IBeginMoveArgs e)
         {
             var offset = e.CurrentMove.Offset;
 
             if (offset == Point.North)
-                e.Result = new PlayerEntity(Id, Point.North);
+                e.ResultingEntity = new PlayerEntity(Id, Point.North);
             else if (offset == Point.East)
-                e.Result = new PlayerEntity(Id, Point.East);
+                e.ResultingEntity = new PlayerEntity(Id, Point.East);
             else if (offset == Point.South)
-                e.Result = new PlayerEntity(Id, Point.South);
+                e.ResultingEntity = new PlayerEntity(Id, Point.South);
             else if (offset == Point.West)
-                e.Result = new PlayerEntity(Id, Point.West);
+                e.ResultingEntity = new PlayerEntity(Id, Point.West);
             else
-                e.Result = this;
+                e.ResultingEntity = this;
 
             return Task.CompletedTask;
         }
 
-        public override Task DetachAsync(EntityDetachArgs e)
+        public override Task DetachAsync(IEntityDetachArgs e)
             => DetachByPushingAsync(e);
 
         protected override IEnumerable GetHashProperties()

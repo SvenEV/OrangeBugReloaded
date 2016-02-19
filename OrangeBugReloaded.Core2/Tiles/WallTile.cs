@@ -11,13 +11,13 @@ namespace OrangeBugReloaded.Core.Tiles
 
         private WallTile() { }
 
-        internal override Task AttachEntityAsync(AttachArgs e)
+        internal override Task AttachEntityAsync(IAttachArgs e)
         {
             e.Cancel();
             return Task.CompletedTask;
         }
 
-        internal override Task DetachEntityAsync(DetachArgs e)
+        internal override Task DetachEntityAsync(IDetachArgs e)
         {
             e.Cancel();
             return Task.CompletedTask;

@@ -49,7 +49,7 @@ namespace OrangeBugReloaded.Core
         /// </remarks>
         /// <param name="e">Event arguments</param>
         /// <returns>Task</returns>
-        internal virtual async Task AttachEntityAsync(AttachArgs e)
+        internal virtual async Task AttachEntityAsync(IAttachArgs e)
         {
             if (Entity != Entity.None)
             {
@@ -77,7 +77,7 @@ namespace OrangeBugReloaded.Core
         /// </remarks>
         /// <param name="e">Event arguments</param>
         /// <returns>Task</returns>
-        internal virtual Task DetachEntityAsync(DetachArgs e)
+        internal virtual Task DetachEntityAsync(IDetachArgs e)
         {
             // Default behavior: Entities are correctly detached from the tile
             e.Result = WithoutEntity(this);
@@ -98,7 +98,7 @@ namespace OrangeBugReloaded.Core
         /// </remarks>
         /// <param name="e">Event arguments</param>
         /// <returns>Task</returns>
-        internal virtual Task OnEntityMoveTransactionCompletedAsync(TileEventArgs e)
+        internal virtual Task OnEntityMoveTransactionCompletedAsync(IMovesCompletedArgs e)
         {
             e.Result = this;
             return Task.CompletedTask;
@@ -113,7 +113,7 @@ namespace OrangeBugReloaded.Core
         /// <param name="e">Event arguments</param>
         /// <param name="position">The position of the tile</param>
         /// <returns>Task</returns>
-        internal virtual Task OnFollowUpTransactionAsync(FollowUpEventArgs e, Point position) => Task.CompletedTask;
+        internal virtual Task OnFollowUpTransactionAsync(IFollowUpArgs e, Point position) => Task.CompletedTask;
 
         /// <summary>
         /// Combines the specified <see cref="Tile"/> and the specified <see cref="Entity"/>

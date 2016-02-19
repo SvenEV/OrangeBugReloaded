@@ -1,7 +1,5 @@
 ﻿using OrangeBugReloaded.Core.Events;
-using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core.Transactions
 {
@@ -22,8 +20,8 @@ namespace OrangeBugReloaded.Core.Transactions
         /// Indicates whether the transaction has been cancelled.
         /// Changes of a cancelled transaction are not committed and therefore
         /// not applied to the map.
-        /// Cancelled transactions cannot initiate further move operations.
-        /// Follow-up transactions cannot be created for a canclled transaction.
+        /// Canceled transactions cannot initiate further move operations.
+        /// Follow-up transactions cannot be created for a canceled transaction.
         /// </summary>
         bool IsCanceled { get; }
 
@@ -32,9 +30,9 @@ namespace OrangeBugReloaded.Core.Transactions
         IList<IGameEvent> Events { get; }
 
         /// <summary>
-        /// Provides information about the object that caused the move.
+        /// Provides information about the object that caused the moves.
         /// </summary>
-        MoveInitiator Initiator { get; }
+        MoveInitiator Initiator { get; set; }
 
         /// <summary>
         /// Cancels the transaction and clears the list of changes.

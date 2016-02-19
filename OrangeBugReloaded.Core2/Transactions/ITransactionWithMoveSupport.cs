@@ -22,7 +22,7 @@ namespace OrangeBugReloaded.Core.Transactions
         /// This is equivalent to the topmost element of <see cref="Moves"/>.
         /// </summary>
         EntityMoveInfo CurrentMove { get; }
-
+        
         /// <summary>
         /// Applies the changes collected in the transaction to the specified
         /// map and flushes events to the specified observer.

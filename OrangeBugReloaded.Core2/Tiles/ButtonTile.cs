@@ -31,7 +31,7 @@ namespace OrangeBugReloaded.Core.Tiles
             var s = VisualHintAttribute.GetVisualName(this);
         }
 
-        internal override Task OnEntityMoveTransactionCompletedAsync(TileEventArgs e)
+        internal override Task OnEntityMoveTransactionCompletedAsync(IMovesCompletedArgs e)
         {
             if (Entity != Entity.None && Sensitivity.Includes(Entity.GetType()))
             {

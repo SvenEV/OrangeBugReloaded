@@ -24,7 +24,7 @@ namespace OrangeBugReloaded.Core.Tiles
             Color = color;
         }
 
-        internal override Task OnEntityMoveTransactionCompletedAsync(TileEventArgs e)
+        internal override Task OnEntityMoveTransactionCompletedAsync(IMovesCompletedArgs e)
         {
             var balloon = Entity as BalloonEntity;
 

@@ -131,14 +131,16 @@
     <Compile Include="Entities\PlayerEntity.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="EntityFilterMode.cs" />
-    <Compile Include="EventArgs.cs" />
     <Compile Include="Events\ChunkAddedEvent.cs" />
     <Compile Include="Events\ChunkRemovedEvent.cs" />
+    <Compile Include="Events\EntityDespawnEvent.cs" />
     <Compile Include="Events\EntityMoveEvent.cs" />
+    <Compile Include="Events\EntitySpawnEvent.cs" />
     <Compile Include="Events\IGameEvent.cs" />
     <Compile Include="Events\IGameEventEmitter.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="ClientServer\GameServer.cs" />
+    <Compile Include="GameplayArgs.cs" />
     <Compile Include="IChunkStorage.cs" />
     <Compile Include="IMap.cs" />
     <Compile Include="IMapMetadata.cs" />
@@ -176,17 +178,12 @@
     <Compile Include="Tiles\TeleporterTile.cs" />
     <Compile Include="Tiles\WallTile.cs" />
     <Compile Include="Transactions\EntityMoveInfo.cs" />
-    <Compile Include="Transactions\ITransactionChain.cs" />
-    <Compile Include="Transactions\ITransactionChainWithMoveSupport.cs" />
     <Compile Include="Transactions\ITransactionWithMoveSupport.cs" />
     <Compile Include="Transactions\MoveInitiator.cs" />
-    <Compile Include="Transactions\TransactionChainWithEditSupport.cs" />
     <Compile Include="Transactions\TransactionWithEditSupport.cs" />
     <Compile Include="Transactions\TransactionWithMoveSupport.cs" />
     <Compile Include="Transactions\ITransaction.cs" />
-    <Compile Include="Transactions\Transaction.cs" />
-    <Compile Include="Transactions\TransactionChainBase.cs" />
-    <Compile Include="Transactions\TransactionChainWithMoveSupport.cs" />
+    <Compile Include="Transactions\TransactionBase.cs" />
     <EmbeddedResource Include="Properties\OrangeBugReloaded.Core2.rd.xml" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

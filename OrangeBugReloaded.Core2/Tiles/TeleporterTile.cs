@@ -2,7 +2,6 @@
 using OrangeBugReloaded.Core.Rendering;
 using System.Threading.Tasks;
 using System.Collections;
-using System;
 using OrangeBugReloaded.Core.Transactions;
 
 namespace OrangeBugReloaded.Core.Tiles
@@ -29,7 +28,7 @@ namespace OrangeBugReloaded.Core.Tiles
             AcceptedEntities = acceptedEntities;
         }
 
-        internal override async Task OnFollowUpTransactionAsync(FollowUpEventArgs e, Point position)
+        internal override async Task OnFollowUpTransactionAsync(IFollowUpArgs e, Point position)
         {
             // Teleport using a new transaction
             // (because if teleportation fails, we still want every other move
@@ -38,11 +37,10 @@ namespace OrangeBugReloaded.Core.Tiles
             if (Entity != Entity.None && AcceptedEntities.Includes(Entity.GetType()) &&
                 !(e.Initiator.Object is TeleporterTile))
             {
-
                 // Now the initiator is the teleporter itself, so
                 // if the target is a teleporter as well the entity
                 // won't end up in an endless loop of teleportations.
-                var initiator = new MoveInitiator(this, position);
+                e.Initiator = new MoveInitiator(this, position);
 
                 var isSuccessful = await e.MoveAsync(position, TargetPosition);
 

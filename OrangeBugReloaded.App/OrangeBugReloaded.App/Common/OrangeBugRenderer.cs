@@ -286,6 +286,7 @@ namespace OrangeBugReloaded.App.Common
             _sprites["BalloonEntity-Green"] = await loadSpriteAsync("GreenBall");
             _sprites["BalloonEntity-Blue"] = await loadSpriteAsync("BlueBall");
             _sprites["PistonEntity"] = await loadSpriteAsync("BoxingGlove");
+            _sprites["CoinEntity"] = await loadSpriteAsync("Coin");
         }
 
         private void OnEntityMoved(EntityMoveEvent e)

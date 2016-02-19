@@ -17,7 +17,7 @@ namespace OrangeBugReloaded.Core.Tiles
             Orientation = orientation;
         }
 
-        internal override async Task AttachEntityAsync(AttachArgs e)
+        internal override async Task AttachEntityAsync(IAttachArgs e)
         {
             var inDirection = e.CurrentMove.Offset;
             var outDirection = _outDirections.TryGetValue(new Tuple<Point, Point>(Orientation, inDirection));
@@ -37,7 +37,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
         }
 
-        internal override Task DetachEntityAsync(DetachArgs e)
+        internal override Task DetachEntityAsync(IDetachArgs e)
         {
             if (e.CurrentMove.Offset.IsDirection && !GetOutDirections().Contains(e.CurrentMove.Offset))
             {

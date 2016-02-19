@@ -1,7 +1,6 @@
 ﻿using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Transactions;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core
@@ -47,23 +46,11 @@ namespace OrangeBugReloaded.Core
         Task<bool> SetMetadataAsync(Point position, TileMetadata value);
     }
 
-    public interface ISupportsMove
-    {
-        /// <summary>
-        /// Tries to move the <see cref="Entity"/> at the specified
-        /// source position to the specified target position.
-        /// </summary>
-        /// <param name="sourcePosition">The position from where the entity is moved</param>
-        /// <param name="targetPosition">The position to which the entity is moved</param>
-        /// <returns>Move result</returns>
-        Task<MoveResult> MoveAsync(Point sourcePosition, Point targetPosition);
-    }
-
     /// <summary>
     /// A map that supports get-, set- and move-operations and
     /// provides a stream of gameplay events.
     /// </summary>
-    public interface IGameplayMap : IMap, ISupportsMove
+    public interface IGameplayMap : IMap
     {
         /// <summary>
         /// Provides metadata about the map.
@@ -94,6 +81,7 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         /// <param name="sourcePosition">The position from where the entity is moved</param>
         /// <param name="targetPosition">The position to which the entity is moved</param>
+        /// <param name="initiator">The object that has initiated the move</param>
         /// <param name="transaction">The transaction that records the changes made during the move</param>
         /// <returns>Move result</returns>
         Task<MoveResult> MoveAsync(Point sourcePosition, Point targetPosition, ITransactionWithMoveSupport transaction);

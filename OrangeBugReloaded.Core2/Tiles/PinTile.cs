@@ -24,7 +24,7 @@ namespace OrangeBugReloaded.Core.Tiles
             Color = color;
         }
 
-        internal override async Task AttachEntityAsync(AttachArgs e)
+        internal override async Task AttachEntityAsync(IAttachArgs e)
         {
             if (e.CurrentMove.Entity is PlayerEntity)
             {
@@ -43,7 +43,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
         }
 
-        internal override Task OnEntityMoveTransactionCompletedAsync(TileEventArgs e)
+        internal override Task OnEntityMoveTransactionCompletedAsync(IMovesCompletedArgs e)
         {
             if ((Entity as BalloonEntity)?.Color == Color)
             {

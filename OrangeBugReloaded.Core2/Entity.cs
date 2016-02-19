@@ -23,9 +23,9 @@ namespace OrangeBugReloaded.Core
         /// * Initiate another move
         /// </remarks>
         /// <param name="e">Event arguments</param>
-        public virtual Task BeginMoveAsync(EntityBeginMoveArgs e)
+        public virtual Task BeginMoveAsync(IBeginMoveArgs e)
         {
-            e.Result = this;
+            e.ResultingEntity = this;
             return Task.CompletedTask;
         }
 
@@ -39,7 +39,7 @@ namespace OrangeBugReloaded.Core
         /// </remarks>
         /// <param name="e">Event arguments</param>
         /// <returns>Task</returns>
-        public virtual Task DetachAsync(EntityDetachArgs e)
+        public virtual Task DetachAsync(IEntityDetachArgs e)
         {
             // Default behavior: Cancel transaction, entity cannot be pushed or collected
             e.Cancel();
@@ -53,7 +53,7 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         /// <param name="e">Event arguments</param>
         /// <returns>Task</returns>
-        protected static async Task DetachByPushingAsync(EntityDetachArgs e)
+        protected static async Task DetachByPushingAsync(IEntityDetachArgs e)
         {
             if (e.CurrentMove.Entity is IPusher && e.SuggestedPushDirection.IsDirection)
             {
@@ -74,12 +74,13 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         /// <param name="e">Event arguments</param>
         /// <returns>Task</returns>
-        protected static Task DetachByCollectingAsync(EntityDetachArgs e)
+        protected static Task DetachByCollectingAsync(IEntityDetachArgs e)
         {
             if (e.CurrentMove.Entity is PlayerEntity)
             {
                 // Player collects the entity
-                e.Result = Tile.WithoutEntity(e.Tile);
+                // TODO: Is it sufficient to do nothing here?
+                //e.Result = Tile.WithoutEntity(e.Tile);
             }
             else
             {

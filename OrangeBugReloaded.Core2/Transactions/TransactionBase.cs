@@ -15,7 +15,7 @@ namespace OrangeBugReloaded.Core.Transactions
         public IList<IGameEvent> Events { get; } = new List<IGameEvent>();
 
         /// <inheritdoc/>
-        public MoveInitiator Initiator { get; }
+        public MoveInitiator Initiator { get; set; }
         
         /// <inheritdoc/>
         public bool IsCanceled { get; private set; }

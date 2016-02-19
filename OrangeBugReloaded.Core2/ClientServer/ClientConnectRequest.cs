@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace OrangeBugReloaded.Core.ClientServer
+﻿namespace OrangeBugReloaded.Core.ClientServer
 {
     public class ClientConnectRequest
     {

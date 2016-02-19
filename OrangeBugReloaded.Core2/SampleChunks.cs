@@ -45,7 +45,7 @@ namespace OrangeBugReloaded.Core
             chunk[0, 3] = v0(PathTile.Default);
             chunk[0, 4] = v0(PathTile.Default);
             chunk[0, 5] = v0(PathTile.Default);
-            chunk[0, 6] = v0(new CornerTile(Point.South));
+            chunk[0, 6] = v0(Tile.Compose(new CornerTile(Point.South), CoinEntity.Default));
 
             for (var y = 1; y < Chunk.Size - 1; y++)
                 for (var x = 1; x < Chunk.Size - 1; x++)

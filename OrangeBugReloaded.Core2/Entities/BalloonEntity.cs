@@ -22,7 +22,7 @@ namespace OrangeBugReloaded.Core.Entities
             Color = color;
         }
 
-        public override Task DetachAsync(EntityDetachArgs e)
+        public override Task DetachAsync(IEntityDetachArgs e)
             => DetachByPushingAsync(e);
 
         protected override IEnumerable GetHashProperties()

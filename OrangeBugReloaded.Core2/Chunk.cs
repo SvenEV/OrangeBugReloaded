@@ -1,7 +1,4 @@
-﻿using OrangeBugReloaded.Core.Entities;
-using OrangeBugReloaded.Core.Tiles;
-using System;
-using System.Linq;
+﻿using System.Linq;
 
 namespace OrangeBugReloaded.Core
 {
