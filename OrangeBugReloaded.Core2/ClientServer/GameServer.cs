@@ -108,7 +108,7 @@ namespace OrangeBugReloaded.Core.ClientServer
             var connection = GetConnection(connectionId);
             var player = Map.Metadata.Players[connection.Client.PlayerId];
 
-            // TODO: Remove PlayerEntity from Map (despawn)
+            // Remove PlayerEntity from Map (despawn)
             var despawnResult = await Map.DespawnAsync(player.Position);
 
             if (despawnResult.IsSuccessful)
@@ -184,12 +184,13 @@ namespace OrangeBugReloaded.Core.ClientServer
                 var initiator = new MoveInitiator(source.Tile.Entity, move.SourcePosition);
                 var transaction = new TransactionWithMoveSupport(initiator);
                 var moveResult = await Map.MoveAsync(move.SourcePosition, move.TargetPosition, transaction);
-                
+
                 // Compare affected tiles of the client and those of the server
-                var clientAffectedTiles = move.AffectedPositions;
-                var serverAffectedTiles = moveResult.Transaction.IsCanceled ?
-                    new[] { new VersionedPoint(move.SourcePosition, source.Version), new VersionedPoint(move.TargetPosition, target.Version) }.ToList() :
-                    moveResult.Transaction.Changes.Select(c => new VersionedPoint(c.Key, c.Value.Version)).ToList();
+                var clientAffectedTiles = move.AffectedPositions.Union(new[] { move.SourcePosition, move.TargetPosition });
+                var serverAffectedTiles = moveResult.Transaction.Changes
+                    .Select(c => new VersionedPoint(c.Key, c.Value.Version))
+                    .Union(new[] { new VersionedPoint(move.SourcePosition, source.Version), new VersionedPoint(move.TargetPosition, target.Version) })
+                    .ToList();
 
                 var versions = serverAffectedTiles.FullOuterJoin(clientAffectedTiles,
                     vp => vp.Position,
@@ -221,17 +222,8 @@ namespace OrangeBugReloaded.Core.ClientServer
                     // => Commit and schedule follow-up transactions
                     // => Notify other clients about the changes
 
-                    if (moveResult.IsSuccessful)
-                    {
-                        var newVersion = await CommitAndBroadcastAsync(moveResult.Transaction, moveResult.FollowUpEvents, connection);
-                        return RemoteMoveResult.CreateSuccessful(newVersion);
-                    }
-                    else
-                    {
-                        // The move produced a cancelled transaction on both, client and server
-                        // => the move request is successful, but no changes have to be committed
-                        return RemoteMoveResult.CreateSuccessful(-1);
-                    }
+                    var newVersion = await CommitAndBroadcastAsync(moveResult.Transaction, moveResult.FollowUpEvents, connection);
+                    return RemoteMoveResult.CreateSuccessful(newVersion);
                 }
             }
             finally
@@ -261,16 +253,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                     var transaction = new TransactionWithMoveSupport(followUpEvent.Initiator);
                     var args = new GameplayArgs(transaction, Map) as IFollowUpArgs;
                     await tileInfo.Tile.OnFollowUpTransactionAsync(args, followUpEvent.Position);
-
-                    if (!transaction.IsCanceled)
-                    {
-                        await CommitAndBroadcastAsync(transaction, args.FollowUpEvents);
-                        //Debug.WriteLine($"RUNASYNC MOVED {move.SourcePosition} to {move.TargetPosition}", "GameServer");
-                    }
-                    else
-                    {
-                        //Debug.WriteLine($"RUNASYNC FAILED TO MOVE {move.SourcePosition} to {move.TargetPosition}", "GameServer");
-                    }
+                    await CommitAndBroadcastAsync(transaction, args.FollowUpEvents);
                 }
 
                 await Task.Delay(200);
@@ -281,24 +264,21 @@ namespace OrangeBugReloaded.Core.ClientServer
         {
             var newVersion = -1;
 
-            if (!transaction.IsCanceled)
+            // TODO: Emit events
+            if (transaction.Changes.Any())
             {
-                // TODO: Emit events
-                if (transaction.Changes.Any())
-                {
-                    // Get new version number for the tiles that changed
-                    newVersion = Map.Metadata.NextVersion();
+                // Get new version number for the tiles that changed
+                newVersion = Map.Metadata.NextVersion();
 
-                    // Apply changes to the server's map (using the version number above)
-                    await transaction.CommitAsync(Map, newVersion, null);
+                // Apply changes to the server's map (using the version number above)
+                await transaction.CommitAsync(Map, newVersion, null);
 
-                    // Send the updated tiles to clients that have loaded the corresponding map area
-                    await BroadcastChangesAsync(transaction, newVersion, excludedConnection);
-                }
-
-                // Schedule follow-up events that might have been created during e.g. a move
-                _scheduledFollowUpEvents.AddRange(followUpEvents);
+                // Send the updated tiles to clients that have loaded the corresponding map area
+                await BroadcastChangesAsync(transaction, newVersion, excludedConnection);
             }
+
+            // Schedule follow-up events that might have been created during e.g. a move
+            _scheduledFollowUpEvents.AddRange(followUpEvents);
 
             return newVersion;
         }
@@ -324,7 +304,12 @@ namespace OrangeBugReloaded.Core.ClientServer
                     .ToArray();
 
                 if (relevantChanges.Any())
-                    await conn.Client.OnTileUpdates(relevantChanges);
+                {
+                    // TODO: Currently ALL events are distributed to ALL clients
+                    //       (but only if there are tile updates which doesn't make sense)
+                    var update = new ClientUpdate(relevantChanges, transaction.Events);
+                    await conn.Client.OnUpdate(update);
+                }
             }
         }
 

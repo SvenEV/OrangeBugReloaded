@@ -8,36 +8,37 @@ namespace OrangeBugReloaded.Core.Transactions
     /// <para>
     /// Transactions are objects that simulate certain actions on a map
     /// and record changes that would be made to the map.
-    /// Eventually if the transaction is not cancelled these changes are
-    /// committed, i.e. applied to the underlying map, in an atomic way.
+    /// Eventually these changes are committed, i.e. applied to the
+    /// underlying map, in an atomic way.
     /// </para>
     /// </summary>
     /// <typeparam name="T">The type of changes</typeparam>
     /// <typeparam name="TMap">The type of the underlying map</typeparam>
-    public interface ITransaction<T>
+    public interface ITransaction<T> : IGameEventEmitter
     {
         /// <summary>
-        /// Indicates whether the transaction has been cancelled.
-        /// Changes of a cancelled transaction are not committed and therefore
-        /// not applied to the map.
-        /// Canceled transactions cannot initiate further move operations.
-        /// Follow-up transactions cannot be created for a canceled transaction.
+        /// Indicates whether recording of changes has stopped.
+        /// If this is true, the transaction won't allow further changes
+        /// or events to be recorded.
         /// </summary>
-        bool IsCanceled { get; }
+        bool IsFinalized { get; }
 
-        IDictionary<Point, T> Changes { get; }
+        IReadOnlyDictionary<Point, T> Changes { get; }
 
-        IList<IGameEvent> Events { get; }
+        IReadOnlyList<IGameEvent> Events { get; }
 
         /// <summary>
         /// Provides information about the object that caused the moves.
         /// </summary>
         MoveInitiator Initiator { get; set; }
 
+        bool Set(Point position, T oldValue, T value);
+
         /// <summary>
-        /// Cancels the transaction and clears the list of changes.
-        /// <seealso cref="IsCanceled"/>
+        /// Finalizes the transaction so that no more
+        /// changes can be added.
+        /// <seealso cref="IsFinalized"/>
         /// </summary>
-        void Cancel();
+        void StopRecording();
     }
 }

@@ -27,13 +27,13 @@ namespace OrangeBugReloaded.Core.Tiles
                 if (Entity != Entity.None)
                     await Entity.DetachAsync(e.CreateEntityDetachArgs(this, outDirection));
 
-                if (!e.IsCanceled)
+                if (!e.IsFinalized)
                     e.Result = Compose(this, e.CurrentMove.Entity);
             }
             else
             {
                 // The entity tries to move across a wall side of the corner
-                e.Cancel();
+                e.StopRecording();
             }
         }
 
@@ -42,7 +42,7 @@ namespace OrangeBugReloaded.Core.Tiles
             if (e.CurrentMove.Offset.IsDirection && !GetOutDirections().Contains(e.CurrentMove.Offset))
             {
                 // The entity tries to leave the tile across a wall side of the corner
-                e.Cancel();
+                e.StopRecording();
             }
             else
             {

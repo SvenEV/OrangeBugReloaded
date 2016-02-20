@@ -1,4 +1,5 @@
 ﻿using OrangeBugReloaded.Core.Entities;
+using OrangeBugReloaded.Core.Events;
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -19,7 +20,7 @@ namespace OrangeBugReloaded.Core
         /// <remarks>
         /// This method allows the following actions:
         /// * Change the entity before it is moved
-        /// * Cancel the transaction
+        /// * Cancel the move
         /// * Initiate another move
         /// </remarks>
         /// <param name="e">Event arguments</param>
@@ -41,8 +42,8 @@ namespace OrangeBugReloaded.Core
         /// <returns>Task</returns>
         public virtual Task DetachAsync(IEntityDetachArgs e)
         {
-            // Default behavior: Cancel transaction, entity cannot be pushed or collected
-            e.Cancel();
+            // Default behavior: Finalize transaction, entity cannot be pushed or collected
+            e.StopRecording();
             return Task.CompletedTask;
         }
 
@@ -63,7 +64,7 @@ namespace OrangeBugReloaded.Core
             }
             else
             {
-                e.Cancel();
+                e.StopRecording();
             }
         }
 
@@ -81,10 +82,12 @@ namespace OrangeBugReloaded.Core
                 // Player collects the entity
                 // TODO: Is it sufficient to do nothing here?
                 //e.Result = Tile.WithoutEntity(e.Tile);
+                var despawnEvent = new EntityDespawnEvent(e.CurrentMove.TargetPosition, e.Tile.Entity);
+                e.Emit(despawnEvent);
             }
             else
             {
-                e.Cancel();
+                e.StopRecording();
             }
 
             return Task.CompletedTask;

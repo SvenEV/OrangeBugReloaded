@@ -37,7 +37,7 @@ namespace OrangeBugReloaded.Core
         /// This method typically implements at least one of the following behaviors:
         /// * Accept the entity: return a composition of the tile and the entity
         /// * If the tile is already occupied, detach the current entity
-        /// * Cancel the transaction
+        /// * Cancel the move
         /// * Initiate another move
         /// 
         /// Default behavior:
@@ -57,7 +57,7 @@ namespace OrangeBugReloaded.Core
                 await Entity.DetachAsync(detachArgs);
             }
 
-            if (!e.IsCanceled)
+            if (!e.IsFinalized)
             {
                 e.Result = Compose(this, e.CurrentMove.Entity);
             }
@@ -69,7 +69,7 @@ namespace OrangeBugReloaded.Core
         /// <remarks>
         /// This method typically implements at least on of the following behaviors:
         /// * Remove the entity: return the tile without the entity attached
-        /// * Cancel the transaction
+        /// * Cancel the move
         /// 
         /// Default behavior:
         /// The entity is correctly detached from the tile.
@@ -91,8 +91,6 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         /// <remarks>
         /// Use the method to check map dependencies and update the tile accordingly.
-        /// Implementers of this method must not cancel the transaction.
-        /// Implementers of this method must not initiate further moves
         /// (initiate further moves using
         /// <see cref="OnFollowUpTransactionAsync(FollowUpEventArgs, Point)"/> instead).
         /// </remarks>

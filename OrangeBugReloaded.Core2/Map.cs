@@ -100,18 +100,18 @@ namespace OrangeBugReloaded.Core
             // Execute the actual move.
             // Any changes to the map are "recorded" in the transaction
             // and can later be applied to the map via a commit.
-            await MoveCoreAsync(sourcePosition, targetPosition, transaction);
+            var isSuccessful = await MoveCoreAsync(sourcePosition, targetPosition, transaction);
 
             // At the end of the recursion...
-            if (transaction.Moves.Count == 0 && !transaction.IsCanceled)
+            if (transaction.Moves.Count == 0)
             {
                 // Notify changed tiles and tiles that directly or indirectly depend on changed tiles
                 var affectedTiles = transaction.Changes.Select(kvp => kvp.Key);
                 var followUpEvents = await UpdateTilesAsync(affectedTiles, transaction);
-                return new MoveResult(transaction, followUpEvents);
+                return new MoveResult(transaction, isSuccessful, followUpEvents);
             }
 
-            return new MoveResult(transaction, Enumerable.Empty<FollowUpEvent>());
+            return new MoveResult(transaction, isSuccessful, Enumerable.Empty<FollowUpEvent>());
         }
 
         /// <inheritdoc/>
@@ -133,16 +133,16 @@ namespace OrangeBugReloaded.Core
             await tileInfo.Tile.AttachEntityAsync(attachArgs);
             attachArgs.ValidateResult();
 
-            if (attachArgs.IsCanceled)
-                return new MoveResult(transaction, Enumerable.Empty<FollowUpEvent>());
+            if (transaction.IsFinalized)
+                return new MoveResult(transaction, false, Enumerable.Empty<FollowUpEvent>());
 
             var newTileInfo = tileInfo.WithTile(attachArgs.Result);
-            transaction.Changes[position] = newTileInfo;
+            transaction.Set(position, tileInfo, newTileInfo);
 
-            // Update tile (note that this cannot cancel the transaction)
+            // Update tile
             var followUpEvents = await UpdateTilesAsync(new[] { position }, transaction);
 
-            return new MoveResult(transaction, followUpEvents);
+            return new MoveResult(transaction, true, followUpEvents);
         }
 
         public async Task<MoveResult> DespawnAsync(Point position)
@@ -152,7 +152,7 @@ namespace OrangeBugReloaded.Core
 
             // No entity => nothing to despawn
             if (tileInfo.Tile.Entity == Entity.None)
-                return new MoveResult(TransactionWithMoveSupport.CanceledTransaction, Enumerable.Empty<FollowUpEvent>());
+                return new MoveResult(TransactionWithMoveSupport.EmptyFinalizedTransaction, true, Enumerable.Empty<FollowUpEvent>());
 
             var transaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
             transaction.Moves.Push(new EntityMoveInfo
@@ -167,19 +167,19 @@ namespace OrangeBugReloaded.Core
             await tileInfo.Tile.DetachEntityAsync(detachArgs);
             detachArgs.ValidateResult();
 
-            if (detachArgs.IsCanceled)
-                return new MoveResult(transaction, Enumerable.Empty<FollowUpEvent>());
+            if (transaction.IsFinalized)
+                return new MoveResult(transaction, false, Enumerable.Empty<FollowUpEvent>());
 
             var newTileInfo = tileInfo.WithTile(detachArgs.Result);
-            transaction.Changes[position] = newTileInfo;
+            transaction.Set(position, tileInfo, newTileInfo);
 
-            // Update tile (note that this cannot cancel the transaction)
+            // Update tile
             var followUpEvents = await UpdateTilesAsync(new[] { position }, transaction);
 
-            return new MoveResult(transaction, followUpEvents);
+            return new MoveResult(transaction, true, followUpEvents);
         }
 
-        private async Task MoveCoreAsync(Point sourcePosition, Point targetPosition, ITransactionWithMoveSupport transaction)
+        private async Task<bool> MoveCoreAsync(Point sourcePosition, Point targetPosition, ITransactionWithMoveSupport transaction)
         {
             var source = await GetAsync(sourcePosition);
             var target = await GetAsync(targetPosition);
@@ -193,8 +193,8 @@ namespace OrangeBugReloaded.Core
             if (source.Tile.Entity == Entity.None)
             {
                 // Cancel if there's no entity to move
-                transaction.Cancel();
-                return;
+                transaction.StopRecording();
+                return false;
             }
 
             var move = new EntityMoveInfo
@@ -213,73 +213,62 @@ namespace OrangeBugReloaded.Core
             // OnBeginMove: Notify entity that a move has been initiated
             await source.Tile.Entity.BeginMoveAsync(beginMoveArgs);
             beginMoveArgs.ValidateResult();
-            if (transaction.IsCanceled) return;
-            if (!Equals(source.Tile, beginMoveArgs.ResultingEntity))
-            {
-                source = source.WithTile(Tile.Compose(source.Tile, beginMoveArgs.ResultingEntity));
-                transaction.Changes[sourcePosition] = source;
-            }
+            if (transaction.IsFinalized) return false;
+
+            var newSource = source.WithTile(Tile.Compose(source.Tile, beginMoveArgs.ResultingEntity));
+            if (transaction.Set(sourcePosition, source, newSource))
+                source = newSource;
+
             move.Entity = beginMoveArgs.ResultingEntity;
 
             // Detach: Remove the entity from the source tile
             await source.Tile.DetachEntityAsync(detachArgs);
             detachArgs.ValidateResult();
-            if (transaction.IsCanceled) return;
+            if (transaction.IsFinalized) return false;
 
             // Attach: Add the entity to the target tile
-            if (!detachArgs.PreventAttach)
-            {
-                await target.Tile.AttachEntityAsync(attachArgs);
-                attachArgs.ValidateResult();
-                if (transaction.IsCanceled) return;
-            }
+            await target.Tile.AttachEntityAsync(attachArgs);
+            attachArgs.ValidateResult();
+            if (transaction.IsFinalized) return false;
 
-            if (!attachArgs.PreventDetach)
-            {
-                if (!Equals(source.Tile, detachArgs.Result))
-                {
-                    source = source.WithTile(detachArgs.Result);
-                    transaction.Changes[sourcePosition] = source;
-                }
-            }
+            // Detach from old tile, attach to new tile have succeeded
+            // => Apply changes to transaction
+            var newSource2 = source.WithTile(detachArgs.Result);
+            if (transaction.Set(sourcePosition, source, newSource2))
+                source = newSource2;
 
-            if (!detachArgs.PreventAttach)
-            {
-                if (!Equals(target.Tile, attachArgs.Result))
-                {
-                    target = target.WithTile(attachArgs.Result);
-                    transaction.Changes[targetPosition] = target;
-                }
-            }
-
-            // TODO: Implement PreventDetach & PreventAttach
-            //       or find a good reason to not implement them.
-            if (attachArgs.PreventDetach || detachArgs.PreventAttach)
-                throw new NotImplementedException("PreventDetach & PreventAttach are not fully supported yet");
-
+            var newTarget = target.WithTile(attachArgs.Result);
+            if (transaction.Set(targetPosition, target, newTarget))
+                target = newTarget;
 
             // Emit events
-            // TODO: This needs further thinking
-
-            // At this point the move has successfully been executed
             var moveEvent = new EntityMoveEvent(sourcePosition, targetPosition, oldSource.Tile, target.Tile);
-            transaction.Events.Add(moveEvent);
+            transaction.Emit(moveEvent);
 
             if (source.Tile.Entity != Entity.None)
             {
                 // A new entity has been created at source position
                 var spawnEvent = new EntitySpawnEvent(sourcePosition, source.Tile.Entity);
-                transaction.Events.Add(spawnEvent);
+                transaction.Emit(spawnEvent);
             }
 
             if (oldTarget.Tile.Entity != Entity.None)
             {
                 // The entity at target position has been replaced
-                var despawnEvent = new EntityDespawnEvent(targetPosition, oldTarget.Tile.Entity);
-                transaction.Events.Add(despawnEvent);
+                // or the entity at old target has been moved/collected/...
+                var oldTargetEntityOverwritten = // TODO: Test this!
+                    !(transaction.Events.OfType<EntityDespawnEvent>().Any(ev => ev.Position == targetPosition) ||
+                    transaction.Events.OfType<EntityMoveEvent>().Any(ev => ev.SourcePosition == targetPosition));
+
+                if (oldTargetEntityOverwritten)
+                {
+                    var despawnEvent = new EntityDespawnEvent(targetPosition, oldTarget.Tile.Entity);
+                    transaction.Emit(despawnEvent);
+                }
             }
 
             transaction.Moves.Pop();
+            return true;
         }
 
         private async void OnChunkLoaded(KeyValuePair<Point, IChunk> kvp)
@@ -345,16 +334,13 @@ namespace OrangeBugReloaded.Core
                 await tileInfo.Tile.OnEntityMoveTransactionCompletedAsync(completionArgs);
                 completionArgs.ValidateResult();
 
-                if (transaction.IsCanceled)
+                if (transaction.IsFinalized)
                     return null; // Null terminates the loop
 
                 var newTileInfo = tileInfo.WithTile(completionArgs.Result);
 
-                if (!Equals(tileInfo.Tile, newTileInfo.Tile))
-                {
-                    transaction.Changes[p] = newTileInfo;
+                if (transaction.Set(p, tileInfo, newTileInfo))
                     return true;
-                }
 
                 return initialPoints.Contains(p);
             });

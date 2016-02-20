@@ -112,6 +112,7 @@
     <Compile Include="ChunkLoader.cs" />
     <Compile Include="ClientServer\ClientConnection.cs" />
     <Compile Include="ClientServer\ClientConnectRequest.cs" />
+    <Compile Include="ClientServer\ClientUpdate.cs" />
     <Compile Include="ClientServer\ConnectResult.cs" />
     <Compile Include="ClientServer\DelayedServerFacade.cs" />
     <Compile Include="ClientServer\GameClient.cs" />

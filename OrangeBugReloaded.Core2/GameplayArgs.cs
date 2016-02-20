@@ -19,12 +19,10 @@ namespace OrangeBugReloaded.Core
 
         public Tile Tile { get; }
         public Point SuggestedPushDirection { get; }
-        public bool IsCanceled => _transaction.IsCanceled;
+        public bool IsFinalized => _transaction.IsFinalized;
         public EntityMoveInfo CurrentMove => _transaction.CurrentMove;
         public IReadOnlyCollection<FollowUpEvent> FollowUpEvents => _followUpEvents;
         public Tile Result { get; set; }
-        public bool PreventDetach { get; set; }
-        public bool PreventAttach { get; set; }
         public Entity ResultingEntity { get; set; }
 
         public MoveInitiator Initiator
@@ -46,13 +44,9 @@ namespace OrangeBugReloaded.Core
             SuggestedPushDirection = suggestedPushDirection;
         }
 
-        public void Cancel() => _transaction.Cancel();
+        public void StopRecording() => _transaction.StopRecording();
 
-        public void Emit(IGameEvent e)
-        {
-            // TODO
-            //_transaction.Emit(e);
-        }
+        public void Emit(IGameEvent e) => _transaction.Emit(e);
 
         public async Task<TileInfo> GetAsync(Point position)
         {
@@ -77,34 +71,32 @@ namespace OrangeBugReloaded.Core
 
         public void ValidateResult()
         {
-            if ((Result == null && ResultingEntity == null) && !_transaction.IsCanceled)
-                throw new InvalidOperationException("Invalid result: No result is provided and the transaction is not canceled");
+            if ((Result == null && ResultingEntity == null) && !_transaction.IsFinalized)
+                throw new InvalidOperationException("Invalid result: No result is provided and the transaction is not finalized");
 
-            if ((Result != null || ResultingEntity != null) && _transaction.IsCanceled)
-                throw new InvalidOperationException("Invalid result: The transaction is canceled but a result is provided");
+            if ((Result != null || ResultingEntity != null) && _transaction.IsFinalized)
+                throw new InvalidOperationException("Invalid result: The transaction is finalized but a result is provided");
         }
     }
 
     // Interfaces for all the different events on tiles and entities
 
-    public interface IBeginMoveArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ICancelable, IGameEventEmitter
+    public interface IBeginMoveArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ICanFinalize, IGameEventEmitter
     {
         Entity ResultingEntity { get; set; }
         void ValidateResult();
     }
 
-    public interface IAttachArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ICancelable, IGameEventEmitter, ISupportsMove
+    public interface IAttachArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ICanFinalize, IGameEventEmitter, ISupportsMove
     {
         Tile Result { get; set; }
-        bool PreventDetach { get; set; }
         IEntityDetachArgs CreateEntityDetachArgs(Tile tile, Point suggestedPushDirection);
         void ValidateResult();
     }
 
-    public interface IDetachArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ICancelable, IGameEventEmitter, ISupportsMove
+    public interface IDetachArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ICanFinalize, IGameEventEmitter, ISupportsMove
     {
         Tile Result { get; set; }
-        bool PreventAttach { get; set; }
         void ValidateResult();
     }
 
@@ -120,7 +112,7 @@ namespace OrangeBugReloaded.Core
         IReadOnlyCollection<FollowUpEvent> FollowUpEvents { get; }
     }
 
-    public interface IEntityDetachArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ICancelable, IGameEventEmitter, ISupportsMove
+    public interface IEntityDetachArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ICanFinalize, IGameEventEmitter, ISupportsMove
     {
         Tile Tile { get; }
         Point SuggestedPushDirection { get; }
@@ -138,10 +130,10 @@ namespace OrangeBugReloaded.Core
         EntityMoveInfo CurrentMove { get; }
     }
 
-    public interface ICancelable
+    public interface ICanFinalize
     {
-        bool IsCanceled { get; }
-        void Cancel();
+        bool IsFinalized { get; }
+        void StopRecording();
     }
 
     public interface ISupportsMove

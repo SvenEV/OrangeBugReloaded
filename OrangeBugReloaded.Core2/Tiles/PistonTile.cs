@@ -62,7 +62,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
             else
             {
-                e.Cancel();
+                e.StopRecording();
             }
 
             return Task.CompletedTask;

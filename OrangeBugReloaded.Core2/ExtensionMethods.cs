@@ -9,8 +9,20 @@ namespace OrangeBugReloaded.Core
     {
         private static readonly Random _random = new Random();
 
+        // This method resolves ambiguity when calling TryGetValue(...) on a Dictionary<TKey, TValue>
+        public static TValue TryGetValue<TKey, TValue>(
+            this Dictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue = default(TValue))
+            => (dictionary as IDictionary<TKey, TValue>).TryGetValue(key, defaultValue);
+
         public static TValue TryGetValue<TKey, TValue>(
             this IDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue = default(TValue))
+        {
+            TValue value;
+            return dictionary.TryGetValue(key, out value) ? value : defaultValue;
+        }
+
+        public static TValue TryGetValue<TKey, TValue>(
+            this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue = default(TValue))
         {
             TValue value;
             return dictionary.TryGetValue(key, out value) ? value : defaultValue;
@@ -40,7 +52,7 @@ namespace OrangeBugReloaded.Core
                 var result = await map.SpawnAsync(entity, spawnPosition);
 
                 if (result.IsSuccessful)
-                    return new AreaSpawnResult(result.Transaction, result.FollowUpEvents, spawnPosition);
+                    return new AreaSpawnResult(result.Transaction, true, result.FollowUpEvents, spawnPosition);
             }
 
             return null;

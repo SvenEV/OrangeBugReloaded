@@ -1,4 +1,6 @@
-﻿using OrangeBugReloaded.Core.Transactions;
+﻿using OrangeBugReloaded.Core.Entities;
+using OrangeBugReloaded.Core.Events;
+using OrangeBugReloaded.Core.Transactions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -68,25 +70,19 @@ namespace OrangeBugReloaded.Core.ClientServer
             var transaction = new TransactionWithMoveSupport(initiator);
             var result = await Map.MoveAsync(sourcePosition, targetPosition, transaction);
 
-            var request = result.IsSuccessful ?
-                RemoteMoveRequest.CreateSuccessful(
-                    new VersionedPoint(sourcePosition, source.Version),
-                    new VersionedPoint(targetPosition, target.Version),
-                    result.Transaction.Changes.Select(c => new VersionedPoint(c.Key, c.Value.Version))) :
-                RemoteMoveRequest.CreateFaulted(
-                    new VersionedPoint(sourcePosition, source.Version),
-                    new VersionedPoint(targetPosition, target.Version));
+            var request = new RemoteMoveRequest(
+                new VersionedPoint(sourcePosition, source.Version),
+                new VersionedPoint(targetPosition, target.Version),
+                result.Transaction.Changes.Select(c => new VersionedPoint(c.Key, c.Value.Version)));
 
             var remoteMoveResult = await _server.MoveAsync(_connectionId, request);
 
             if (remoteMoveResult.IsSuccessful)
             {
                 // Commit transaction
-                if (!transaction.IsCanceled)
-                {
-                    await transaction.CommitAsync(Map, remoteMoveResult.NewVersion, null);
-                    return true;
-                }
+                await transaction.CommitAsync(Map, remoteMoveResult.NewVersion, null);
+                AnalyzeEvents(transaction.Events);
+                return true;
             }
             else
             {
@@ -101,15 +97,7 @@ namespace OrangeBugReloaded.Core.ClientServer
         public async Task<bool> MovePlayerAsync(Point direction)
         {
             direction.EnsureDirection();
-            var isSuccessful = await MoveAsync(PlayerPosition, PlayerPosition + direction);
-
-            if (isSuccessful)
-            {
-                PlayerPosition = PlayerPosition + direction;
-                return true;
-            }
-
-            return false;
+            return await MoveAsync(PlayerPosition, PlayerPosition + direction);
         }
 
         private async Task ApplyChunkAsync(IChunk chunk, Point index)
@@ -126,10 +114,26 @@ namespace OrangeBugReloaded.Core.ClientServer
             }
         }
 
-        public async Task OnTileUpdates(IEnumerable<TileUpdate> tileUpdates)
+        public async Task OnUpdate(ClientUpdate e)
         {
-            foreach (var change in tileUpdates)
+            foreach (var change in e.TileUpdates)
                 await Map.SetAsync(change.Position, change.TileInfo);
+
+            AnalyzeEvents(e.Events);
+
+            // TODO: Emit events
+        }
+
+        private void AnalyzeEvents(IEnumerable<IGameEvent> events)
+        {
+            var playerMoveEvent = events.OfType<EntityMoveEvent>()
+                .FirstOrDefault(ev => (ev.Source.Entity as PlayerEntity)?.Id == PlayerId);
+
+            if (playerMoveEvent != null)
+            {
+                // It is the player that has been moved
+                PlayerPosition = playerMoveEvent.TargetPosition;
+            }
         }
     }
 }

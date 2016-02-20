@@ -40,7 +40,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
             else
             {
-                e.Cancel();
+                e.StopRecording();
             }
         }
 
@@ -52,7 +52,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
             else
             {
-                e.Cancel();
+                e.StopRecording();
             }
         }
 

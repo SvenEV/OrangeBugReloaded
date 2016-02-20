@@ -7,18 +7,19 @@ namespace OrangeBugReloaded.Core.ClientServer
     {
         /// <summary>
         /// Indicates whether the move request has been acknowledged by the server.
-        /// If true, the client commits its pending local transaction (if it is
-        /// not canceled) and increases the version of affected chunks by one.
-        /// If false, the client cancels its pending transaction and
-        /// uses the provided <see cref="ChunkUpdates"/> (if any)
-        /// to become up-to-date.
+        /// If true, the client commits its pending local transaction and increases
+        /// the version of affected tiles to match the new version number assigned
+        /// by the server.
+        /// If false, the client cancels its pending transaction and uses the
+        /// provided <see cref="ChunkUpdates"/> (if any) to become up-to-date.
         /// </summary>
         public bool IsSuccessful { get; }
 
         /// <summary>
         /// The version number that the client assigns to the affected
         /// tiles of the transaction if the move is successful.
-        /// If 
+        /// The value is -1 if <see cref="IsSuccessful"/> is false
+        /// or the move yielded no tile changes.
         /// </summary>
         public int NewVersion { get; }
 
