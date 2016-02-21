@@ -117,7 +117,9 @@
     <Compile Include="ClientServer\DelayedServerFacade.cs" />
     <Compile Include="ClientServer\GameClient.cs" />
     <Compile Include="ClientServer\IGameClient.cs" />
+    <Compile Include="ClientServer\IGameClientStub.cs" />
     <Compile Include="ClientServer\IGameServer.cs" />
+    <Compile Include="ClientServer\IGameServerStub.cs" />
     <Compile Include="ClientServer\RemoteChunkStorage.cs" />
     <Compile Include="ClientServer\RemoteMoveRequest.cs" />
     <Compile Include="ClientServer\RemoteMoveResult.cs" />
@@ -139,6 +141,7 @@
     <Compile Include="Events\EntitySpawnEvent.cs" />
     <Compile Include="Events\IGameEvent.cs" />
     <Compile Include="Events\IGameEventEmitter.cs" />
+    <Compile Include="Events\ILocatedGameEvent.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="ClientServer\GameServer.cs" />
     <Compile Include="GameplayArgs.cs" />
@@ -187,6 +190,7 @@
     <Compile Include="Transactions\TransactionBase.cs" />
     <EmbeddedResource Include="Properties\OrangeBugReloaded.Core2.rd.xml" />
   </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

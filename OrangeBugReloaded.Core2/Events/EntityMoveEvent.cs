@@ -1,6 +1,8 @@
-﻿namespace OrangeBugReloaded.Core.Events
+﻿using System.Collections.Generic;
+
+namespace OrangeBugReloaded.Core.Events
 {
-    public class EntityMoveEvent : IGameEvent
+    public class EntityMoveEvent : ILocatedGameEvent
     {
         public Point SourcePosition { get; }
         public Point TargetPosition { get; }
@@ -13,6 +15,12 @@
             TargetPosition = targetPosition;
             Source = source;
             Target = target;
+        }
+
+        public IEnumerable<Point> GetPositions()
+        {
+            yield return SourcePosition;
+            yield return TargetPosition;
         }
     }
 }

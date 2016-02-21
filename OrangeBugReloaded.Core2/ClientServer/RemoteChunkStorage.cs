@@ -8,10 +8,10 @@ namespace OrangeBugReloaded.Core.ClientServer
     public sealed class RemoteChunkStorage : IChunkStorage
     {
         private string _connectionId;
-        private IGameServer _server;
+        private IGameServerStub _server;
         private Dictionary<Point, IChunk> _loadedChunks = new Dictionary<Point, IChunk>();
 
-        public RemoteChunkStorage(string connectionId, IGameServer server)
+        public RemoteChunkStorage(string connectionId, IGameServerStub server)
         {
             _connectionId = connectionId;
             _server = server;

@@ -23,7 +23,7 @@ namespace OrangeBugReloaded.Core.ClientServer
             _server = server;
         }
 
-        public async Task<ConnectResult> ConnectAsync(IGameClient client)
+        public async Task<ConnectResult> ConnectAsync(IGameClientStub client)
         {
             await Task.Delay(_connectDelay);
             var result = await _server.ConnectAsync(client);

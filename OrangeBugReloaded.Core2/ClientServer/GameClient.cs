@@ -11,7 +11,7 @@ namespace OrangeBugReloaded.Core.ClientServer
 {
     public class GameClient : IGameClient
     {
-        private IGameServer _server;
+        private IGameServerStub _server;
         private string _connectionId;
 
         public Point PlayerPosition { get; private set; }
@@ -26,7 +26,7 @@ namespace OrangeBugReloaded.Core.ClientServer
             PlayerDisplayName = playerDisplayName;
         }
 
-        public async Task ConnectAsync(IGameServer server)
+        public async Task ConnectAsync(IGameServerStub server)
         {
             _server = server;
 

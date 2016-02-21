@@ -1,4 +1,5 @@
 ﻿using OrangeBugReloaded.Core.Entities;
+using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Transactions;
 using System;
 using System.Collections.Generic;
@@ -51,7 +52,7 @@ namespace OrangeBugReloaded.Core.ClientServer
         }
 
         /// <inheritdoc/>
-        public async Task<ConnectResult> ConnectAsync(IGameClient client)
+        public async Task<ConnectResult> ConnectAsync(IGameClientStub client)
         {
             if (_connections.Values.Any(conn => conn.Client.PlayerId == client.PlayerId))
                 return new ConnectResult(false, null, Point.Zero, "Another client is already connected using the same player ID");
@@ -284,7 +285,8 @@ namespace OrangeBugReloaded.Core.ClientServer
         }
 
         /// <summary>
-        /// Sends tile updates to all clients that currently have loaded the respective chunks.
+        /// Sends a subset of the changes and events of the specified transaction to the
+        /// clients depending on which chunks each client has currently loaded.
         /// </summary>
         /// <param name="transaction">The transaction that contains the changes that are broadcasted</param>
         /// <param name="newVersion">The version to be used for the updates tiles</param>
@@ -303,11 +305,16 @@ namespace OrangeBugReloaded.Core.ClientServer
                     .Select(change => new TileUpdate(change.Key, change.Value.WithVersion(newVersion)))
                     .ToArray();
 
-                if (relevantChanges.Any())
+                var relevantEvents = transaction.Events
+                    .OfType<ILocatedGameEvent>()
+                    .Where(ev => ev.GetPositions().Any(p => conn.LoadedChunks.Contains(p / Chunk.Size)))
+                    .ToArray();
+
+                if (relevantChanges.Any() || relevantEvents.Any())
                 {
-                    // TODO: Currently ALL events are distributed to ALL clients
-                    //       (but only if there are tile updates which doesn't make sense)
-                    var update = new ClientUpdate(relevantChanges, transaction.Events);
+                    // If there are any tile changes or any events that are of interest
+                    // to the client, push them to the client.
+                    var update = new ClientUpdate(relevantChanges, relevantEvents);
                     await conn.Client.OnUpdate(update);
                 }
             }

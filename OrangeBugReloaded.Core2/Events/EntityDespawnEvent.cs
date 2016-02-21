@@ -1,6 +1,9 @@
-﻿namespace OrangeBugReloaded.Core.Events
+﻿using System;
+using System.Collections.Generic;
+
+namespace OrangeBugReloaded.Core.Events
 {
-    public class EntityDespawnEvent : IGameEvent
+    public class EntityDespawnEvent : ILocatedGameEvent
     {
         public Point Position { get; }
         public Entity Entity { get; }
@@ -9,6 +12,11 @@
         {
             Position = position;
             Entity = entity;
+        }
+
+        public IEnumerable<Point> GetPositions()
+        {
+            yield return Position;
         }
     }
 }
