@@ -6,6 +6,10 @@ namespace OrangeBugReloaded.Core.ClientServer
     {
         Point PlayerPosition { get; }
 
+        string PlayerId { get; }
+
+        string PlayerDisplayName { get; }
+
         IGameplayMap Map { get; }
 
         /// <summary>

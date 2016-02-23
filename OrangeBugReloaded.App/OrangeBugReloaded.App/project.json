@@ -3,7 +3,8 @@
     "Microsoft.NETCore.UniversalWindowsPlatform": "5.0.0",
     "Rx-Main": "2.3.0-beta2",
     "Win2D.uwp": "1.15.0",
-    "MvvmLightLibs": "5.2.0"
+    "MvvmLightLibs": "5.2.0",
+    "Newtonsoft.Json": "8.0.2"
   },
   "frameworks": {
     "uap10.0": {}

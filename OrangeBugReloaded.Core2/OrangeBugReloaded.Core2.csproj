@@ -120,6 +120,12 @@
     <Compile Include="ClientServer\IGameClientStub.cs" />
     <Compile Include="ClientServer\IGameServer.cs" />
     <Compile Include="ClientServer\IGameServerStub.cs" />
+    <Compile Include="ClientServer\Net\Client\ClientConnectInfo.cs" />
+    <Compile Include="ClientServer\Net\Client\ClientSideServerProxy.cs" />
+    <Compile Include="ClientServer\Net\Client\NetGameClient.cs" />
+    <Compile Include="ClientServer\Net\Client\ServerConnectInfo.cs" />
+    <Compile Include="ClientServer\Net\Server\NetGameServer.cs" />
+    <Compile Include="ClientServer\Net\Server\ServerSideClientProxy.cs" />
     <Compile Include="ClientServer\RemoteChunkStorage.cs" />
     <Compile Include="ClientServer\RemoteMoveRequest.cs" />
     <Compile Include="ClientServer\RemoteMoveResult.cs" />
@@ -189,6 +195,12 @@
     <Compile Include="Transactions\ITransaction.cs" />
     <Compile Include="Transactions\TransactionBase.cs" />
     <EmbeddedResource Include="Properties\OrangeBugReloaded.Core2.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Apps\UwpNetworkingEssentials\UwpNetworkingEssentials\UwpNetworkingEssentials.csproj">
+      <Project>{a3ddfd77-e4bf-41e3-8575-7ef94a231ec1}</Project>
+      <Name>UwpNetworkingEssentials</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

@@ -12,7 +12,6 @@ namespace OrangeBugReloaded.Core.ClientServer
     public class GameClient : IGameClient
     {
         private IGameServerStub _server;
-        private string _connectionId;
 
         public Point PlayerPosition { get; private set; }
         public string PlayerId { get; }
@@ -31,14 +30,13 @@ namespace OrangeBugReloaded.Core.ClientServer
             _server = server;
 
             var request = new ClientConnectRequest(PlayerId, PlayerDisplayName);
-            var result = await _server.ConnectAsync(this);
+            var result = await _server.ConnectAsync(this, PlayerId);
 
             if (result.IsSuccessful)
             {
-                _connectionId = result.ConnectionId;
                 PlayerPosition = result.SpawnPosition;
 
-                Map = new Map(new RemoteChunkStorage(result.ConnectionId, _server));
+                Map = new Map(new RemoteChunkStorage(PlayerId, _server));
 
                 // Load chunk at spawn position
                 await Map.GetAsync(result.SpawnPosition);
@@ -55,9 +53,8 @@ namespace OrangeBugReloaded.Core.ClientServer
             if (_server == null)
                 return;
 
-            await _server.DisconnectAsync(_connectionId);
+            await _server.DisconnectAsync(PlayerId);
             _server = null;
-            _connectionId = null;
             PlayerPosition = Point.Zero;
             Map = null;
         }
@@ -75,7 +72,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                 new VersionedPoint(targetPosition, target.Version),
                 result.Transaction.Changes.Select(c => new VersionedPoint(c.Key, c.Value.Version)));
 
-            var remoteMoveResult = await _server.MoveAsync(_connectionId, request);
+            var remoteMoveResult = await _server.MoveAsync(request, PlayerId);
 
             if (remoteMoveResult.IsSuccessful)
             {

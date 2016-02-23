@@ -5,7 +5,7 @@ namespace OrangeBugReloaded.Core.ClientServer
 {
     public class ClientConnection
     {
-        public string ConnectionId { get; }
+        public string PlayerId { get; }
 
         public IGameClientStub Client { get; }
         
@@ -13,10 +13,10 @@ namespace OrangeBugReloaded.Core.ClientServer
 
         public SemaphoreSlim MoveSemaphore { get; } = new SemaphoreSlim(1);
 
-        public ClientConnection(string connectionId, IGameClientStub client)
+        public ClientConnection(string playerId, IGameClientStub client)
         {
             Client = client;
-            ConnectionId = connectionId;
+            PlayerId = playerId;
         }
     }
 }

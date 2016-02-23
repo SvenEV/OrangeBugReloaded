@@ -11,15 +11,16 @@ namespace OrangeBugReloaded.Core.ClientServer
         /// Establishes a connection from a client to the server.
         /// </summary>
         /// <param name="client">Client</param>
+        /// <param name="playerId">Player ID</param>
         /// <returns>Result</returns>
-        Task<ConnectResult> ConnectAsync(IGameClientStub client);
+        Task<ConnectResult> ConnectAsync(IGameClientStub client, object playerId);
 
         /// <summary>
         /// Disconnects a client from the server.
         /// </summary>
-        /// <param name="connectionId">Client ID</param>
+        /// <param name="playerId">Player ID</param>
         /// <returns>Task</returns>
-        Task DisconnectAsync(string connectionId);
+        Task DisconnectAsync(object playerId);
 
         /// <summary>
         /// Gets the chunk with the specified index.
@@ -28,8 +29,9 @@ namespace OrangeBugReloaded.Core.ClientServer
         /// in changes to that chunk.
         /// </summary>
         /// <param name="index">Chunk index</param>
+        /// <param name="playerId">Player ID</param>
         /// <returns>The loaded chunk</returns>
-        Task<IChunk> LoadChunkAsync(string connectionId, Point index);
+        Task<IChunk> LoadChunkAsync(Point index, object playerId);
 
         /// <summary>
         /// Tells the server that the client has unloaded
@@ -37,14 +39,16 @@ namespace OrangeBugReloaded.Core.ClientServer
         /// to that chunk.
         /// </summary>
         /// <param name="index">Chunk index</param>
+        /// <param name="playerId">Player ID</param>
         /// <returns>Task</returns>
-        Task UnloadChunkAsync(string connectionId, Point index);
+        Task UnloadChunkAsync(Point index, object playerId);
 
         /// <summary>
         /// Tries to execute a move on the server.
         /// </summary>
         /// <param name="move">Information about the move</param>
+        /// <param name="playerId">Player ID</param>
         /// <returns>Resulting information</returns>
-        Task<RemoteMoveResult> MoveAsync(string connectionId, RemoteMoveRequest move);
+        Task<RemoteMoveResult> MoveAsync(RemoteMoveRequest move, object playerId);
     }
 }

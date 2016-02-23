@@ -1,17 +1,74 @@
-﻿using System.Numerics;
-using System.Threading.Tasks;
-using GalaSoft.MvvmLight;
+﻿using GalaSoft.MvvmLight;
+using GalaSoft.MvvmLight.Threading;
 using OrangeBugReloaded.Core;
-using OrangeBugReloaded.Core.Tiles;
-using Microsoft.Graphics.Canvas.UI.Xaml;
+using OrangeBugReloaded.Core.ClientServer.Net.Client;
 using OrangeBugReloaded.Core.Entities;
+using OrangeBugReloaded.Core.Tiles;
 using System;
-using OrangeBugReloaded.Core.ClientServer;
+using System.Linq;
+using System.Numerics;
+using System.Threading.Tasks;
+using Windows.Networking.Connectivity;
+using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 
 namespace OrangeBugReloaded.App.Common
 {
     public class MainViewModel : ViewModelBase
     {
+        private readonly Frame _frame;
+        private string _port = "1234";
+        private string _serverIp = "192.168.178.";
+
+        public string Port
+        {
+            get { return _port; }
+            set { Set(ref _port, value); }
+        }
+
+        public string ServerIp
+        {
+            get { return _serverIp; }
+            set { Set(ref _serverIp, value); }
+        }
+
+        public string LocalIp { get; private set; }
+
+        public MainViewModel()
+        {
+            _frame = Window.Current.Content as Frame;
+            DispatcherHelper.Initialize();
+            LocalIp = GetLocalIp();
+        }
+
+        public void StartServer()
+        {
+            _frame.Navigate(typeof(GameServerPage), Port);
+        }
+
+        public void ConnectClient()
+        {
+            var serverInfo = new ServerConnectInfo(ServerIp, Port);
+            _frame.Navigate(typeof(GameClientPage), serverInfo);
+        }
+
+        private string GetLocalIp()
+        {
+            var profile = NetworkInformation.GetInternetConnectionProfile();
+
+            if (profile?.NetworkAdapter == null)
+                return null;
+
+            var hostNames = NetworkInformation.GetHostNames().Where(hn =>
+                hn.IPInformation?.NetworkAdapter != null &&
+                hn.IPInformation.NetworkAdapter.NetworkAdapterId == profile.NetworkAdapter.NetworkAdapterId);
+
+            return hostNames.Any() ?
+                string.Join("\r\n", hostNames.Select(hn => hn.CanonicalName)) :
+                "(could not determine)";
+        }
+
+        #region Editor related
         private object _selectedTileTemplate;
 
         public object[] TileTemplates { get; } = new object[]
@@ -37,61 +94,6 @@ namespace OrangeBugReloaded.App.Common
             set { Set(ref _selectedTileTemplate, value); }
         }
 
-        public IGameClient Client1 { get; }
-        public IGameClient Client2 { get; }
-        public IGameServer Server { get; }
-
-        public OrangeBugRenderer RendererClient1 { get; }
-        public OrangeBugRenderer RendererClient2 { get; }
-        public OrangeBugRenderer RendererServer { get; }
-
-        public bool AreVersionsVisible
-        {
-            get { return RendererServer.DisplayDebugInfo; }
-            set
-            {
-                RendererServer.DisplayDebugInfo = value;
-                RendererClient1.DisplayDebugInfo = value;
-                RendererClient2.DisplayDebugInfo = value;
-            }
-        }
-
-        public MainViewModel(CanvasAnimatedControl canvasClient1, CanvasAnimatedControl canvasClient2, CanvasAnimatedControl canvasServer)
-        {
-            var storage = new InMemoryChunkStorage();
-            storage.SaveAsync(new Point(0, 0), SampleChunks.Chunk1.Clone()).Wait();
-            storage.SaveAsync(new Point(-1, 0), SampleChunks.Chunk2.Clone()).Wait();
-            storage.SaveAsync(new Point(-1, -1), SampleChunks.Chunk3.Clone()).Wait();
-            var map = new Map(storage);
-
-            Server = new DelayedServerFacade(new GameServer(map));
-            Client1 = new GameClient("player1", "Player A");
-            Client2 = new GameClient("player2", "Player B");
-
-            RendererClient1 = new OrangeBugRenderer();
-            RendererClient1.Attach(canvasClient1);
-            RendererClient1.Plugins.Add<OrangeBugAudioPlayer>();
-
-            RendererClient2 = new OrangeBugRenderer();
-            RendererClient2.Attach(canvasClient2);
-            RendererClient2.Plugins.Add<OrangeBugAudioPlayer>();
-
-            RendererServer = new OrangeBugRenderer();
-            RendererServer.Attach(canvasServer);
-            RendererServer.Map = Server.Map;
-
-            InitAsync();
-        }
-
-        private async Task InitAsync()
-        {
-            await Client1.ConnectAsync(Server);
-            await Client2.ConnectAsync(Server);
-
-            RendererClient1.Map = Client1.Map;
-            RendererClient2.Map = Client2.Map;
-        }
-
         public async Task EditMapAsync(Vector2 canvasPosition)
         {
             /*var t = TransactionChainWithEditSupport.Create<TransactionWithEditSupport>(Map);
@@ -113,5 +115,6 @@ namespace OrangeBugReloaded.App.Common
             //    await Map.SetAsync(kvp.Key, kvp.Value.TileTemplate);
             //}
         }
+        #endregion
     }
 }

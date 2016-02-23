@@ -7,13 +7,13 @@ namespace OrangeBugReloaded.Core.ClientServer
 {
     public sealed class RemoteChunkStorage : IChunkStorage
     {
-        private string _connectionId;
+        private string _playerId;
         private IGameServerStub _server;
         private Dictionary<Point, IChunk> _loadedChunks = new Dictionary<Point, IChunk>();
 
-        public RemoteChunkStorage(string connectionId, IGameServerStub server)
+        public RemoteChunkStorage(string playerId, IGameServerStub server)
         {
-            _connectionId = connectionId;
+            _playerId = playerId;
             _server = server;
         }
 
@@ -28,7 +28,7 @@ namespace OrangeBugReloaded.Core.ClientServer
 
             if (chunk == null)
             {
-                chunk = await _server.LoadChunkAsync(_connectionId, index);
+                chunk = await _server.LoadChunkAsync(index, _playerId);
                 _loadedChunks.Add(index, chunk);
             }
 

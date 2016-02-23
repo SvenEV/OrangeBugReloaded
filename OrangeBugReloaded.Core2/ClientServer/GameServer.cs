@@ -52,27 +52,27 @@ namespace OrangeBugReloaded.Core.ClientServer
         }
 
         /// <inheritdoc/>
-        public async Task<ConnectResult> ConnectAsync(IGameClientStub client)
+        public async Task<ConnectResult> ConnectAsync(IGameClientStub client, object playerId)
         {
-            if (_connections.Values.Any(conn => conn.Client.PlayerId == client.PlayerId))
-                return new ConnectResult(false, null, Point.Zero, "Another client is already connected using the same player ID");
+            if (_connections.Values.Any(conn => conn.PlayerId == playerId.ToString()))
+                return new ConnectResult(false, Point.Zero, "Another client is already connected using the same player ID");
 
-            var connection = new ClientConnection(Guid.NewGuid().ToString(), client);
-            var playerEntity = new PlayerEntity(client.PlayerId, Point.North);
+            var connection = new ClientConnection(playerId.ToString(), client);
+            var playerEntity = new PlayerEntity(connection.PlayerId, Point.North);
 
             // Check if the player is playing this map the first time
-            if (Map.Metadata.Players.IsKnown(client.PlayerId))
+            if (Map.Metadata.Players.IsKnown(connection.PlayerId))
             {
                 // Try to spawn player at its last known position.
-                var playerInfo = Map.Metadata.Players[client.PlayerId];
+                var playerInfo = Map.Metadata.Players[connection.PlayerId];
                 var spawnResult = await Map.SpawnAsync(playerEntity, playerInfo.Position);
 
                 if (spawnResult.IsSuccessful)
                 {
                     // TODO: What if a player spawns within a level some others are currently trying to solve?
                     await CommitAndBroadcastAsync(spawnResult.Transaction, spawnResult.FollowUpEvents, connection);
-                    _connections.Add(connection.ConnectionId, connection);
-                    return new ConnectResult(true, connection.ConnectionId, playerInfo.Position);
+                    _connections.Add(connection.PlayerId, connection);
+                    return new ConnectResult(true, playerInfo.Position);
                 }
                 else
                 {
@@ -90,10 +90,10 @@ namespace OrangeBugReloaded.Core.ClientServer
                 if (spawnResult != null)
                 {
                     await CommitAndBroadcastAsync(spawnResult.Transaction, spawnResult.FollowUpEvents, connection);
-                    var playerInfo = new PlayerInfo(client.PlayerId, client.PlayerDisplayName, spawnResult.SpawnPosition);
+                    var playerInfo = new PlayerInfo(connection.PlayerId, "TODO: PlayerDisplayName", spawnResult.SpawnPosition);
                     Map.Metadata.Players.Add(playerInfo);
-                    _connections.Add(connection.ConnectionId, connection);
-                    return new ConnectResult(true, connection.ConnectionId, spawnResult.SpawnPosition);
+                    _connections.Add(connection.PlayerId, connection);
+                    return new ConnectResult(true, spawnResult.SpawnPosition);
                 }
                 else
                 {
@@ -104,10 +104,10 @@ namespace OrangeBugReloaded.Core.ClientServer
         }
 
         /// <inheritdoc/>
-        public async Task DisconnectAsync(string connectionId)
+        public async Task DisconnectAsync(object playerId)
         {
-            var connection = GetConnection(connectionId);
-            var player = Map.Metadata.Players[connection.Client.PlayerId];
+            var connection = GetConnection(playerId);
+            var player = Map.Metadata.Players[connection.PlayerId];
 
             // Remove PlayerEntity from Map (despawn)
             var despawnResult = await Map.DespawnAsync(player.Position);
@@ -118,9 +118,9 @@ namespace OrangeBugReloaded.Core.ClientServer
 
                 // Unload all the chunks currently loaded by the client
                 while (connection.LoadedChunks.Any())
-                    await UnloadChunkAsync(connectionId, connection.LoadedChunks.First());
+                    await UnloadChunkAsync(connection.LoadedChunks.First(), playerId);
 
-                _connections.Remove(connectionId);
+                _connections.Remove(connection.PlayerId);
             }
             else
             {
@@ -130,9 +130,9 @@ namespace OrangeBugReloaded.Core.ClientServer
         }
 
         /// <inheritdoc/>
-        public async Task<IChunk> LoadChunkAsync(string connectionId, Point index)
+        public async Task<IChunk> LoadChunkAsync(Point index, object playerId)
         {
-            var connection = GetConnection(connectionId);
+            var connection = GetConnection(playerId);
 
             var chunk = await Map.ChunkLoader.GetAsync(index);
 
@@ -146,9 +146,9 @@ namespace OrangeBugReloaded.Core.ClientServer
         }
 
         /// <inheritdoc/>
-        public Task UnloadChunkAsync(string connectionId, Point index)
+        public Task UnloadChunkAsync(Point index, object playerId)
         {
-            var connection = GetConnection(connectionId);
+            var connection = GetConnection(playerId);
             connection.LoadedChunks.Remove(index);
 
             var connectionsList = _connectionsByChunk.TryGetValue(index);
@@ -171,11 +171,11 @@ namespace OrangeBugReloaded.Core.ClientServer
         }
 
         /// <inheritdoc/>
-        public async Task<RemoteMoveResult> MoveAsync(string connectionId, RemoteMoveRequest move)
+        public async Task<RemoteMoveResult> MoveAsync(RemoteMoveRequest move, object playerId)
         {
             // TODO: Test, test, test!
 
-            var connection = GetConnection(connectionId);
+            var connection = GetConnection(playerId);
             await connection.MoveSemaphore.WaitAsync();
 
             try
@@ -320,12 +320,12 @@ namespace OrangeBugReloaded.Core.ClientServer
             }
         }
 
-        private ClientConnection GetConnection(string connectionId)
+        private ClientConnection GetConnection(object playerId)
         {
-            var connection = _connections.TryGetValue(connectionId);
+            var connection = _connections.TryGetValue(playerId.ToString());
 
             if (connection == null)
-                throw new ArgumentException($"There is no connection with ID '{connectionId}'");
+                throw new ArgumentException($"There is no connection with player ID '{playerId.ToString()}'");
 
             return connection;
         }

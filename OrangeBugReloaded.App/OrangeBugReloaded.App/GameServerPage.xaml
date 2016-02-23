@@ -1,0 +1,25 @@
+﻿<Page
+    x:Class="OrangeBugReloaded.App.GameServerPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:OrangeBugReloaded.App"
+    xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="Black">
+
+        <win2d:CanvasAnimatedControl x:Name="canvas"
+                                     Grid.Column="2"
+                                     Grid.RowSpan="3"
+                                     PointerWheelChanged="canvas_PointerWheelChanged"/>
+
+        <TextBlock Text="Server" Grid.Column="2"
+                   FontSize="16" Margin="12"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Foreground="WhiteSmoke"/>
+
+    </Grid>
+</Page>

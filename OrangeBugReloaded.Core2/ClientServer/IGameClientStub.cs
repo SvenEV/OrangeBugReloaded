@@ -8,17 +8,6 @@ namespace OrangeBugReloaded.Core.ClientServer
     public interface IGameClientStub
     {
         /// <summary>
-        /// The unique player ID.
-        /// TODO: How does this correspond to PlayerEntity.Id?
-        /// </summary>
-        string PlayerId { get; }
-
-        /// <summary>
-        /// The name that is displayed for the player.
-        /// </summary>
-        string PlayerDisplayName { get; }
-
-        /// <summary>
         /// Sends updated tiles and events to the client.
         /// </summary>
         /// <param name="e">Update arguments</param>
