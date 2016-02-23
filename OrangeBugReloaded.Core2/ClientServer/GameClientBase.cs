@@ -9,34 +9,39 @@ using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core.ClientServer
 {
-    public class GameClient : IGameClient
+    public abstract class GameClientBase : IGameClient
     {
-        private IGameServerStub _server;
+        private IGameClientInfo _clientInfo;
+        private IGameServerInfo _serverInfo;
+        private IGameServerStub _serverStub;
 
         public Point PlayerPosition { get; private set; }
+
         public string PlayerId { get; }
+
         public string PlayerDisplayName { get; }
 
         public IGameplayMap Map { get; private set; }
 
-        public GameClient(string playerId, string playerDisplayName)
+        public GameClientBase(string playerId, string playerDisplayName)
         {
             PlayerId = playerId;
             PlayerDisplayName = playerDisplayName;
         }
 
-        public async Task ConnectAsync(IGameServerStub server)
+        public async Task ConnectAsync(IGameServerInfo serverInfo)
         {
-            _server = server;
+            _serverInfo = serverInfo;
+            _clientInfo = await CreateClientInfoAsync(serverInfo);
+            _serverStub = await CreateServerStubAsync(serverInfo);
 
-            var request = new ClientConnectRequest(PlayerId, PlayerDisplayName);
-            var result = await _server.ConnectAsync(this, PlayerId);
+            var result = await _serverStub.JoinAsync(_clientInfo);
 
             if (result.IsSuccessful)
             {
                 PlayerPosition = result.SpawnPosition;
 
-                Map = new Map(new RemoteChunkStorage(PlayerId, _server));
+                Map = new Map(new RemoteChunkStorage(PlayerId, _serverStub));
 
                 // Load chunk at spawn position
                 await Map.GetAsync(result.SpawnPosition);
@@ -50,11 +55,12 @@ namespace OrangeBugReloaded.Core.ClientServer
 
         public async Task DisconnectAsync()
         {
-            if (_server == null)
+            if (_serverStub == null)
                 return;
 
-            await _server.DisconnectAsync(PlayerId);
-            _server = null;
+            await _serverStub.LeaveAsync(PlayerId);
+            _serverInfo = null;
+            _serverStub = null;
             PlayerPosition = Point.Zero;
             Map = null;
         }
@@ -72,7 +78,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                 new VersionedPoint(targetPosition, target.Version),
                 result.Transaction.Changes.Select(c => new VersionedPoint(c.Key, c.Value.Version)));
 
-            var remoteMoveResult = await _server.MoveAsync(request, PlayerId);
+            var remoteMoveResult = await _serverStub.MoveAsync(request, PlayerId);
 
             if (remoteMoveResult.IsSuccessful)
             {
@@ -97,6 +103,20 @@ namespace OrangeBugReloaded.Core.ClientServer
             return await MoveAsync(PlayerPosition, PlayerPosition + direction);
         }
 
+        public async Task OnUpdate(ClientUpdate e)
+        {
+            foreach (var change in e.TileUpdates)
+                await Map.SetAsync(change.Position, change.TileInfo);
+
+            AnalyzeEvents(e.Events);
+
+            // TODO: Emit events
+        }
+
+        protected abstract Task<IGameClientInfo> CreateClientInfoAsync(IGameServerInfo serverInfo);
+
+        protected abstract Task<IGameServerStub> CreateServerStubAsync(IGameServerInfo serverInfo);
+
         private async Task ApplyChunkAsync(IChunk chunk, Point index)
         {
             // TODO: It would be better to directly replace the chunk via ChunkLoader
@@ -111,20 +131,10 @@ namespace OrangeBugReloaded.Core.ClientServer
             }
         }
 
-        public async Task OnUpdate(ClientUpdate e)
-        {
-            foreach (var change in e.TileUpdates)
-                await Map.SetAsync(change.Position, change.TileInfo);
-
-            AnalyzeEvents(e.Events);
-
-            // TODO: Emit events
-        }
-
         private void AnalyzeEvents(IEnumerable<IGameEvent> events)
         {
             var playerMoveEvent = events.OfType<EntityMoveEvent>()
-                .FirstOrDefault(ev => (ev.Source.Entity as PlayerEntity)?.Id == PlayerId);
+                .FirstOrDefault(ev => (ev.Source.Entity as PlayerEntity)?.PlayerId == PlayerId);
 
             if (playerMoveEvent != null)
             {

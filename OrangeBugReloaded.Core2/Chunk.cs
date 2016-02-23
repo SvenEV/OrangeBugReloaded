@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using Newtonsoft.Json;
+using System.Linq;
 
 namespace OrangeBugReloaded.Core
 {
@@ -21,11 +22,15 @@ namespace OrangeBugReloaded.Core
         void SetMetadata(Point position, TileMetadata value);
     }
 
+    [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
     public class Chunk : IChunk
     {
         public const int Size = 8;
 
+        [JsonProperty("Tiles")]
         private readonly TileInfo[] _tiles;
+
+        [JsonProperty("TileMetadata")]
         private readonly TileMetadata[] _tileMetadata;
 
         public bool IsEmpty => _tileMetadata.All(t => t == TileMetadata.Empty);

@@ -13,7 +13,7 @@ namespace OrangeBugReloaded.Core
     /// and the Y axis points upwards.
     /// </summary>
     [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
-    [JsonConverter(typeof(PointConverter))]
+    //[JsonConverter(typeof(PointConverter))]
     public struct Point
     {
         /// <summary>
@@ -70,6 +70,7 @@ namespace OrangeBugReloaded.Core
         /// <param name="x">X</param>
         /// <param name="y">Y</param>
         [DebuggerStepThrough]
+        [JsonConstructor]
         public Point(int x, int y) : this()
         {
             X = x;

@@ -1,8 +1,6 @@
 ﻿using Microsoft.Graphics.Canvas.UI.Xaml;
 using OrangeBugReloaded.Core;
-using OrangeBugReloaded.Core.ClientServer;
-using OrangeBugReloaded.Core.ClientServer.Net.Server;
-using System;
+using OrangeBugReloaded.Core.ClientServer.Net;
 using System.Diagnostics;
 
 namespace OrangeBugReloaded.App.Common
@@ -34,10 +32,10 @@ namespace OrangeBugReloaded.App.Common
                 await map.GetAsync(Point.Zero);
                 _renderer.Map = map;
 
-                var game = new GameServer(map);
-                _server = await NetGameServer.StartAsync(port, game);
+                _server = new NetGameServer(map);
+                await _server.StartAsync(port);
             }
-            catch (Exception e)
+            catch
             {
                 Debugger.Break();
             }

@@ -13,14 +13,14 @@ namespace OrangeBugReloaded.Core.Entities
     {
         public Point Perspective { get; }
 
-        public string Id { get; }
+        public string PlayerId { get; }
 
         public PlayerEntity(string playerId, Point perspective)
         {
             if (!perspective.IsDirection)
                 throw new ArgumentException("Invalid direction", nameof(perspective));
 
-            Id = playerId;
+            PlayerId = playerId;
             Perspective = perspective;
         }
 
@@ -29,13 +29,13 @@ namespace OrangeBugReloaded.Core.Entities
             var offset = e.CurrentMove.Offset;
 
             if (offset == Point.North)
-                e.ResultingEntity = new PlayerEntity(Id, Point.North);
+                e.ResultingEntity = new PlayerEntity(PlayerId, Point.North);
             else if (offset == Point.East)
-                e.ResultingEntity = new PlayerEntity(Id, Point.East);
+                e.ResultingEntity = new PlayerEntity(PlayerId, Point.East);
             else if (offset == Point.South)
-                e.ResultingEntity = new PlayerEntity(Id, Point.South);
+                e.ResultingEntity = new PlayerEntity(PlayerId, Point.South);
             else if (offset == Point.West)
-                e.ResultingEntity = new PlayerEntity(Id, Point.West);
+                e.ResultingEntity = new PlayerEntity(PlayerId, Point.West);
             else
                 e.ResultingEntity = this;
 
@@ -48,7 +48,7 @@ namespace OrangeBugReloaded.Core.Entities
         protected override IEnumerable GetHashProperties()
         {
             yield return Perspective;
-            yield return Id;
+            yield return PlayerId;
         }
     }
 }

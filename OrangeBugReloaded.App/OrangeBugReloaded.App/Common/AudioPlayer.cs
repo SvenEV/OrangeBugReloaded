@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Windows.Media.Audio;
 using Windows.Storage;
 
-namespace OrangeBugReloaded
+namespace OrangeBugReloaded.App.Common
 {
     public class AudioPlayer
     {

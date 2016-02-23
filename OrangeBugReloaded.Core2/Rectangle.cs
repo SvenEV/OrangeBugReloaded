@@ -14,7 +14,7 @@ namespace OrangeBugReloaded.Core
     /// and the Y axis points upwards.
     /// </summary>
     [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
-    [JsonConverter(typeof(RectangleConverter))]
+    //[JsonConverter(typeof(RectangleConverter))]
     public struct Rectangle : IEnumerable<Point>
     {
         /// <summary>
@@ -90,6 +90,7 @@ namespace OrangeBugReloaded.Core
         /// <param name="y">Bottom edge</param>
         /// <param name="width">Width (non-negative)</param>
         /// <param name="height">Height (non-negative)</param>
+        [JsonConstructor]
         public Rectangle(int x, int y, int width, int height) : this()
         {
             if (width < 0) throw new ArgumentOutOfRangeException(nameof(width));

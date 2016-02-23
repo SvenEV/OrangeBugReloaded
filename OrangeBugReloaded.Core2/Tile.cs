@@ -1,4 +1,5 @@
-﻿using OrangeBugReloaded.Core.Rendering;
+﻿using Newtonsoft.Json;
+using OrangeBugReloaded.Core.Rendering;
 using OrangeBugReloaded.Core.Tiles;
 using System;
 using System.Collections;
@@ -13,12 +14,14 @@ namespace OrangeBugReloaded.Core
     {
         public static Tile Empty { get; } = WallTile.Default;
 
+        [JsonProperty]
         public Entity Entity { get; private set; } = Entity.None;
 
         /// <summary>
         /// The delay between updates of the tile and
         /// its follow up transactions.
         /// </summary>
+        [JsonIgnore]
         public virtual TimeSpan FollowUpDelay => TimeSpan.FromSeconds(1);
 
         public Tile()
@@ -181,6 +184,9 @@ namespace OrangeBugReloaded.Core
         public override string ToString() =>
             VisualHintAttribute.GetVisualName(this) +
             (Entity != Entity.None ? " + " + VisualHintAttribute.GetVisualName(Entity) : "");
+
+        public static bool operator ==(Tile a, Tile b) => Equals(a, b);
+        public static bool operator !=(Tile a, Tile b) => !Equals(a, b);
     }
 
     public static class TileExtensions

@@ -124,6 +124,9 @@ namespace OrangeBugReloaded.Core
         }
 
         protected virtual IEnumerable GetHashProperties() { yield break; }
+
+        public static bool operator ==(Entity a, Entity b) => Equals(a, b);
+        public static bool operator !=(Entity a, Entity b) => !Equals(a, b);
     }
 
     public static class EntityExtensions

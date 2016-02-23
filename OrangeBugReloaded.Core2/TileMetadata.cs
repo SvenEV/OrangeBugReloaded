@@ -1,4 +1,6 @@
-﻿namespace OrangeBugReloaded.Core
+﻿using Newtonsoft.Json;
+
+namespace OrangeBugReloaded.Core
 {
     /// <summary>
     /// Provides information about a tile on the map in its
@@ -12,6 +14,7 @@
         public Tile TileTemplate { get; }
         public int RegionId { get; }
 
+        [JsonConstructor]
         public TileMetadata(Tile tileTemplate, int regionId) : this()
         {
             TileTemplate = tileTemplate.EnsureNotNull();

@@ -1,4 +1,4 @@
-﻿namespace OrangeBugReloaded
+﻿namespace OrangeBugReloaded.App.Common
 {
     public static class Mathf
     {

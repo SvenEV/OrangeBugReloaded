@@ -1,6 +1,6 @@
 ﻿using Microsoft.Graphics.Canvas.UI.Xaml;
 using OrangeBugReloaded.Core.ClientServer;
-using OrangeBugReloaded.Core.ClientServer.Net.Client;
+using OrangeBugReloaded.Core.ClientServer.Net;
 using System;
 using System.Diagnostics;
 
@@ -8,7 +8,7 @@ namespace OrangeBugReloaded.App.Common
 {
     public class GameClientViewModel
     {
-        private ServerConnectInfo _serverInfo;
+        private NetGameServerInfo _serverInfo;
         private NetGameClient _client;
         private OrangeBugRenderer _renderer;
 
@@ -16,7 +16,7 @@ namespace OrangeBugReloaded.App.Common
 
         public OrangeBugRenderer Renderer => _renderer;
 
-        public GameClientViewModel(CanvasAnimatedControl canvas, ServerConnectInfo serverInfo)
+        public GameClientViewModel(CanvasAnimatedControl canvas, NetGameServerInfo serverInfo)
         {
             _renderer = new OrangeBugRenderer();
             _renderer.Attach(canvas);
@@ -28,11 +28,15 @@ namespace OrangeBugReloaded.App.Common
         {
             try
             {
-                var game = new GameClient("Player1", "Player 1");
-                _client = new NetGameClient(game);
+                var random = new Random();
+                var number = random.Next(1, 100);
+                _client = new NetGameClient($"Player{number}", $"Player {number}");
                 await _client.ConnectAsync(_serverInfo);
+
+                _renderer.Map = _client.Map;
+                Renderer.CameraPosition = _client.PlayerPosition.ToVector2();
             }
-            catch (Exception e)
+            catch
             {
                 Debugger.Break();
             }

@@ -1,4 +1,6 @@
-﻿namespace OrangeBugReloaded.Core.Tiles
+﻿using Newtonsoft.Json;
+
+namespace OrangeBugReloaded.Core.Tiles
 {
     /// <summary>
     /// A tile that any <see cref="Entity"/> can move over at any time.

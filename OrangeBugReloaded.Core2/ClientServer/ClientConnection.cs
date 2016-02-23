@@ -5,18 +5,18 @@ namespace OrangeBugReloaded.Core.ClientServer
 {
     public class ClientConnection
     {
-        public string PlayerId { get; }
+        public IGameClientInfo ClientInfo { get; }
 
-        public IGameClientStub Client { get; }
+        public IGameClientStub ClientStub { get; }
         
         public HashSet<Point> LoadedChunks { get; } = new HashSet<Point>();
 
         public SemaphoreSlim MoveSemaphore { get; } = new SemaphoreSlim(1);
 
-        public ClientConnection(string playerId, IGameClientStub client)
+        public ClientConnection(IGameClientInfo clientInfo, IGameClientStub clientStub)
         {
-            Client = client;
-            PlayerId = playerId;
+            ClientInfo = clientInfo;
+            ClientStub = clientStub;
         }
     }
 }

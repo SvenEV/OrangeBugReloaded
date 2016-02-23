@@ -5,6 +5,10 @@ using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core.ClientServer
 {
+    /// <summary>
+    /// A chunk storage that only supports load operations
+    /// and loads chunks and metadata from a game server.
+    /// </summary>
     public sealed class RemoteChunkStorage : IChunkStorage
     {
         private string _playerId;

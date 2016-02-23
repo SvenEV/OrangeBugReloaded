@@ -131,7 +131,8 @@ namespace OrangeBugReloaded.Core
             }
             catch
             {
-                // Something else happened, do nothing
+                // Something else happened, throw
+                throw;
             }
 
             if (chunk == null)

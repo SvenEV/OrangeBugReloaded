@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace OrangeBugReloaded.Core.ClientServer
@@ -30,6 +31,7 @@ namespace OrangeBugReloaded.Core.ClientServer
         /// </summary>
         public IReadOnlyCollection<KeyValuePair<Point, IChunk>> ChunkUpdates { get; }
 
+        [JsonConstructor]
         private RemoteMoveResult(bool isSuccessful, int newVersion, IEnumerable<KeyValuePair<Point, IChunk>> chunkUpdates)
         {
             IsSuccessful = isSuccessful;

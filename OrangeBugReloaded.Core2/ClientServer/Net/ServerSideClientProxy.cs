@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using UwpNetworkingEssentials.Rpc;
 
-namespace OrangeBugReloaded.Core.ClientServer.Net.Server
+namespace OrangeBugReloaded.Core.ClientServer.Net
 {
     public class ServerSideClientProxy : IGameClientStub
     {

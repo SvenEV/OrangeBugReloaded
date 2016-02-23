@@ -1,8 +1,7 @@
-﻿using OrangeBugReloaded.App.Common;
-using OrangeBugReloaded.Core;
+﻿using OrangeBugReloaded.Core;
 using System;
 
-namespace OrangeBugReloaded
+namespace OrangeBugReloaded.App.Common
 {
     public interface IRendererPlugin : IDisposable
     {

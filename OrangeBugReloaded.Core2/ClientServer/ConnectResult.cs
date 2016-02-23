@@ -1,4 +1,6 @@
-﻿namespace OrangeBugReloaded.Core.ClientServer
+﻿using Newtonsoft.Json;
+
+namespace OrangeBugReloaded.Core.ClientServer
 {
     public struct ConnectResult
     {
@@ -18,6 +20,7 @@
         /// </summary>
         public string Message { get; }
 
+        [JsonConstructor]
         public ConnectResult(bool isSuccessful, Point spawnPosition, string message = "")
         {
             IsSuccessful = isSuccessful;

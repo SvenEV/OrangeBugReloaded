@@ -1,7 +1,7 @@
 ﻿using Microsoft.Graphics.Canvas.UI.Xaml;
 using OrangeBugReloaded.App.Common;
 using OrangeBugReloaded.Core;
-using OrangeBugReloaded.Core.ClientServer.Net.Client;
+using OrangeBugReloaded.Core.ClientServer.Net;
 using System;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -26,10 +26,10 @@ namespace OrangeBugReloaded.App
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
-            var serverInfo = e.Parameter as ServerConnectInfo;
+            var serverInfo = e.Parameter as NetGameServerInfo;
 
             if (serverInfo == null)
-                throw new ArgumentException($"Expected {nameof(ServerConnectInfo)} as parameter");
+                throw new ArgumentException($"Expected {nameof(NetGameServerInfo)} as parameter");
 
             ViewModel = new GameClientViewModel(canvas, serverInfo);
         }

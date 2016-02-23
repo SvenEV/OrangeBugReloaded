@@ -1,4 +1,6 @@
-﻿namespace OrangeBugReloaded.Core
+﻿using Newtonsoft.Json;
+
+namespace OrangeBugReloaded.Core
 {
     /// <summary>
     /// Provides information about a tile during gameplay.
@@ -10,6 +12,7 @@
         public Tile Tile { get; }
         public int Version { get; }
 
+        [JsonConstructor]
         public TileInfo(Tile tile, int version)
         {
             Tile = tile;
@@ -35,5 +38,7 @@
 
         public static bool operator ==(TileInfo a, TileInfo b) => Equals(a, b);
         public static bool operator !=(TileInfo a, TileInfo b) => !Equals(a, b);
+
+        public override string ToString() => $"[{Version.ToString().PadLeft(4, '0')}] {Tile.ToString()}";
     }
 }

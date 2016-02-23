@@ -1,7 +1,7 @@
 ﻿using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Threading;
 using OrangeBugReloaded.Core;
-using OrangeBugReloaded.Core.ClientServer.Net.Client;
+using OrangeBugReloaded.Core.ClientServer.Net;
 using OrangeBugReloaded.Core.Entities;
 using OrangeBugReloaded.Core.Tiles;
 using System;
@@ -48,7 +48,7 @@ namespace OrangeBugReloaded.App.Common
 
         public void ConnectClient()
         {
-            var serverInfo = new ServerConnectInfo(ServerIp, Port);
+            var serverInfo = new NetGameServerInfo(ServerIp, Port);
             _frame.Navigate(typeof(GameClientPage), serverInfo);
         }
 
