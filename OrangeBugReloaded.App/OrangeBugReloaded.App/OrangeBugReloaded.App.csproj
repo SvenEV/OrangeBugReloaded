@@ -273,10 +273,6 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Apps\UwpNetworkingEssentials\UwpNetworkingEssentials\UwpNetworkingEssentials.csproj">
-      <Project>{a3ddfd77-e4bf-41e3-8575-7ef94a231ec1}</Project>
-      <Name>UwpNetworkingEssentials</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\OrangeBugReloaded.Core2\OrangeBugReloaded.Core2.csproj">
       <Project>{cdca3b67-c9bd-4bc6-9377-c0c099eaa09b}</Project>
       <Name>OrangeBugReloaded.Core2</Name>
