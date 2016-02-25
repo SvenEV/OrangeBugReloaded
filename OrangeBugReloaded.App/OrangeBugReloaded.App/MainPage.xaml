@@ -9,128 +9,9 @@
     mc:Ignorable="d">
 
     <Grid Background="Black">
-        <Grid.RowDefinitions>
-            <RowDefinition/>
-            <RowDefinition Height="8"/>
-            <RowDefinition/>
-            <RowDefinition Height="100"/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-            <ColumnDefinition Width="8"/>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
-        
-        <!-- Client 1 -->
-        <!--
-        <win2d:CanvasAnimatedControl x:Name="canvasClient1"
-                                     Grid.Row="0" Grid.Column="0"
-                                     PointerWheelChanged="canvas_PointerWheelChanged"
-                                     PointerPressed="canvas_PointerPressed"/>
-
-        <TextBlock Text="Client 1"
-                   Grid.Row="0" Grid.Column="0"
-                   FontSize="16" Margin="12"
-                   HorizontalAlignment="Left"
-                   VerticalAlignment="Top"
-                   Foreground="WhiteSmoke"/>
-        -->
-
-        <!-- Client 2 -->
-        <!--
-        <win2d:CanvasAnimatedControl x:Name="canvasClient2"
-                                     Grid.Row="2" Grid.Column="0"
-                                     PointerWheelChanged="canvas_PointerWheelChanged"
-                                     PointerPressed="canvas_PointerPressed"/>
-
-        <TextBlock Text="Client 2"
-                   Grid.Row="2" Grid.Column="0"
-                   FontSize="16" Margin="12"
-                   HorizontalAlignment="Left"
-                   VerticalAlignment="Top"
-                   Foreground="WhiteSmoke"/>
-        -->
-
-        <!-- Server -->
-        <!--
-        <win2d:CanvasAnimatedControl x:Name="canvasServer"
-                                     Grid.Column="2"
-                                     Grid.RowSpan="3"
-                                     PointerWheelChanged="canvas_PointerWheelChanged"
-                                     PointerPressed="canvas_PointerPressed"/>
-
-        <TextBlock Text="Server" Grid.Column="2"
-                   FontSize="16" Margin="12"
-                   HorizontalAlignment="Left"
-                   VerticalAlignment="Top"
-                   Foreground="WhiteSmoke"/>
-        -->
-
-        <!-- Versions toggle -->
-        <!--
-        <CheckBox IsChecked="{Binding MainVM.AreVersionsVisible, Mode=TwoWay}"
-                  Grid.RowSpan="99" Grid.ColumnSpan="99"
-                  Margin="8.5"
-                  RequestedTheme="Dark"
-                  Content="Display Versions"
-                  HorizontalAlignment="Right"
-                  VerticalAlignment="Top"/>
-        -->
-
-        <!-- Separators -->
-        <!--
-        <Border Background="WhiteSmoke" Grid.Column="1" Grid.RowSpan="99"/>
-        <Border Background="WhiteSmoke" Grid.Row="1" Grid.Column="0"/>
-        -->
-
-        <!-- Editor -->
-        <!--
-        <Border Grid.Row="99" Grid.ColumnSpan="99" Background="WhiteSmoke" Padding="12">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-
-                <ToggleSwitch x:Name="editToggle" Header="Edit Mode" MinWidth="100"/>
-
-                <ListView ItemsSource="{Binding MainVM.TileTemplates}"
-                          SelectedItem="{Binding MainVM.SelectedTileTemplate, Mode=TwoWay}"
-                          SelectionMode="Single" Grid.Column="1"
-                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                          ScrollViewer.HorizontalScrollMode="Enabled"
-                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                          ScrollViewer.VerticalScrollMode="Disabled">
-
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="Padding" Value="4"/>
-                            <Setter Property="MaxWidth" Value="200"/>
-                            <Setter Property="MinWidth" Value="0"/>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-
-                    <ListView.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ListView.ItemsPanel>
-
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <Border Width="68" Height="68" Background="SkyBlue">
-                                <TextBlock Text="{Binding}" TextWrapping="Wrap"/>
-                            </Border>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
                 
-                </ListView>
-
-            </Grid>
-        </Border>
-        -->
-        
-        <Border Padding="12" Background="WhiteSmoke"
+        <Border Padding="12"
+                Background="#FFFE6A01"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Width="340"
@@ -140,30 +21,39 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>
-                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="12"/>
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="Server" Style="{StaticResource TitleTextBlockStyle}"/>
-                    <TextBox PlaceholderText="Port" Text="{x:Bind ViewModel.Port, Mode=TwoWay}"/>
-                    <Button Content="Start Server" Click="{x:Bind ViewModel.StartServer}"/>
+                    <TextBlock Text="Server" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                    <TextBox PlaceholderText="Port" Text="{x:Bind ViewModel.Port, Mode=TwoWay}" Header="Port"/>
+                    <Button Content="Start Server" Click="{x:Bind ViewModel.StartServer}" Margin="0,68,0,0" HorizontalAlignment="Stretch"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2">
-                    <TextBlock Text="Client" Style="{StaticResource TitleTextBlockStyle}"/>
-                    <TextBox PlaceholderText="Server IP" Text="{x:Bind ViewModel.ServerIp, Mode=TwoWay}"/>
-                    <TextBox PlaceholderText="Server Port" Text="{x:Bind ViewModel.Port, Mode=TwoWay}"/>
-                    <Button Content="Connect" Click="{x:Bind ViewModel.ConnectClient}"/>
+                    <TextBlock Text="Client" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                    <TextBox PlaceholderText="Server IP" Text="{x:Bind ViewModel.ServerIp, Mode=TwoWay}" Header="Server IP"/>
+                    <TextBox PlaceholderText="Server Port" Text="{x:Bind ViewModel.Port, Mode=TwoWay}" Header="Server Port"/>
+                    <Button Content="Connect" Click="{x:Bind ViewModel.ConnectClient}" Margin="0,8,0,0" HorizontalAlignment="Stretch"/>
                 </StackPanel>
 
                 <TextBlock Grid.Row="1" Grid.ColumnSpan="99" Margin="0,12,0,0">
                     Your IP:<LineBreak/><Run Text="{x:Bind ViewModel.LocalIp}"/>
                 </TextBlock>
+
+                <Image Source="ms-appx:///Assets/Sprites/PlayerRight.png"
+                       Grid.Row="1" Grid.ColumnSpan="99"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Bottom"
+                       Height="40"/>
             </Grid>
 
         </Border>

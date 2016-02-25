@@ -198,12 +198,6 @@
     <Compile Include="Transactions\TransactionBase.cs" />
     <EmbeddedResource Include="Properties\OrangeBugReloaded.Core2.rd.xml" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Apps\UwpNetworkingEssentials\UwpNetworkingEssentials\UwpNetworkingEssentials.csproj">
-      <Project>{a3ddfd77-e4bf-41e3-8575-7ef94a231ec1}</Project>
-      <Name>UwpNetworkingEssentials</Name>
-    </ProjectReference>
-  </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

@@ -36,6 +36,9 @@ namespace OrangeBugReloaded.App.Common
 
         public MainViewModel()
         {
+            if (IsInDesignMode)
+                return;
+
             _frame = Window.Current.Content as Frame;
             DispatcherHelper.Initialize();
             LocalIp = GetLocalIp();
