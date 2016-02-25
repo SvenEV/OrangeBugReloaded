@@ -1,12 +1,11 @@
 ﻿using Microsoft.Graphics.Canvas.UI.Xaml;
 using OrangeBugReloaded.App.Common;
+using OrangeBugReloaded.App.ViewModels;
 using OrangeBugReloaded.Core;
 using OrangeBugReloaded.Core.ClientServer.Net;
 using System;
 using System.Numerics;
 using System.Threading.Tasks;
-using Windows.System;
-using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Navigation;
@@ -15,13 +14,13 @@ namespace OrangeBugReloaded.App
 {
     public sealed partial class GameClientPage : Page
     {
-        public GameClientViewModel ViewModel { get; private set; }
+        public NetGameClientViewModel ViewModel { get; private set; }
 
         public GameClientPage()
         {
             InitializeComponent();
             DataContext = this;
-            Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
+            KeyboardManager.ArrowKeyDown.Subscribe(OnDirectionKeyDown);
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -31,33 +30,12 @@ namespace OrangeBugReloaded.App
             if (serverInfo == null)
                 throw new ArgumentException($"Expected {nameof(NetGameServerInfo)} as parameter");
 
-            ViewModel = new GameClientViewModel(canvas, serverInfo);
+            ViewModel = new NetGameClientViewModel(canvas, serverInfo);
         }
 
-        private async void CoreWindow_KeyDown(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.KeyEventArgs args)
+        private async void OnDirectionKeyDown(Point direction)
         {
-            switch (args.VirtualKey)
-            {
-                case VirtualKey.Left:
-                    await ViewModel.Client.MovePlayerAsync(Point.West);
-                    break;
-
-                case VirtualKey.Right:
-                    await ViewModel.Client.MovePlayerAsync(Point.East);
-                    break;
-
-                case VirtualKey.Up:
-                    await ViewModel.Client.MovePlayerAsync(Point.North);
-                    break;
-
-                case VirtualKey.Down:
-                    await ViewModel.Client.MovePlayerAsync(Point.South);
-                    break;
-            }
-
-            ViewModel.Renderer.CameraPosition = ViewModel.Client.PlayerPosition.ToVector2();
-
-            args.Handled = true;
+            await ViewModel.Client.MovePlayerAsync(direction);
         }
 
         private void canvas_PointerWheelChanged(object sender, PointerRoutedEventArgs e)

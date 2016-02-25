@@ -2,16 +2,20 @@
 
 namespace OrangeBugReloaded.Core.ClientServer.Local
 {
-    public class LocalGameServer : GameServerBase
+    public class LocalGameServer
     {
-        public LocalGameServer(IGameplayMap map) : base(map)
+        private readonly GameServer _gameServer;
+
+        public GameServer UnderlyingGameServer => _gameServer;
+
+        public LocalGameServer(GameServer gameServer)
         {
+            _gameServer = gameServer;
         }
 
-        protected override async Task<IGameClientStub> CreateClientStubAsync(IGameClientInfo clientInfo)
+        public Task<JoinResult> JoinAsync(LocalGameClient gameClient)
         {
-            await Task.CompletedTask;
-            return (clientInfo as LocalGameClientInfo)?.Client;
+            return _gameServer.JoinAsync(gameClient.PlayerInfo, gameClient);
         }
     }
 }

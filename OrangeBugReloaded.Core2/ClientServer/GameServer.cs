@@ -3,6 +3,7 @@ using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Transactions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -12,23 +13,23 @@ namespace OrangeBugReloaded.Core.ClientServer
     /// Hosts an Orange Bug Map and allows multiple players to
     /// connect and play.
     /// </summary>
-    public abstract class GameServerBase : IGameServer
+    public sealed class GameServer : IGameServerStub
     {
         // Maps connection IDs to ClientConnections
-        private Dictionary<string, ClientConnection> _clients = new Dictionary<string, ClientConnection>();
+        private readonly Dictionary<string, ClientConnection> _clients = new Dictionary<string, ClientConnection>();
 
         // Maps chunk indices to lists of client connections that have currently loaded that chunk
-        private Dictionary<Point, List<ClientConnection>> _connectionsByChunk = new Dictionary<Point, List<ClientConnection>>();
+        private readonly Dictionary<Point, List<ClientConnection>> _connectionsByChunk = new Dictionary<Point, List<ClientConnection>>();
 
         // Stores follow-up events that must be executed in the future
-        private List<FollowUpEvent> _scheduledFollowUpEvents = new List<FollowUpEvent>();
+        private readonly List<FollowUpEvent> _scheduledFollowUpEvents = new List<FollowUpEvent>();
 
         // The task that executes scheduled follow-up events
         private readonly Task _updateTask;
 
         public IGameplayMap Map { get; }
 
-        public GameServerBase(IGameplayMap map)
+        public GameServer(IGameplayMap map)
         {
             Map = map;
             map.ChunkLoader.Chunks.ItemAdded += OnChunkLoaded;
@@ -52,12 +53,11 @@ namespace OrangeBugReloaded.Core.ClientServer
         }
 
         /// <inheritdoc/>
-        public async Task<ConnectResult> JoinAsync(IGameClientInfo clientInfo)
+        public async Task<JoinResult> JoinAsync(GameClientInfo clientInfo, IGameClientStub clientStub)
         {
             if (_clients.Values.Any(conn => conn.ClientInfo.PlayerId == clientInfo.PlayerId.ToString()))
-                return new ConnectResult(false, Point.Zero, "Another client is already connected using the same player ID");
+                return new JoinResult(false, Point.Zero, "Another client is already connected using the same player ID");
 
-            var clientStub = await CreateClientStubAsync(clientInfo);
             var connection = new ClientConnection(clientInfo, clientStub);
             var playerEntity = new PlayerEntity(clientInfo.PlayerId, Point.North);
 
@@ -73,7 +73,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                     // TODO: What if a player spawns within a level some others are currently trying to solve?
                     await CommitAndBroadcastAsync(spawnResult.Transaction, spawnResult.FollowUpEvents, connection);
                     _clients.Add(clientInfo.PlayerId, connection);
-                    return new ConnectResult(true, playerInfo.Position);
+                    return new JoinResult(true, playerInfo.Position);
                 }
                 else
                 {
@@ -94,7 +94,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                     var playerInfo = new PlayerInfo(clientInfo.PlayerId, clientInfo.PlayerDisplayName, spawnResult.SpawnPosition);
                     Map.Metadata.Players.Add(playerInfo);
                     _clients.Add(clientInfo.PlayerId, connection);
-                    return new ConnectResult(true, spawnResult.SpawnPosition);
+                    return new JoinResult(true, spawnResult.SpawnPosition);
                 }
                 else
                 {
@@ -234,8 +234,6 @@ namespace OrangeBugReloaded.Core.ClientServer
             }
         }
 
-        protected abstract Task<IGameClientStub> CreateClientStubAsync(IGameClientInfo clientInfo);
-
         private async Task RunAsync()
         {
             while (true)
@@ -297,6 +295,16 @@ namespace OrangeBugReloaded.Core.ClientServer
         /// <returns></returns>
         private async Task BroadcastChangesAsync(ITransactionWithMoveSupport transaction, int newVersion, ClientConnection excludedConnection = null)
         {
+            // Check which players have moved and update their positions in map metadata
+            var playerMoveEvents = transaction.Events
+                .OfType<EntityMoveEvent>()
+                .Where(e => e.Source.Entity is PlayerEntity)
+                .Select(e => new { PlayerId = (e.Source.Entity as PlayerEntity)?.PlayerId, NewPosition = e.TargetPosition });
+
+            foreach (var move in playerMoveEvents)
+                Map.Metadata.Players[move.PlayerId] =
+                    Map.Metadata.Players[move.PlayerId].WithPosition(move.NewPosition);
+
             // Notify clients that have loaded the affected chunks
             foreach (var conn in _clients.Values)
             {
@@ -325,12 +333,12 @@ namespace OrangeBugReloaded.Core.ClientServer
 
         private ClientConnection GetClient(string playerId)
         {
-            var connection = _clients.TryGetValue(playerId.ToString());
+            var client = _clients.TryGetValue(playerId.ToString());
 
-            if (connection == null)
-                throw new ArgumentException($"There is no connection with player ID '{playerId.ToString()}'");
+            if (client == null)
+                throw new ArgumentException($"There is no client with player ID '{playerId.ToString()}'");
 
-            return connection;
+            return client;
         }
     }
 }

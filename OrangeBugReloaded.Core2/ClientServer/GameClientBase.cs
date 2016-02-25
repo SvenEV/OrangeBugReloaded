@@ -3,54 +3,50 @@ using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Transactions;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Subjects;
 using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core.ClientServer
 {
-    public abstract class GameClientBase : IGameClient
+    public abstract class GameClientBase : IGameClientStub
     {
-        private IGameClientInfo _clientInfo;
-        private IGameServerInfo _serverInfo;
+        private readonly Subject<IGameEvent> _events = new Subject<IGameEvent>();
         private IGameServerStub _serverStub;
 
         public Point PlayerPosition { get; private set; }
 
-        public string PlayerId { get; }
-
-        public string PlayerDisplayName { get; }
-
+        public GameClientInfo PlayerInfo { get; }
+        
         public IGameplayMap Map { get; private set; }
 
-        public GameClientBase(string playerId, string playerDisplayName)
+        public IObservable<IGameEvent> Events => _events;
+
+        public GameClientBase(GameClientInfo playerInfo)
         {
-            PlayerId = playerId;
-            PlayerDisplayName = playerDisplayName;
+            PlayerInfo = playerInfo;
         }
 
-        public async Task ConnectAsync(IGameServerInfo serverInfo)
+        /// <summary>
+        /// Initializes the client after it has successfully joined a game on
+        /// a game server.
+        /// </summary>
+        /// <param name="spawnPosition">
+        /// The position on the map where the server has created the <see cref="PlayerEntity"/>
+        /// for the player
+        /// </param>
+        /// <param name="serverStub">
+        /// An object that can invoke methods on the game server
+        /// </param>
+        /// <returns></returns>
+        protected async Task InitializeAsync(Point spawnPosition, IGameServerStub serverStub)
         {
-            _serverInfo = serverInfo;
-            _clientInfo = await CreateClientInfoAsync(serverInfo);
-            _serverStub = await CreateServerStubAsync(serverInfo);
+            _serverStub = serverStub;
+            PlayerPosition = spawnPosition;
+            Map = new Map(new RemoteChunkStorage(PlayerInfo.PlayerId, _serverStub));
 
-            var result = await _serverStub.JoinAsync(_clientInfo);
-
-            if (result.IsSuccessful)
-            {
-                PlayerPosition = result.SpawnPosition;
-
-                Map = new Map(new RemoteChunkStorage(PlayerId, _serverStub));
-
-                // Load chunk at spawn position
-                await Map.GetAsync(result.SpawnPosition);
-            }
-            else
-            {
-                Debugger.Break();
-                throw new Exception(result.Message);
-            }
+            // Load chunk at spawn position
+            await Map.GetAsync(spawnPosition);
         }
 
         public async Task DisconnectAsync()
@@ -58,8 +54,7 @@ namespace OrangeBugReloaded.Core.ClientServer
             if (_serverStub == null)
                 return;
 
-            await _serverStub.LeaveAsync(PlayerId);
-            _serverInfo = null;
+            await _serverStub.LeaveAsync(PlayerInfo.PlayerId);
             _serverStub = null;
             PlayerPosition = Point.Zero;
             Map = null;
@@ -78,7 +73,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                 new VersionedPoint(targetPosition, target.Version),
                 result.Transaction.Changes.Select(c => new VersionedPoint(c.Key, c.Value.Version)));
 
-            var remoteMoveResult = await _serverStub.MoveAsync(request, PlayerId);
+            var remoteMoveResult = await _serverStub.MoveAsync(request, PlayerInfo.PlayerId);
 
             if (remoteMoveResult.IsSuccessful)
             {
@@ -110,12 +105,9 @@ namespace OrangeBugReloaded.Core.ClientServer
 
             AnalyzeEvents(e.Events);
 
-            // TODO: Emit events
+            foreach (var ev in e.Events)
+                _events.OnNext(ev);
         }
-
-        protected abstract Task<IGameClientInfo> CreateClientInfoAsync(IGameServerInfo serverInfo);
-
-        protected abstract Task<IGameServerStub> CreateServerStubAsync(IGameServerInfo serverInfo);
 
         private async Task ApplyChunkAsync(IChunk chunk, Point index)
         {
@@ -131,15 +123,18 @@ namespace OrangeBugReloaded.Core.ClientServer
             }
         }
 
-        private void AnalyzeEvents(IEnumerable<IGameEvent> events)
+        private async void AnalyzeEvents(IEnumerable<IGameEvent> events)
         {
             var playerMoveEvent = events.OfType<EntityMoveEvent>()
-                .FirstOrDefault(ev => (ev.Source.Entity as PlayerEntity)?.PlayerId == PlayerId);
+                .FirstOrDefault(ev => (ev.Source.Entity as PlayerEntity)?.PlayerId == PlayerInfo.PlayerId);
 
             if (playerMoveEvent != null)
             {
                 // It is the player that has been moved
                 PlayerPosition = playerMoveEvent.TargetPosition;
+
+                // Make sure we have that part of the map loaded
+                await Map.GetAsync(PlayerPosition);
             }
         }
     }

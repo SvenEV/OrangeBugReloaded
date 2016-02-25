@@ -96,7 +96,8 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="Common\AudioPlayer.cs" />
-    <Compile Include="Common\GameServerViewModel.cs" />
+    <Compile Include="Common\KeyboardManager.cs" />
+    <Compile Include="ViewModels\GameServerViewModel.cs" />
     <Compile Include="Common\IRendererPlugin.cs" />
     <Compile Include="Common\MainViewModel.cs" />
     <Compile Include="Common\Mathf.cs" />
@@ -107,7 +108,8 @@
     <Compile Include="GameClientPage.xaml.cs">
       <DependentUpon>GameClientPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Common\GameClientViewModel.cs" />
+    <Compile Include="ViewModels\LocalGameClientViewModel.cs" />
+    <Compile Include="ViewModels\NetGameClientViewModel.cs" />
     <Compile Include="GameServerPage.xaml.cs">
       <DependentUpon>GameServerPage.xaml</DependentUpon>
     </Compile>

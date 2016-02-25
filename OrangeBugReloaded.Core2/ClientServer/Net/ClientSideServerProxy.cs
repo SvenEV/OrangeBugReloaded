@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using UwpNetworkingEssentials.Rpc;
 
 namespace OrangeBugReloaded.Core.ClientServer.Net
@@ -11,16 +10,6 @@ namespace OrangeBugReloaded.Core.ClientServer.Net
         public ClientSideServerProxy(RpcConnection connection)
         {
             _connection = connection;
-        }
-
-        public async Task<ConnectResult> JoinAsync(IGameClientInfo clientInfo)
-        {
-            var remoteClientInfo = clientInfo as NetGameClientInfo;
-
-            if (remoteClientInfo == null)
-                throw new ArgumentException();
-
-            return await _connection.Proxy.JoinAsync(remoteClientInfo);
         }
 
         public Task LeaveAsync(string playerId)

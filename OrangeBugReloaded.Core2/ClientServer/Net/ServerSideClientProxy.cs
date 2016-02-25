@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Diagnostics;
+using System.Threading.Tasks;
 using UwpNetworkingEssentials.Rpc;
 
 namespace OrangeBugReloaded.Core.ClientServer.Net
@@ -7,20 +8,25 @@ namespace OrangeBugReloaded.Core.ClientServer.Net
     {
         private readonly RpcConnection _connection;
 
-        public string PlayerDisplayName { get; }
+        public GameClientInfo PlayerInfo { get; }
 
-        public string PlayerId { get; }
-
-        public ServerSideClientProxy(string playerId, string playerDisplayName, RpcConnection connection)
+        public ServerSideClientProxy(GameClientInfo clientInfo, RpcConnection connection)
         {
-            PlayerId = playerId;
-            PlayerDisplayName = playerDisplayName;
+            PlayerInfo = clientInfo;
             _connection = connection;
         }
 
         public async Task OnUpdate(ClientUpdate e)
         {
-            await _connection.Proxy.OnUpdate(e);
+            try
+            {
+                await _connection.Proxy.OnUpdate(e);
+            }
+            catch
+            {
+                Debugger.Launch();
+                Debugger.Break();
+            }
         }
     }
 }

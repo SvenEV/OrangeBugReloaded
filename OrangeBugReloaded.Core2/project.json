@@ -2,8 +2,7 @@
   "dependencies": {
     "Microsoft.NETCore.UniversalWindowsPlatform": "5.0.0",
     "Newtonsoft.Json": "8.0.2",
-    "Rx-Main": "2.3.0-beta2",
-    "UwpNetworkingEssentials": "1.0.1"
+    "Rx-Main": "2.3.0-beta2"
   },
   "frameworks": {
     "uap10.0": {}

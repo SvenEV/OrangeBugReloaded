@@ -1,23 +1,22 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core.ClientServer.Local
 {
     public class LocalGameClient : GameClientBase
     {
-        public LocalGameClient(string playerId, string playerDisplayName) : base(playerId, playerDisplayName)
+        public LocalGameClient(GameClientInfo playerInfo) : base(playerInfo)
         {
         }
 
-        protected override async Task<IGameClientInfo> CreateClientInfoAsync(IGameServerInfo serverInfo)
+        public async Task JoinAsync(LocalGameServer gameServer)
         {
-            await Task.CompletedTask;
-            return new LocalGameClientInfo(this, PlayerId, PlayerDisplayName);
-        }
+            var joinResult = await gameServer.JoinAsync(this);
 
-        protected override async Task<IGameServerStub> CreateServerStubAsync(IGameServerInfo serverInfo)
-        {
-            await Task.CompletedTask;
-            return (serverInfo as LocalGameServerInfo).Server;
+            if (joinResult.IsSuccessful)
+                await InitializeAsync(joinResult.SpawnPosition, gameServer.UnderlyingGameServer);
+            else
+                throw new InvalidOperationException("Failed to join game server");
         }
     }
 }

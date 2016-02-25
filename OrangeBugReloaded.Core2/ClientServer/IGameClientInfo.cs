@@ -1,8 +1,17 @@
-﻿namespace OrangeBugReloaded.Core.ClientServer
+﻿using Newtonsoft.Json;
+
+namespace OrangeBugReloaded.Core.ClientServer
 {
-    public interface IGameClientInfo
+    public struct GameClientInfo
     {
-        string PlayerId { get; }
-        string PlayerDisplayName { get; }
+        public string PlayerId { get; }
+        public string PlayerDisplayName { get; }
+
+        [JsonConstructor]
+        public GameClientInfo(string playerId, string playerDisplayName)
+        {
+            PlayerId = playerId;
+            PlayerDisplayName = playerDisplayName;
+        }
     }
 }

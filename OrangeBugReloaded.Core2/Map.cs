@@ -345,16 +345,6 @@ namespace OrangeBugReloaded.Core
                 return initialPoints.Contains(p);
             });
 
-            // Trigger follow-up transactions
-            // e.g. a teleporter might initiate a new transaction here to teleport an entity
-            //foreach (var p in notifiedPositions)
-            //{
-            //    var args = new FollowUpEventArgs(this, transaction);
-            //    var tileInfo = await GetAsync(p);
-            //    await tileInfo.Tile.OnFollowUpTransactionAsync(args, p);
-            //    followUpEvents.AddRange(args.FollowUpMoves);
-            //}
-
             return followUpEvents;
         }
     }

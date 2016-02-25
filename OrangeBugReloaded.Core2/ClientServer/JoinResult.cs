@@ -2,7 +2,7 @@
 
 namespace OrangeBugReloaded.Core.ClientServer
 {
-    public struct ConnectResult
+    public struct JoinResult
     {
         /// <summary>
         /// True iff the connection is established and the player
@@ -21,7 +21,7 @@ namespace OrangeBugReloaded.Core.ClientServer
         public string Message { get; }
 
         [JsonConstructor]
-        public ConnectResult(bool isSuccessful, Point spawnPosition, string message = "")
+        public JoinResult(bool isSuccessful, Point spawnPosition, string message = "")
         {
             IsSuccessful = isSuccessful;
             SpawnPosition = spawnPosition;

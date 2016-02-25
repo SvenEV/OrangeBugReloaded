@@ -112,7 +112,7 @@
     <Compile Include="ChunkLoader.cs" />
     <Compile Include="ClientServer\ClientConnection.cs" />
     <Compile Include="ClientServer\ClientUpdate.cs" />
-    <Compile Include="ClientServer\ConnectResult.cs" />
+    <Compile Include="ClientServer\JoinResult.cs" />
     <Compile Include="ClientServer\GameClientBase.cs" />
     <Compile Include="ClientServer\IGameClient.cs" />
     <Compile Include="ClientServer\IGameClientInfo.cs" />
@@ -121,14 +121,11 @@
     <Compile Include="ClientServer\IGameServerInfo.cs" />
     <Compile Include="ClientServer\IGameServerStub.cs" />
     <Compile Include="ClientServer\Local\LocalGameClient.cs" />
-    <Compile Include="ClientServer\Local\LocalGameClientInfo.cs" />
     <Compile Include="ClientServer\Local\LocalGameServer.cs" />
-    <Compile Include="ClientServer\Local\LocalGameServerInfo.cs" />
-    <Compile Include="ClientServer\Net\NetGameClientInfo.cs" />
     <Compile Include="ClientServer\Net\ClientSideServerProxy.cs" />
     <Compile Include="ClientServer\Net\NetGameClient.cs" />
-    <Compile Include="ClientServer\Net\NetGameServerInfo.cs" />
     <Compile Include="ClientServer\Net\NetGameServer.cs" />
+    <Compile Include="ClientServer\Net\NetGameServerInfo.cs" />
     <Compile Include="ClientServer\Net\ServerSideClientProxy.cs" />
     <Compile Include="ClientServer\RemoteChunkStorage.cs" />
     <Compile Include="ClientServer\RemoteMoveRequest.cs" />
@@ -153,7 +150,7 @@
     <Compile Include="Events\IGameEventEmitter.cs" />
     <Compile Include="Events\ILocatedGameEvent.cs" />
     <Compile Include="ExtensionMethods.cs" />
-    <Compile Include="ClientServer\GameServerBase.cs" />
+    <Compile Include="ClientServer\GameServer.cs" />
     <Compile Include="GameplayArgs.cs" />
     <Compile Include="IChunkStorage.cs" />
     <Compile Include="IMap.cs" />
@@ -176,7 +173,7 @@
     <Compile Include="Rendering\IVisualHint.cs" />
     <Compile Include="Rendering\VisualHintAttribute.cs" />
     <Compile Include="SampleChunks.cs" />
-    <Compile Include="ScheduledMove.cs" />
+    <Compile Include="FollowUpEvent.cs" />
     <Compile Include="Serialization.cs" />
     <Compile Include="TaskEx.cs" />
     <Compile Include="Tile.cs" />
@@ -201,7 +198,12 @@
     <Compile Include="Transactions\TransactionBase.cs" />
     <EmbeddedResource Include="Properties\OrangeBugReloaded.Core2.rd.xml" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Apps\UwpNetworkingEssentials\UwpNetworkingEssentials\UwpNetworkingEssentials.csproj">
+      <Project>{a3ddfd77-e4bf-41e3-8575-7ef94a231ec1}</Project>
+      <Name>UwpNetworkingEssentials</Name>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

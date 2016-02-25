@@ -9,17 +9,35 @@
     mc:Ignorable="d">
 
     <Grid Background="Black">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="12"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
 
-        <win2d:CanvasAnimatedControl x:Name="canvas"
-                                     Grid.Column="2"
-                                     Grid.RowSpan="3"
-                                     PointerWheelChanged="canvas_PointerWheelChanged"/>
+        <Border Background="WhiteSmoke" Grid.Column="1"/>
+
+        <TextBlock Text="Local Client" Grid.Column="0"
+                   FontSize="16" Margin="12"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Foreground="WhiteSmoke"/>
 
         <TextBlock Text="Server" Grid.Column="2"
                    FontSize="16" Margin="12"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top"
                    Foreground="WhiteSmoke"/>
+
+        <win2d:CanvasAnimatedControl x:Name="clientCanvas"
+                                     Grid.Column="0"
+                                     Grid.RowSpan="3"
+                                     PointerWheelChanged="canvas_PointerWheelChanged"/>
+
+        <win2d:CanvasAnimatedControl x:Name="canvas"
+                                     Grid.Column="2"
+                                     Grid.RowSpan="3"
+                                     PointerWheelChanged="canvas_PointerWheelChanged"/>
 
     </Grid>
 </Page>

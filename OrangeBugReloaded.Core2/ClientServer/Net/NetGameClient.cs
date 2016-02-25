@@ -10,27 +10,22 @@ namespace OrangeBugReloaded.Core.ClientServer.Net
     {
         private RpcClient _rpcClient;
 
-        public NetGameClient(string playerId, string playerDisplayName) : base(playerId, playerDisplayName)
+        public NetGameClient(GameClientInfo playerInfo) : base(playerInfo)
         {
         }
 
-        protected override async Task<IGameClientInfo> CreateClientInfoAsync(IGameServerInfo serverInfo)
+        public async Task JoinAsync(NetGameServerInfo serverInfo)
         {
-            var remoteServerInfo = serverInfo as NetGameServerInfo;
-
-            if (remoteServerInfo == null)
-                throw new ArgumentException();
-
             var serializer = new DefaultJsonSerializer(typeof(NetGameClient).GetTypeInfo().Assembly, Serialization.JsonSerializationSettings);
-            _rpcClient = await RpcClient.ConnectAsync(remoteServerInfo.RemoteAddress, remoteServerInfo.RemotePort, this, serializer);
+            _rpcClient = await RpcClient.ConnectAsync(serverInfo.RemoteAddress, serverInfo.RemotePort, this, serializer);
 
-            return new NetGameClientInfo(_rpcClient.Connection.Id, PlayerId, PlayerDisplayName);
-        }
+            JoinResult joinResult = await _rpcClient.Server.JoinAsync(PlayerInfo);
+            var serverStub = new ClientSideServerProxy(_rpcClient.Connection);
 
-        protected override async Task<IGameServerStub> CreateServerStubAsync(IGameServerInfo serverInfo)
-        {
-            await Task.CompletedTask;
-            return new ClientSideServerProxy(_rpcClient.Connection);
+            if (joinResult.IsSuccessful)
+                await InitializeAsync(joinResult.SpawnPosition, serverStub);
+            else
+                throw new InvalidOperationException("Failed to join game server");
         }
     }
 }

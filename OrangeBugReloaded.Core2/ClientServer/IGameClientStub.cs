@@ -7,6 +7,8 @@ namespace OrangeBugReloaded.Core.ClientServer
     /// </summary>
     public interface IGameClientStub
     {
+        GameClientInfo PlayerInfo { get; }
+
         /// <summary>
         /// Sends updated tiles and events to the client.
         /// </summary>

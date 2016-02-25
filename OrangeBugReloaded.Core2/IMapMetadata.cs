@@ -40,7 +40,7 @@ namespace OrangeBugReloaded.Core
         /// </exception>
         void Add(PlayerInfo playerInfo);
 
-        PlayerInfo this[string id] { get; }
+        PlayerInfo this[string id] { get; set; }
     }
 
     public class RegionInfo
@@ -92,5 +92,8 @@ namespace OrangeBugReloaded.Core
             DisplayName = displayName;
             Position = position;
         }
+
+        public PlayerInfo WithPosition(Point newPosition)
+            => new PlayerInfo(Id, DisplayName, newPosition);
     }
 }

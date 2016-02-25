@@ -8,15 +8,6 @@ namespace OrangeBugReloaded.Core.ClientServer
     public interface IGameServerStub
     {
         /// <summary>
-        /// Establishes a connection from a client to the server and
-        /// makes the player join the game.
-        /// </summary>
-        /// <param name="client">Client</param>
-        /// <param name="playerId">Player ID</param>
-        /// <returns>Result</returns>
-        Task<ConnectResult> JoinAsync(IGameClientInfo clientInfo);
-
-        /// <summary>
         /// Disconnects a client from the server.
         /// </summary>
         /// <param name="playerId">Player ID</param>
