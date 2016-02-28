@@ -78,7 +78,7 @@ namespace OrangeBugReloaded.Core.ClientServer
             if (remoteMoveResult.IsSuccessful)
             {
                 // Commit transaction
-                await transaction.CommitAsync(Map, remoteMoveResult.NewVersion, null);
+                await transaction.CommitAsync(Map, remoteMoveResult.NewVersion);
                 AnalyzeEvents(transaction.Events);
                 return true;
             }
@@ -102,6 +102,9 @@ namespace OrangeBugReloaded.Core.ClientServer
         {
             foreach (var change in e.TileUpdates)
                 await Map.SetAsync(change.Position, change.TileInfo);
+
+            foreach (var ev in e.Events)
+                Map.Emit(ev);
 
             AnalyzeEvents(e.Events);
 

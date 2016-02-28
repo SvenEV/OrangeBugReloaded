@@ -50,7 +50,7 @@ namespace OrangeBugReloaded.Core
     /// A map that supports get-, set- and move-operations and
     /// provides a stream of gameplay events.
     /// </summary>
-    public interface IGameplayMap : IMap
+    public interface IGameplayMap : IMap, IGameEventEmitter
     {
         /// <summary>
         /// Provides metadata about the map.

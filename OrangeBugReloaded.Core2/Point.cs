@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Text.RegularExpressions;
@@ -16,6 +17,13 @@ namespace OrangeBugReloaded.Core
     //[JsonConverter(typeof(PointConverter))]
     public struct Point
     {
+        /// <summary>
+        /// Gets the points that represent a direction.
+        /// These are <see cref="North"/>, <see cref="East"/>,
+        /// <see cref="South"/> and <see cref="West"/>.
+        /// </summary>
+        public static IEnumerable<Point> Directions => GetDirections();
+
         /// <summary>
         /// The <see cref="Point"/> [0, 0].
         /// </summary>
@@ -147,6 +155,14 @@ namespace OrangeBugReloaded.Core
         {
             // http://stackoverflow.com/questions/1082917/mod-of-negative-number-is-melting-my-brain
             return (x % m + m) % m;
+        }
+
+        private static IEnumerable<Point> GetDirections()
+        {
+            yield return North;
+            yield return East;
+            yield return South;
+            yield return West;
         }
     }
 

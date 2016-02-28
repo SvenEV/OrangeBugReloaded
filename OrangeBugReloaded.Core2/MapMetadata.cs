@@ -8,14 +8,21 @@ namespace OrangeBugReloaded.Core
         private object _lock = new object();
 
         public string Name { get; }
-        public RegionInfo RootRegion { get; } = new RegionInfo(0, "Root region", new Rectangle(-8, 0, 2 * Chunk.Size - 1, Chunk.Size - 1));
+        public IRegionTree Regions { get; } = new RegionTree();
         public IPlayerCollection Players { get; } = new PlayerCollection();
-        public int Version { get; private set; }
+        public int TileVersion { get; private set; }
+        public int TileMetadataVersion { get; private set; }
 
-        public int NextVersion()
+        public int NextTileVersion()
         {
             lock (_lock)
-                return ++Version;
+                return ++TileVersion;
+        }
+
+        public int NextTileMetadataVersion()
+        {
+            lock (_lock)
+                return ++TileMetadataVersion;
         }
     }
 

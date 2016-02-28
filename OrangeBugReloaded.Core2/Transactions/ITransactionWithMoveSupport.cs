@@ -25,12 +25,11 @@ namespace OrangeBugReloaded.Core.Transactions
         
         /// <summary>
         /// Applies the changes collected in the transaction to the specified
-        /// map and flushes events to the specified observer.
+        /// map and flushes events to the map if it supports event emission.
         /// </summary>
         /// <param name="map">Map</param>
         /// <param name="version">The version to use for the changed tiles</param>
-        /// <param name="eventSource">Observer</param>
         /// <returns>Task</returns>
-        Task CommitAsync(IMap map, int version, IObserver<IGameEvent> eventSource);
+        Task CommitAsync(IMap map, int version);
     }
 }

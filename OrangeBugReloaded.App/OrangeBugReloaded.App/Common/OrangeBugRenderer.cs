@@ -42,8 +42,8 @@ namespace OrangeBugReloaded.App.Common
         private IGameplayMap _map;
         private float _currentZoomLevel = 40;
         private Vector2 _currentCameraPosition = Vector2.Zero;
-        private Dictionary<Point, EntityInfo> _entities = new Dictionary<Point, EntityInfo>();
-        private IDisposable _eventSubscription;
+        private List<EntityInfo> _entities = new List<EntityInfo>();
+        private IDisposable[] _eventSubscriptions;
 
         public IGameplayMap Map
         {
@@ -52,12 +52,32 @@ namespace OrangeBugReloaded.App.Common
             {
                 if (!Equals(_map, value))
                 {
-                    _eventSubscription?.Dispose();
+                    foreach (var sub in _eventSubscriptions ?? Enumerable.Empty<IDisposable>())
+                        sub.Dispose();
 
                     _map = value;
 
                     if (value != null)
-                        _eventSubscription = value.Events.OfType<EntityMoveEvent>().Subscribe(OnEntityMoved);
+                    {
+                        _eventSubscriptions = new[]
+                        {
+                            value.Events.OfType<EntitySpawnEvent>().Subscribe(OnEntitySpawned),
+                        };
+
+                        var chunkBounds = new Rectangle(0, 0, Chunk.Size - 1, Chunk.Size - 1);
+
+                        _entities = value.ChunkLoader.Chunks
+                            .SelectMany(chunk => chunkBounds.Select(p => new { Position = chunk.Key * Chunk.Size + p, Entity = chunk.Value[p].Tile.Entity }))
+                            .Where(o => o.Entity != Entity.None)
+                            .Select(o => new EntityInfo(o.Entity, o.Position, _map.Events))
+                            .ToList();
+                    }
+                    else
+                    {
+                        _eventSubscriptions = null;
+                    }
+
+                    // Clear _entities, fill _entities for new map
 
                     Plugins.OnMapChanged(value);
                 }
@@ -121,8 +141,9 @@ namespace OrangeBugReloaded.App.Common
 
                         var position = kvp.Key * Chunk.Size + new Point(x, y);
                         DrawSprite(g, tileInfo.Tile, position.ToVector2());
-                        if (tileInfo.Tile.Entity != Entity.None)
-                            DrawSprite(g, tileInfo.Tile.Entity, position.ToVector2());
+
+                        //if (tileInfo.Tile.Entity != Entity.None)
+                        //    DrawSprite(g, tileInfo.Tile.Entity, position.ToVector2());
 
                         if (DisplayDebugInfo)
                         {
@@ -136,23 +157,10 @@ namespace OrangeBugReloaded.App.Common
                 }
             }
 
-            var finishedAnimations = new List<Point>();
-
             foreach (var entityInfo in _entities)
             {
-                var isValid = entityInfo.Value.Advance();
-
-                if (!isValid)
-                    finishedAnimations.Add(entityInfo.Key);
-
-                DrawSprite(g, entityInfo.Value.Entity, entityInfo.Value.CurrentPosition);
-            }
-
-            foreach (var p in finishedAnimations)
-            {
-                var entityInfo = _entities[p];
-                _entities.Remove(p);
-                _entities[new Point((int)entityInfo.TargetPosition.X, (int)entityInfo.TargetPosition.Y)] = entityInfo;
+                entityInfo.Advance();
+                DrawSprite(g, entityInfo.Entity, entityInfo.CurrentPosition);
             }
 
             // Draw entities
@@ -289,17 +297,18 @@ namespace OrangeBugReloaded.App.Common
             _sprites["CoinEntity"] = await loadSpriteAsync("Coin");
         }
 
-        private void OnEntityMoved(EntityMoveEvent e)
+        private void OnEntitySpawned(EntitySpawnEvent e)
         {
-            Debug.WriteLine($"{e.Source.Entity.GetType().Name} at {e.SourcePosition} -> {e.Target.Entity.GetType().Name} at {e.TargetPosition}");
-
-            // TODO
+            _entities.Add(new EntityInfo(e.Entity, e.Position, Map.Events));
         }
-
-
+        
 
         class EntityInfo
         {
+            private readonly IDisposable _sub1, _sub2;
+
+            public event Action<EntityInfo> Despawned;
+
             public Entity Entity { get; private set; }
 
             public Vector2 SourcePosition { get; private set; }
@@ -312,14 +321,26 @@ namespace OrangeBugReloaded.App.Common
 
             public TimeSpan AnimationDuration { get; private set; }
 
-            public EntityInfo(Entity entity, Point position)
+            public EntityInfo(Entity entity, Point position, IObservable<IGameEvent> eventStream)
             {
                 Entity = entity;
                 SourcePosition = TargetPosition = CurrentPosition = position.ToVector2();
+
+                _sub1 = eventStream
+                    .OfType<EntityMoveEvent>()
+                    .Where(e => e.SourcePosition.ToVector2() == TargetPosition)
+                    .Subscribe(ApplyMoveEvent);
+
+                _sub2 = eventStream
+                    .OfType<EntityDespawnEvent>()
+                    .Where(e => e.Position.ToVector2() == TargetPosition)
+                    .Subscribe(OnDespawn);
             }
 
             public void ApplyMoveEvent(EntityMoveEvent e)
             {
+                Debug.WriteLine($"{e.Source.Entity.GetType().Name} at {e.SourcePosition} -> {e.Target.Entity.GetType().Name} at {e.TargetPosition}");
+
                 // TODO: Think about animations that should happen one after another
                 SourcePosition = CurrentPosition;
                 TargetPosition = e.TargetPosition.ToVector2();
@@ -344,22 +365,12 @@ namespace OrangeBugReloaded.App.Common
 
                 return t <= 1;
             }
-        }
 
-
-
-
-        struct Animation
-        {
-            public EntityMoveEvent Event { get; }
-            public DateTime StartTime { get; }
-            public TimeSpan Duration { get; }
-
-            public Animation(EntityMoveEvent e)
+            private void OnDespawn(EntityDespawnEvent e)
             {
-                Event = e;
-                StartTime = DateTime.Now;
-                Duration = TimeSpan.FromSeconds(.6);
+                _sub1.Dispose();
+                _sub2.Dispose();
+                Despawned?.Invoke(this);
             }
         }
     }

@@ -9,13 +9,14 @@ namespace OrangeBugReloaded.Core
     /// </summary>
     public struct TileMetadata
     {
-        public static TileMetadata Empty => new TileMetadata(Tile.Empty, 0);
+        public static TileMetadata Empty => new TileMetadata(Tile.Empty, 0, 0);
 
         public Tile TileTemplate { get; }
         public int RegionId { get; }
+        public int Version { get; }
 
         [JsonConstructor]
-        public TileMetadata(Tile tileTemplate, int regionId) : this()
+        public TileMetadata(Tile tileTemplate, int regionId, int version) : this()
         {
             TileTemplate = tileTemplate.EnsureNotNull();
             RegionId = regionId;

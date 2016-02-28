@@ -42,7 +42,7 @@ namespace OrangeBugReloaded.Core
                 _random.Next(rectangle.Bottom, rectangle.Top));
         }
 
-        public static async Task<AreaSpawnResult> SpawnAsync(this IGameplayMap map, Entity entity, Rectangle area)
+        public static async Task<AreaSpawnResult> SpawnAsync(this IGameplayMap map, Entity entity, IEnumerable<Point> area)
         {
             var availableSpawnPoints = area.Shuffle().ToQueue();
 
@@ -56,6 +56,48 @@ namespace OrangeBugReloaded.Core
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Determines all positions that are directly or indirectly adjacent to
+        /// and have the same region as the tile at the specified position.
+        /// </summary>
+        /// <param name="map">Map</param>
+        /// <param name="startPosition">Start position</param>
+        /// <param name="maxRadius">The maximum radius in which points are selected</param>
+        /// <returns>
+        /// Points that form a cohesive map area of the same region (including the start position).
+        /// </returns>
+        public static async Task<IReadOnlyCollection<Point>> GetCoherentPositionsAsync(this IMap map, Point startPosition, int maxRadius = 10)
+        {
+            var startTile = await map.GetMetadataAsync(startPosition);
+            var visited = new HashSet<Point>();
+            var queue = new Queue<Point>();
+            queue.Enqueue(startPosition);
+
+            while (queue.Count != 0)
+            {
+                var currentPosition = queue.Dequeue();
+
+                foreach (var dir in Point.Directions)
+                {
+                    var neighborPosition = currentPosition + dir;
+                    var distance = Point.Distance(neighborPosition, startPosition);
+
+                    if (distance.X <= maxRadius && distance.Y <= maxRadius)
+                    {
+                        var neighbor = await map.GetMetadataAsync(currentPosition + dir);
+
+                        if (!visited.Contains(neighborPosition) && neighbor.RegionId == startTile.RegionId)
+                        {
+                            queue.Enqueue(neighborPosition);
+                            visited.Add(neighborPosition);
+                        }
+                    }
+                }
+            }
+
+            return visited.ToArray();
         }
 
         // Taken from http://stackoverflow.com/a/13503860

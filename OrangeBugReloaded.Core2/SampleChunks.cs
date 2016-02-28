@@ -49,7 +49,7 @@ namespace OrangeBugReloaded.Core
 
             for (var y = 1; y < Chunk.Size - 1; y++)
                 for (var x = 1; x < Chunk.Size - 1; x++)
-                    chunk.SetMetadata(new Point(x, y), new TileMetadata(chunk[x, y].Tile, 0));
+                    chunk.SetMetadata(new Point(x, y), new TileMetadata(chunk[x, y].Tile, 0, 0));
 
             return chunk;
         }

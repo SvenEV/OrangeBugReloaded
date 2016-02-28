@@ -40,6 +40,12 @@ namespace OrangeBugReloaded.Core
             // TODO: For now, just create metadata instead of loading from storage
             Metadata = new MapMetadata();
         }
+        
+        /// <inheritdoc/>
+        public void Emit(IGameEvent e)
+        {
+            _eventSource.OnNext(e);
+        }
 
         /// <inheritdoc/>
         public async Task<TileInfo> GetAsync(Point position)
@@ -138,6 +144,7 @@ namespace OrangeBugReloaded.Core
 
             var newTileInfo = tileInfo.WithTile(attachArgs.Result);
             transaction.Set(position, tileInfo, newTileInfo);
+            transaction.Emit(new EntitySpawnEvent(position, entity));
 
             // Update tile
             var followUpEvents = await UpdateTilesAsync(new[] { position }, transaction);
@@ -279,7 +286,15 @@ namespace OrangeBugReloaded.Core
                 {
                     var localPosition = new Point(x, y);
                     var globalPosition = kvp.Key * Chunk.Size + localPosition;
-                    Dependencies.AddDependenciesOf(kvp.Value[localPosition].Tile, globalPosition);
+                    var tileInfo = kvp.Value[localPosition];
+                    Dependencies.AddDependenciesOf(tileInfo.Tile, globalPosition);
+
+                    // For entities emit a spawn event
+                    if (tileInfo.Tile.Entity != Entity.None)
+                    {
+                        var spawnEvent = new EntitySpawnEvent(globalPosition, tileInfo.Tile.Entity);
+                        _eventSource.OnNext(spawnEvent);
+                    }
                 }
             }
 
@@ -295,7 +310,7 @@ namespace OrangeBugReloaded.Core
             // TODO: This is problematic! A commit is done directly on the map
             // bypassing the GameServer. We might have to forward the new chunk
             // to some of the players.
-            await transaction.CommitAsync(this, Metadata.NextVersion(), _eventSource);
+            await transaction.CommitAsync(this, Metadata.NextTileVersion());
         }
 
         private void OnChunkUnloaded(KeyValuePair<Point, IChunk> kvp)
@@ -306,8 +321,16 @@ namespace OrangeBugReloaded.Core
                 {
                     var localPosition = new Point(x, y);
                     var globalPosition = kvp.Key * Chunk.Size + localPosition;
-                    Dependencies.RemoveDependenciesOf(kvp.Value[localPosition].Tile, globalPosition);
+                    var tileInfo = kvp.Value[localPosition];
+                    Dependencies.RemoveDependenciesOf(tileInfo.Tile, globalPosition);
                     Dependencies.RemoveDependenciesOn(globalPosition);
+
+                    // For entities emit a despawn event
+                    if (tileInfo.Tile.Entity != Entity.None)
+                    {
+                        var despawnEvent = new EntityDespawnEvent(globalPosition, tileInfo.Tile.Entity);
+                        _eventSource.OnNext(despawnEvent);
+                    }
                 }
             }
 

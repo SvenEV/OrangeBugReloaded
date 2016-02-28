@@ -38,15 +38,18 @@ namespace OrangeBugReloaded.Core.Transactions
         {
         }
 
-        public async Task CommitAsync(IMap map, int version, IObserver<IGameEvent> eventSource)
+        public async Task CommitAsync(IMap map, int version)
         {
+            if (map == null)
+                throw new ArgumentNullException(nameof(map));
+
             // Apply recorded changes to map
             foreach (var kvp in Changes)
                 await map.SetAsync(kvp.Key, kvp.Value.WithVersion(version));
 
             // Flush recorded events
             foreach (var e in Events)
-                eventSource?.OnNext(e);
+                (map as IGameEventEmitter)?.Emit(e);
         }
     }
 }

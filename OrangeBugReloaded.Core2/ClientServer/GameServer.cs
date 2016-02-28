@@ -78,15 +78,16 @@ namespace OrangeBugReloaded.Core.ClientServer
                 else
                 {
                     // If that fails,
-                    // option 1: spawn at global spawn area
-                    // option 2: spawn at regional spawn area, if that fails try parent region etc.
+                    // option 1: spawn at default spawn area
+                    // option 2: return false
                     throw new NotImplementedException();
                 }
             }
             else
             {
-                // Unknown player: Spawn player somewhere in global spawn area, add to list of known players
-                var spawnResult = await Map.SpawnAsync(playerEntity, Map.Metadata.RootRegion.SpawnArea);
+                // Unknown player: Spawn player somewhere in default spawn area, add to list of known players
+                var spawnPositions = await Map.GetCoherentPositionsAsync(Map.Metadata.Regions.DefaultRegion.SpawnPosition);
+                var spawnResult = await Map.SpawnAsync(playerEntity, spawnPositions);
 
                 if (spawnResult != null)
                 {
@@ -266,14 +267,13 @@ namespace OrangeBugReloaded.Core.ClientServer
         {
             var newVersion = -1;
 
-            // TODO: Emit events
             if (transaction.Changes.Any())
             {
                 // Get new version number for the tiles that changed
-                newVersion = Map.Metadata.NextVersion();
+                newVersion = Map.Metadata.NextTileVersion();
 
                 // Apply changes to the server's map (using the version number above)
-                await transaction.CommitAsync(Map, newVersion, null);
+                await transaction.CommitAsync(Map, newVersion);
 
                 // Send the updated tiles to clients that have loaded the corresponding map area
                 await BroadcastChangesAsync(transaction, newVersion, excludedConnection);

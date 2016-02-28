@@ -1,24 +1,38 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace OrangeBugReloaded.Core
 {
     public interface IMapMetadata
     {
-        RegionInfo RootRegion { get; }
+        IRegionTree Regions { get; }
         IPlayerCollection Players { get; }
-        int Version { get; }
+        int TileVersion { get; }
+        int TileMetadataVersion { get; }
 
         /// <summary>
-        /// Increases the version by one and returns
+        /// Increases the tile version by one and returns
         /// the new version.
         /// </summary>
         /// <returns>The new version</returns>
-        int NextVersion();
+        int NextTileVersion();
+
+        /// <summary>
+        /// Increses the tile metadata version by one and
+        /// returns the new version.
+        /// </summary>
+        /// <returns>The new version</returns>
+        int NextTileMetadataVersion();
+
+
     }
 
-    public interface IRegionCollection
+    public interface IRegionTree
     {
-        RegionInfo this[int id] { get; set; }
+        RegionInfo DefaultRegion { get; }
+        RegionInfo GetBaseRegion(int id);
+        IReadOnlyCollection<RegionInfo> GetDerivedRegions(int id);
+        RegionInfo this[int id] { get; }
     }
 
     public interface IPlayerCollection
@@ -43,21 +57,32 @@ namespace OrangeBugReloaded.Core
         PlayerInfo this[string id] { get; set; }
     }
 
-    public class RegionInfo
+    public struct RegionInfo
     {
+        public static RegionInfo Empty { get; } = new RegionInfo(null, int.MinValue, int.MinValue, Point.Zero);
+
+        public static RegionInfo Default { get; } = new RegionInfo("Default", 0, int.MinValue, Point.Zero);
+
         public string Name { get; }
 
         public int Id { get; }
 
-        public IReadOnlyCollection<RegionInfo> Children { get; }
+        public int Parent { get; }
 
-        public Rectangle SpawnArea { get; }
+        /// <summary>
+        /// Specifies the area where a player respawns when resetting this region.
+        /// The property value refers to a tile position on the map.
+        /// The spawn area is formed by the tile at that position and all direct
+        /// and indirect neighbors of the same region.
+        /// </summary>
+        public Point SpawnPosition { get; }
 
-        public RegionInfo(int id, string name, Rectangle spawnArea)
+        public RegionInfo(string name, int id, int parent, Point spawnPosition)
         {
             Id = id;
             Name = name;
-            SpawnArea = spawnArea;
+            Parent = parent;
+            SpawnPosition = spawnPosition;
         }
     }
 
