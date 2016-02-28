@@ -2,12 +2,12 @@
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
+using OrangeBugReloaded.App.Common;
 using OrangeBugReloaded.Core;
 using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Rendering;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Reactive.Linq;
@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 using Windows.UI;
 using F = Windows.Foundation;
 
-namespace OrangeBugReloaded.App.Common
+namespace OrangeBugReloaded.App.Presentation
 {
     public class OrangeBugRenderer
     {
@@ -37,13 +37,13 @@ namespace OrangeBugReloaded.App.Common
             FontSize = 8
         };
 
-        private Dictionary<string, CanvasBitmap> _sprites = new Dictionary<string, CanvasBitmap>();
+        private readonly Dictionary<string, CanvasBitmap> _sprites = new Dictionary<string, CanvasBitmap>();
+        private readonly List<EntityInfo> _entities = new List<EntityInfo>();
         private CanvasAnimatedControl _canvas;
         private IGameplayMap _map;
         private float _currentZoomLevel = 40;
         private Vector2 _currentCameraPosition = Vector2.Zero;
-        private List<EntityInfo> _entities = new List<EntityInfo>();
-        private IDisposable[] _eventSubscriptions;
+        private IDisposable _spawnSubscription;
 
         public IGameplayMap Map
         {
@@ -52,34 +52,24 @@ namespace OrangeBugReloaded.App.Common
             {
                 if (!Equals(_map, value))
                 {
-                    foreach (var sub in _eventSubscriptions ?? Enumerable.Empty<IDisposable>())
-                        sub.Dispose();
-
+                    DetachMap(_map);
                     _map = value;
-
-                    if (value != null)
-                    {
-                        _eventSubscriptions = new[]
-                        {
-                            value.Events.OfType<EntitySpawnEvent>().Subscribe(OnEntitySpawned),
-                        };
-
-                        var chunkBounds = new Rectangle(0, 0, Chunk.Size - 1, Chunk.Size - 1);
-
-                        _entities = value.ChunkLoader.Chunks
-                            .SelectMany(chunk => chunkBounds.Select(p => new { Position = chunk.Key * Chunk.Size + p, Entity = chunk.Value[p].Tile.Entity }))
-                            .Where(o => o.Entity != Entity.None)
-                            .Select(o => new EntityInfo(o.Entity, o.Position, _map.Events))
-                            .ToList();
-                    }
-                    else
-                    {
-                        _eventSubscriptions = null;
-                    }
-
-                    // Clear _entities, fill _entities for new map
-
+                    AttachMap(value);
                     Plugins.OnMapChanged(value);
+                }
+            }
+        }
+
+        public CanvasAnimatedControl Canvas
+        {
+            get { return _canvas; }
+            set
+            {
+                if (!Equals(_canvas, value))
+                {
+                    DetachCanvas(_canvas);
+                    _canvas = value;
+                    AttachCanvas(value);
                 }
             }
         }
@@ -101,21 +91,58 @@ namespace OrangeBugReloaded.App.Common
             CameraPosition = _currentCameraPosition;
         }
 
-        public void Attach(CanvasAnimatedControl canvas)
+        private void AttachCanvas(CanvasAnimatedControl canvas)
         {
             if (canvas == null)
-                throw new ArgumentNullException(nameof(canvas));
+                return;
 
             _canvas = canvas;
             _canvas.Draw += OnDraw;
             _canvas.CreateResources += OnCreateResources;
         }
 
-        public void Detach()
+        private void DetachCanvas(CanvasAnimatedControl canvas)
         {
-            _canvas.Draw -= OnDraw;
-            _canvas.CreateResources -= OnCreateResources;
-            _canvas = null;
+            if (canvas == null)
+                return;
+
+            canvas.Draw -= OnDraw;
+            canvas.CreateResources -= OnCreateResources;
+        }
+
+        private void AttachMap(IGameplayMap map)
+        {
+            if (map == null)
+                return;
+
+            _spawnSubscription = map.Events.OfType<EntitySpawnEvent>().Subscribe(OnEntitySpawned);
+
+            var chunkBounds = new Rectangle(0, 0, Chunk.Size - 1, Chunk.Size - 1);
+
+            // Add the entities of the already loaded chunks
+            // (if after that a chunk is loaded or unloaded the map will
+            // emit appropiate spawn/despawn events)
+            var entitySpawnEvents = map.ChunkLoader.Chunks
+                .SelectMany(chunk => chunkBounds.Select(p => new { Position = chunk.Key * Chunk.Size + p, Entity = chunk.Value[p].Tile.Entity }))
+                .Where(o => o.Entity != Entity.None)
+                .Select(o => new EntitySpawnEvent(o.Position, o.Entity));
+
+            foreach (var e in entitySpawnEvents)
+                OnEntitySpawned(e);
+        }
+
+        private void DetachMap(IGameplayMap map)
+        {
+            if (map == null)
+                return;
+
+            _spawnSubscription?.Dispose();
+            _spawnSubscription = null;
+
+            foreach (var e in _entities)
+                e.Dispose();
+
+            _entities.Clear();
         }
 
         private void OnDraw(ICanvasAnimatedControl sender, CanvasAnimatedDrawEventArgs args)
@@ -142,9 +169,6 @@ namespace OrangeBugReloaded.App.Common
                         var position = kvp.Key * Chunk.Size + new Point(x, y);
                         DrawSprite(g, tileInfo.Tile, position.ToVector2());
 
-                        //if (tileInfo.Tile.Entity != Entity.None)
-                        //    DrawSprite(g, tileInfo.Tile.Entity, position.ToVector2());
-
                         if (DisplayDebugInfo)
                         {
                             // Draw tile version for testing purposes
@@ -157,49 +181,12 @@ namespace OrangeBugReloaded.App.Common
                 }
             }
 
+            // Draw and animate entities
             foreach (var entityInfo in _entities)
             {
                 entityInfo.Advance();
                 DrawSprite(g, entityInfo.Entity, entityInfo.CurrentPosition);
             }
-
-            // Draw entities
-            //foreach (var chunk in Map.ChunkLoader.Chunks.Values)
-            //{
-            //    for (var y = 0; y < Chunk.Size; y++)
-            //    {
-            //        for (var x = 0; x < Chunk.Size; x++)
-            //        {
-            //            var position = chunk.Index * Chunk.Size + new Point(x, y);
-
-            //            if (_animations.ContainsKey(position))
-            //            {
-            //                var animation = _animations[position];
-            //                var t = (float)((DateTime.Now - animation.StartTime).TotalSeconds / animation.Duration.TotalSeconds);
-
-            //                var interpolatedPosition = Vector2.Lerp(
-            //                    animation.Event.SourcePosition.ToVector2(),
-            //                    animation.Event.TargetPosition.ToVector2(), Mathf.Clamp01(t));
-
-            //                var entity = t <= .5 ?
-            //                    animation.Event.Source.Entity :
-            //                    animation.Event.Target.Entity;
-
-            //                DrawSprite(g, entity, interpolatedPosition);
-
-            //                if (t > 1)
-            //                    _animations.Remove(position);
-            //            }
-            //            else
-            //            {
-            //                var entity = chunk[x, y].Entity;
-
-            //                if (entity != Entity.None)
-            //                    DrawSprite(g, entity, position.ToVector2());
-            //            }
-            //        }
-            //    }
-            //}
 
             var pluginDrawArgs = new PluginDrawEventArgs(args, this);
             Plugins.RaiseOnDraw(pluginDrawArgs);
@@ -299,79 +286,14 @@ namespace OrangeBugReloaded.App.Common
 
         private void OnEntitySpawned(EntitySpawnEvent e)
         {
-            _entities.Add(new EntityInfo(e.Entity, e.Position, Map.Events));
+            var entityInfo = new EntityInfo(e.Entity, e.Position, Map.Events);
+            entityInfo.Despawned += OnEntityDespawned;
+            _entities.Add(entityInfo);
         }
-        
 
-        class EntityInfo
+        private void OnEntityDespawned(EntityInfo entityInfo)
         {
-            private readonly IDisposable _sub1, _sub2;
-
-            public event Action<EntityInfo> Despawned;
-
-            public Entity Entity { get; private set; }
-
-            public Vector2 SourcePosition { get; private set; }
-
-            public Vector2 TargetPosition { get; private set; }
-
-            public Vector2 CurrentPosition { get; private set; }
-
-            public DateTime AnimationStartTime { get; private set; }
-
-            public TimeSpan AnimationDuration { get; private set; }
-
-            public EntityInfo(Entity entity, Point position, IObservable<IGameEvent> eventStream)
-            {
-                Entity = entity;
-                SourcePosition = TargetPosition = CurrentPosition = position.ToVector2();
-
-                _sub1 = eventStream
-                    .OfType<EntityMoveEvent>()
-                    .Where(e => e.SourcePosition.ToVector2() == TargetPosition)
-                    .Subscribe(ApplyMoveEvent);
-
-                _sub2 = eventStream
-                    .OfType<EntityDespawnEvent>()
-                    .Where(e => e.Position.ToVector2() == TargetPosition)
-                    .Subscribe(OnDespawn);
-            }
-
-            public void ApplyMoveEvent(EntityMoveEvent e)
-            {
-                Debug.WriteLine($"{e.Source.Entity.GetType().Name} at {e.SourcePosition} -> {e.Target.Entity.GetType().Name} at {e.TargetPosition}");
-
-                // TODO: Think about animations that should happen one after another
-                SourcePosition = CurrentPosition;
-                TargetPosition = e.TargetPosition.ToVector2();
-                AnimationStartTime = DateTime.Now;
-                AnimationDuration = TimeSpan.FromSeconds(.6);
-            }
-
-            /// <summary>
-            /// 
-            /// </summary>
-            /// <param name="deltaTime"></param>
-            /// <returns>False, if the animation completed</returns>
-            public bool Advance()
-            {
-                var t = (float)((DateTime.Now - AnimationStartTime).TotalSeconds / AnimationDuration.TotalSeconds);
-
-                CurrentPosition = Vector2.Lerp(SourcePosition, TargetPosition, Mathf.Clamp01(t));
-
-                //var entity = t <= .5 ?
-                //    animation.Event.Source.Entity :
-                //    animation.Event.Target.Entity;
-
-                return t <= 1;
-            }
-
-            private void OnDespawn(EntityDespawnEvent e)
-            {
-                _sub1.Dispose();
-                _sub2.Dispose();
-                Despawned?.Invoke(this);
-            }
+            _entities.Remove(entityInfo);
         }
     }
 }

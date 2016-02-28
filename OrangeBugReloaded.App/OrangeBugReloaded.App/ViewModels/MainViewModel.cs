@@ -12,7 +12,7 @@ using Windows.Networking.Connectivity;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
-namespace OrangeBugReloaded.App.Common
+namespace OrangeBugReloaded.App.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {

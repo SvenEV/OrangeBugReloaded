@@ -95,14 +95,15 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Common\AudioPlayer.cs" />
-    <Compile Include="Common\KeyboardManager.cs" />
+    <Compile Include="Presentation\AudioPlayer.cs" />
+    <Compile Include="Presentation\EntityInfo.cs" />
+    <Compile Include="Presentation\KeyboardManager.cs" />
     <Compile Include="ViewModels\GameServerViewModel.cs" />
     <Compile Include="Common\IRendererPlugin.cs" />
-    <Compile Include="Common\MainViewModel.cs" />
-    <Compile Include="Common\Mathf.cs" />
+    <Compile Include="ViewModels\MainViewModel.cs" />
+    <Compile Include="Mathf.cs" />
     <Compile Include="Common\OrangeBugAudioPlayer.cs" />
-    <Compile Include="Common\OrangeBugRenderer.cs" />
+    <Compile Include="Presentation\OrangeBugRenderer.cs" />
     <Compile Include="Common\PluginCollection.cs" />
     <Compile Include="Common\PluginDrawEventArgs.cs" />
     <Compile Include="GameClientPage.xaml.cs">

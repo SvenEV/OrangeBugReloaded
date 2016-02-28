@@ -1,5 +1,6 @@
 ﻿using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
+using OrangeBugReloaded.App.Presentation;
 
 namespace OrangeBugReloaded.App.Common
 {

@@ -6,7 +6,7 @@ using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 
-namespace OrangeBugReloaded.App.Common
+namespace OrangeBugReloaded.App.Presentation
 {
     public static class KeyboardManager
     {

@@ -1,5 +1,5 @@
 ﻿using Microsoft.Graphics.Canvas.UI.Xaml;
-using OrangeBugReloaded.App.Common;
+using OrangeBugReloaded.App.Presentation;
 using OrangeBugReloaded.Core.ClientServer;
 using OrangeBugReloaded.Core.ClientServer.Local;
 using System;
@@ -19,8 +19,7 @@ namespace OrangeBugReloaded.App.ViewModels
 
         public LocalGameClientViewModel(CanvasAnimatedControl canvas, LocalGameServer gameServer)
         {
-            _renderer = new OrangeBugRenderer();
-            _renderer.Attach(canvas);
+            _renderer = new OrangeBugRenderer { Canvas = canvas };
             _server = gameServer;
             Init();
         }

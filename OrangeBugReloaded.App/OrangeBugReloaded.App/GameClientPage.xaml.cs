@@ -1,5 +1,5 @@
 ﻿using Microsoft.Graphics.Canvas.UI.Xaml;
-using OrangeBugReloaded.App.Common;
+using OrangeBugReloaded.App.Presentation;
 using OrangeBugReloaded.App.ViewModels;
 using OrangeBugReloaded.Core;
 using OrangeBugReloaded.Core.ClientServer.Net;

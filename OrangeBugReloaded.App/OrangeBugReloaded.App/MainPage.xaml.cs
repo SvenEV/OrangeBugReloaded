@@ -1,4 +1,4 @@
-﻿using OrangeBugReloaded.App.Common;
+﻿using OrangeBugReloaded.App.ViewModels;
 using Windows.UI.Xaml.Controls;
 
 namespace OrangeBugReloaded.App
