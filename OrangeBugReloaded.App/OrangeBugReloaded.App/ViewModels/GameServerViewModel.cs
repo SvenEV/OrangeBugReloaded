@@ -4,7 +4,9 @@ using OrangeBugReloaded.Core;
 using OrangeBugReloaded.Core.ClientServer;
 using OrangeBugReloaded.Core.ClientServer.Local;
 using OrangeBugReloaded.Core.ClientServer.Net;
+using System;
 using System.Diagnostics;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.App.ViewModels
@@ -33,12 +35,18 @@ namespace OrangeBugReloaded.App.ViewModels
             storage.SaveAsync(new Point(-1, 0), SampleChunks.Chunk2.Clone()).Wait();
             storage.SaveAsync(new Point(-1, -1), SampleChunks.Chunk3.Clone()).Wait();
             var map = new Map(storage);
+            map.Events.OfType<PlayerJoinEvent>().Subscribe(OnPlayerJoined);
 
             await map.GetAsync(Point.Zero);
             _renderer.Map = map;
 
             _gameServer = new GameServer(map);
             _localServer = new LocalGameServer(_gameServer);
+        }
+
+        private void OnPlayerJoined(PlayerJoinEvent e)
+        {
+            _renderer.FollowedPlayerId = e.PlayerInfo.PlayerId;
         }
 
         public async Task OpenForNetworkAsync(string port)

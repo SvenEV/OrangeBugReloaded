@@ -1,6 +1,6 @@
 ﻿namespace OrangeBugReloaded.Core.ClientServer.Net
 {
-    public class NetGameServerInfo : IGameServerInfo
+    public class NetGameServerInfo
     {
         public string RemoteAddress { get; }
         public string RemotePort { get; }

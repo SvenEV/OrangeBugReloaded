@@ -24,7 +24,6 @@ namespace OrangeBugReloaded.Core.ClientServer.Net
             }
             catch
             {
-                Debugger.Launch();
                 Debugger.Break();
             }
         }

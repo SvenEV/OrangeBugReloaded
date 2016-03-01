@@ -36,7 +36,7 @@ namespace OrangeBugReloaded.App.ViewModels
                 await _client.JoinAsync(_server);
 
                 _renderer.Map = _client.Map;
-                Renderer.CameraPosition = _client.PlayerPosition.ToVector2();
+                _renderer.FollowedPlayerId = playerInfo.PlayerId;
             }
             catch
             {

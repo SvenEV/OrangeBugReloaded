@@ -43,8 +43,7 @@ namespace OrangeBugReloaded.Core.Tiles
                 e.Initiator = new MoveInitiator(this, position);
 
                 var isSuccessful = await e.MoveAsync(position, TargetPosition);
-
-                // TODO: Events triggered within MoveAsync are emitted before the teleport event
+                
                 if (isSuccessful)
                     e.Emit(new TeleporterTileTeleportEvent(position, TargetPosition, Entity));
             }

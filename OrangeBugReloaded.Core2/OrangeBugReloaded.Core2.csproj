@@ -108,17 +108,16 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AsyncManualResetEvent.cs" />
     <Compile Include="Chunk.cs" />
     <Compile Include="ChunkLoader.cs" />
     <Compile Include="ClientServer\ClientConnection.cs" />
     <Compile Include="ClientServer\ClientUpdate.cs" />
     <Compile Include="ClientServer\JoinResult.cs" />
     <Compile Include="ClientServer\GameClientBase.cs" />
-    <Compile Include="ClientServer\IGameClient.cs" />
     <Compile Include="ClientServer\IGameClientInfo.cs" />
     <Compile Include="ClientServer\IGameClientStub.cs" />
     <Compile Include="ClientServer\IGameServer.cs" />
-    <Compile Include="ClientServer\IGameServerInfo.cs" />
     <Compile Include="ClientServer\IGameServerStub.cs" />
     <Compile Include="ClientServer\Local\LocalGameClient.cs" />
     <Compile Include="ClientServer\Local\LocalGameServer.cs" />
@@ -127,6 +126,8 @@
     <Compile Include="ClientServer\Net\NetGameServer.cs" />
     <Compile Include="ClientServer\Net\NetGameServerInfo.cs" />
     <Compile Include="ClientServer\Net\ServerSideClientProxy.cs" />
+    <Compile Include="ClientServer\PlayerJoinEvent.cs" />
+    <Compile Include="ClientServer\PlayerLeaveEvent.cs" />
     <Compile Include="ClientServer\RemoteChunkStorage.cs" />
     <Compile Include="ClientServer\RemoteMoveRequest.cs" />
     <Compile Include="ClientServer\RemoteMoveResult.cs" />

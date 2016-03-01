@@ -5,14 +5,18 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Reactive.Linq;
+using System.Threading;
 
 namespace OrangeBugReloaded.App.Presentation
 {
     class EntityInfo : IDisposable
     {
-        private readonly IDisposable _sub1, _sub2;
+        private readonly IDisposable _moveSubscription;
+        private readonly IDisposable _despawnSubscription;
+        private readonly AsyncManualResetEvent _finishEvent = new AsyncManualResetEvent();
 
         public event Action<EntityInfo> Despawned;
+        public event Action<EntityInfo> Moved;
 
         public Entity Entity { get; private set; }
 
@@ -31,57 +35,70 @@ namespace OrangeBugReloaded.App.Presentation
             Entity = entity;
             SourcePosition = TargetPosition = CurrentPosition = position.ToVector2();
 
-            _sub1 = eventStream
+            _moveSubscription = eventStream
                 .OfType<EntityMoveEvent>()
                 .Where(e => e.SourcePosition.ToVector2() == TargetPosition)
-                .Subscribe(ApplyMoveEvent);
+                .Subscribe(OnMoved);
 
-            _sub2 = eventStream
+            _despawnSubscription = eventStream
                 .OfType<EntityDespawnEvent>()
                 .Where(e => e.Position.ToVector2() == TargetPosition)
                 .Subscribe(OnDespawn);
         }
 
-        public void ApplyMoveEvent(EntityMoveEvent e)
+        private void OnMoved(EntityMoveEvent e)
         {
             Debug.WriteLine($"{e.Source.Entity.GetType().Name} at {e.SourcePosition} -> {e.Target.Entity.GetType().Name} at {e.TargetPosition}");
 
             // TODO: Think about animations that should happen one after another
+            Entity = e.Target.Entity;
             SourcePosition = CurrentPosition;
             TargetPosition = e.TargetPosition.ToVector2();
             AnimationStartTime = DateTime.Now;
-            AnimationDuration = TimeSpan.FromSeconds(.6);
+            AnimationDuration = TimeSpan.FromSeconds(.3);
+            _finishEvent.Reset();
+
+            Moved?.Invoke(this);
         }
 
         /// <summary>
-        /// 
+        /// Updates the animation progress.
         /// </summary>
         /// <param name="deltaTime"></param>
         /// <returns>False, if the animation completed</returns>
         public bool Advance()
         {
-            var t = (float)((DateTime.Now - AnimationStartTime).TotalSeconds / AnimationDuration.TotalSeconds);
+            var t = GetAnimationProgress();
+            CurrentPosition = Vector2.Lerp(SourcePosition, TargetPosition, 1 - (t - 1) * (t - 1));
 
-            CurrentPosition = Vector2.Lerp(SourcePosition, TargetPosition, Mathf.Clamp01(t));
-
-            //var entity = t <= .5 ?
-            //    animation.Event.Source.Entity :
-            //    animation.Event.Target.Entity;
+            if (t >= 1)
+                _finishEvent.Set();
 
             return t <= 1;
         }
 
-        private void OnDespawn(EntityDespawnEvent e)
+        private async void OnDespawn(EntityDespawnEvent e)
         {
-            _sub1.Dispose();
-            _sub2.Dispose();
+            _despawnSubscription.Dispose();
+
+            // Wait for animation to finish
+            await _finishEvent.WaitAsync();
+
+            _moveSubscription.Dispose();
             Despawned?.Invoke(this);
+        }
+
+        private float GetAnimationProgress()
+        {
+            var t = (float)((DateTime.Now - AnimationStartTime).TotalSeconds / AnimationDuration.TotalSeconds);
+            t = Mathf.Clamp01(t);
+            return t;
         }
 
         public void Dispose()
         {
-            _sub1.Dispose();
-            _sub2.Dispose();
+            _moveSubscription.Dispose();
+            _despawnSubscription.Dispose();
         }
     }
 }

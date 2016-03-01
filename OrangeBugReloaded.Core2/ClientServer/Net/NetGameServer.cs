@@ -16,6 +16,8 @@ namespace OrangeBugReloaded.Core.ClientServer.Net
         private RpcServer _rpcServer;
         private bool _isDisposed = false;
 
+        public GameServer UnderlyingGameServer => _gameServer;
+
         public NetGameServer(GameServer gameServer)
         {
             _gameServer = gameServer;

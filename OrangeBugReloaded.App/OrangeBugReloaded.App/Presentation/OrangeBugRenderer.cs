@@ -4,6 +4,7 @@ using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using OrangeBugReloaded.App.Common;
 using OrangeBugReloaded.Core;
+using OrangeBugReloaded.Core.Entities;
 using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Rendering;
 using System;
@@ -39,11 +40,14 @@ namespace OrangeBugReloaded.App.Presentation
 
         private readonly Dictionary<string, CanvasBitmap> _sprites = new Dictionary<string, CanvasBitmap>();
         private readonly List<EntityInfo> _entities = new List<EntityInfo>();
+        private readonly object _entitiesLock = new object();
         private CanvasAnimatedControl _canvas;
         private IGameplayMap _map;
         private float _currentZoomLevel = 40;
         private Vector2 _currentCameraPosition = Vector2.Zero;
         private IDisposable _spawnSubscription;
+        private IDisposable _moveSubscription;
+        private string _followedPlayerId;
 
         public IGameplayMap Map
         {
@@ -84,6 +88,16 @@ namespace OrangeBugReloaded.App.Presentation
 
         public Vector2 CameraPosition { get; set; }
 
+        public string FollowedPlayerId
+        {
+            get { return _followedPlayerId; }
+            set
+            {
+                _followedPlayerId = value;
+                MoveToPlayer(value);
+            }
+        }
+
         public OrangeBugRenderer()
         {
             Plugins = new PluginCollection(this);
@@ -116,6 +130,9 @@ namespace OrangeBugReloaded.App.Presentation
                 return;
 
             _spawnSubscription = map.Events.OfType<EntitySpawnEvent>().Subscribe(OnEntitySpawned);
+            _moveSubscription = map.Events.OfType<EntityMoveEvent>()
+                .Where(e => (e.Source.Entity as PlayerEntity)?.PlayerId == FollowedPlayerId && FollowedPlayerId != null)
+                .Subscribe(OnFollowedPlayerMoved);
 
             var chunkBounds = new Rectangle(0, 0, Chunk.Size - 1, Chunk.Size - 1);
 
@@ -139,10 +156,16 @@ namespace OrangeBugReloaded.App.Presentation
             _spawnSubscription?.Dispose();
             _spawnSubscription = null;
 
-            foreach (var e in _entities)
-                e.Dispose();
+            _moveSubscription?.Dispose();
+            _moveSubscription = null;
 
-            _entities.Clear();
+            lock (_entitiesLock)
+            {
+                foreach (var e in _entities)
+                    e.Dispose();
+
+                _entities.Clear();
+            }
         }
 
         private void OnDraw(ICanvasAnimatedControl sender, CanvasAnimatedDrawEventArgs args)
@@ -182,10 +205,13 @@ namespace OrangeBugReloaded.App.Presentation
             }
 
             // Draw and animate entities
-            foreach (var entityInfo in _entities)
+            lock (_entitiesLock)
             {
-                entityInfo.Advance();
-                DrawSprite(g, entityInfo.Entity, entityInfo.CurrentPosition);
+                foreach (var entityInfo in _entities)
+                {
+                    entityInfo.Advance();
+                    DrawSprite(g, entityInfo.Entity, entityInfo.CurrentPosition);
+                }
             }
 
             var pluginDrawArgs = new PluginDrawEventArgs(args, this);
@@ -284,16 +310,38 @@ namespace OrangeBugReloaded.App.Presentation
             _sprites["CoinEntity"] = await loadSpriteAsync("Coin");
         }
 
+        private void OnFollowedPlayerMoved(EntityMoveEvent e)
+        {
+            CameraPosition = e.TargetPosition.ToVector2();
+        }
+
         private void OnEntitySpawned(EntitySpawnEvent e)
         {
             var entityInfo = new EntityInfo(e.Entity, e.Position, Map.Events);
             entityInfo.Despawned += OnEntityDespawned;
-            _entities.Add(entityInfo);
+
+            lock (_entitiesLock)
+                _entities.Add(entityInfo);
         }
 
         private void OnEntityDespawned(EntityInfo entityInfo)
         {
-            _entities.Remove(entityInfo);
+            lock (_entitiesLock)
+                _entities.Remove(entityInfo);
+        }
+
+        private void MoveToPlayer(string playerId)
+        {
+            if (string.IsNullOrEmpty(playerId))
+                return;
+
+            lock (_entitiesLock)
+            {
+                var player = _entities.FirstOrDefault(e => (e.Entity as PlayerEntity)?.PlayerId == playerId);
+
+                if (player != null)
+                    CameraPosition = player.TargetPosition;
+            }
         }
     }
 }

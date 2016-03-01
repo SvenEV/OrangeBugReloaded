@@ -76,7 +76,7 @@ namespace OrangeBugReloaded.Core
                 // Update dependencies
                 Dependencies.RemoveDependenciesOf(oldTileInfo.Tile, position);
                 Dependencies.AddDependenciesOf(tileInfo.Tile, position);
-
+                
                 return true;
             }
 
@@ -179,6 +179,7 @@ namespace OrangeBugReloaded.Core
 
             var newTileInfo = tileInfo.WithTile(detachArgs.Result);
             transaction.Set(position, tileInfo, newTileInfo);
+            transaction.Emit(new EntityDespawnEvent(position, tileInfo.Tile.Entity));
 
             // Update tile
             var followUpEvents = await UpdateTilesAsync(new[] { position }, transaction);
@@ -363,7 +364,14 @@ namespace OrangeBugReloaded.Core
                 var newTileInfo = tileInfo.WithTile(completionArgs.Result);
 
                 if (transaction.Set(p, tileInfo, newTileInfo))
+                {
+                    // TODO: Somehow modify events that have been emitted during the move.
+                    // E.g. when a balloon is moved onto an InkTile the move event's target
+                    // still contains the balloon with its old color.
+                    // Here, after the InkTile has changed the balloons color, we have to
+                    // change that event to reflect the changes of InkTile and balloon.
                     return true;
+                }
 
                 return initialPoints.Contains(p);
             });

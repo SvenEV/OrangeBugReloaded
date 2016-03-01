@@ -17,7 +17,7 @@ namespace OrangeBugReloaded.Core.ClientServer
         public Point PlayerPosition { get; private set; }
 
         public GameClientInfo PlayerInfo { get; }
-        
+
         public IGameplayMap Map { get; private set; }
 
         public IObservable<IGameEvent> Events => _events;
@@ -101,10 +101,28 @@ namespace OrangeBugReloaded.Core.ClientServer
         public async Task OnUpdate(ClientUpdate e)
         {
             foreach (var change in e.TileUpdates)
+            {
                 await Map.SetAsync(change.Position, change.TileInfo);
+            }
 
             foreach (var ev in e.Events)
+            {
+                var moveEvent = ev as EntityMoveEvent;
+
+                if (moveEvent != null && !Map.ChunkLoader.IsLoadedOrLoading(moveEvent.SourcePosition / Chunk.Size))
+                {
+                    // The entity comes from a chunk we have not loaded => spawn it first
+                    Map.Emit(new EntitySpawnEvent(moveEvent.SourcePosition, moveEvent.Target.Entity));
+                }
+
                 Map.Emit(ev);
+
+                if (moveEvent != null && !Map.ChunkLoader.IsLoadedOrLoading(moveEvent.TargetPosition / Chunk.Size))
+                {
+                    // The entity moves into an area we have not loaded => despawn it after the move
+                    Map.Emit(new EntityDespawnEvent(moveEvent.TargetPosition, moveEvent.Source.Entity));
+                }
+            }
 
             AnalyzeEvents(e.Events);
 

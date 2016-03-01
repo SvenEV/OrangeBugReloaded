@@ -3,7 +3,6 @@ using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Transactions;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -61,7 +60,7 @@ namespace OrangeBugReloaded.Core.ClientServer
             var connection = new ClientConnection(clientInfo, clientStub);
             var playerEntity = new PlayerEntity(clientInfo.PlayerId, Point.North);
 
-            // Check if the player is playing this map the first time
+            // Check if the player is playing this map for the first time
             if (Map.Metadata.Players.IsKnown(clientInfo.PlayerId))
             {
                 // Try to spawn player at its last known position.
@@ -73,6 +72,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                     // TODO: What if a player spawns within a level some others are currently trying to solve?
                     await CommitAndBroadcastAsync(spawnResult.Transaction, spawnResult.FollowUpEvents, connection);
                     _clients.Add(clientInfo.PlayerId, connection);
+                    Map.Emit(new PlayerJoinEvent(clientInfo));
                     return new JoinResult(true, playerInfo.Position);
                 }
                 else
@@ -95,6 +95,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                     var playerInfo = new PlayerInfo(clientInfo.PlayerId, clientInfo.PlayerDisplayName, spawnResult.SpawnPosition);
                     Map.Metadata.Players.Add(playerInfo);
                     _clients.Add(clientInfo.PlayerId, connection);
+                    Map.Emit(new PlayerJoinEvent(clientInfo));
                     return new JoinResult(true, spawnResult.SpawnPosition);
                 }
                 else
@@ -123,6 +124,7 @@ namespace OrangeBugReloaded.Core.ClientServer
                     await UnloadChunkAsync(connection.LoadedChunks.First(), playerId);
 
                 _clients.Remove(playerId);
+                Map.Emit(new PlayerLeaveEvent(connection.ClientInfo));
             }
             else
             {
