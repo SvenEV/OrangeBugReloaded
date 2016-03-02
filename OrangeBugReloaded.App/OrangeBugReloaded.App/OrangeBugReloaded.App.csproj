@@ -129,17 +129,41 @@
     <Content Include="..\..\Assets\Sounds\Balloon Pop.mp3">
       <Link>Assets\Sounds\Balloon Pop.mp3</Link>
     </Content>
+    <Content Include="..\..\Assets\Sounds\Button Click Release.mp3">
+      <Link>Assets\Sounds\Button Click Release.mp3</Link>
+    </Content>
+    <Content Include="..\..\Assets\Sounds\Button Click.mp3">
+      <Link>Assets\Sounds\Button Click.mp3</Link>
+    </Content>
     <Content Include="..\..\Assets\Sounds\cf_FX_batch_jingle_glock_N--kloing.mp3">
       <Link>Assets\Sounds\cf_FX_batch_jingle_glock_N--kloing.mp3</Link>
     </Content>
     <Content Include="..\..\Assets\Sounds\click.mp3">
       <Link>Assets\Sounds\click.mp3</Link>
     </Content>
+    <Content Include="..\..\Assets\Sounds\GateClose.mp3">
+      <Link>Assets\Sounds\GateClose.mp3</Link>
+    </Content>
+    <Content Include="..\..\Assets\Sounds\GateOpen.mp3">
+      <Link>Assets\Sounds\GateOpen.mp3</Link>
+    </Content>
     <Content Include="..\..\Assets\Sounds\Money Pickup 2.mp3">
       <Link>Assets\Sounds\Money Pickup 2.mp3</Link>
     </Content>
+    <Content Include="..\..\Assets\Sounds\PistonExtend.mp3">
+      <Link>Assets\Sounds\PistonExtend.mp3</Link>
+    </Content>
+    <Content Include="..\..\Assets\Sounds\PistonRetract.mp3">
+      <Link>Assets\Sounds\PistonRetract.mp3</Link>
+    </Content>
+    <Content Include="..\..\Assets\Sounds\SplishSploshSplosh.mp3">
+      <Link>Assets\Sounds\SplishSploshSplosh.mp3</Link>
+    </Content>
     <Content Include="..\..\Assets\Sounds\teleport.mp3">
       <Link>Assets\Sounds\teleport.mp3</Link>
+    </Content>
+    <Content Include="..\..\Assets\Sounds\wood chair scrape on floor, papers,.mp3">
+      <Link>Assets\Sounds\wood chair scrape on floor, papers,.mp3</Link>
     </Content>
     <Content Include="..\..\Assets\Sprites\BlueBall.png">
       <Link>Assets\Sprites\BlueBall.png</Link>
@@ -162,20 +186,11 @@
     <Content Include="..\..\Assets\Sprites\Button.png">
       <Link>Assets\Sprites\Button.png</Link>
     </Content>
-    <Content Include="..\..\Assets\Sprites\CameraTool.png">
-      <Link>Assets\Sprites\CameraTool.png</Link>
-    </Content>
     <Content Include="..\..\Assets\Sprites\Coin.png">
       <Link>Assets\Sprites\Coin.png</Link>
     </Content>
     <Content Include="..\..\Assets\Sprites\Corner.png">
       <Link>Assets\Sprites\Corner.png</Link>
-    </Content>
-    <Content Include="..\..\Assets\Sprites\Cursor.png">
-      <Link>Assets\Sprites\Cursor.png</Link>
-    </Content>
-    <Content Include="..\..\Assets\Sprites\DesignMode.png">
-      <Link>Assets\Sprites\DesignMode.png</Link>
     </Content>
     <Content Include="..\..\Assets\Sprites\DummyWall.png">
       <Link>Assets\Sprites\DummyWall.png</Link>
@@ -207,9 +222,6 @@
     <Content Include="..\..\Assets\Sprites\PlayerRight.png">
       <Link>Assets\Sprites\PlayerRight.png</Link>
     </Content>
-    <Content Include="..\..\Assets\Sprites\RecoveryTile.png">
-      <Link>Assets\Sprites\RecoveryTile.png</Link>
-    </Content>
     <Content Include="..\..\Assets\Sprites\RedBall.png">
       <Link>Assets\Sprites\RedBall.png</Link>
     </Content>
@@ -218,12 +230,6 @@
     </Content>
     <Content Include="..\..\Assets\Sprites\RedPool.png">
       <Link>Assets\Sprites\RedPool.png</Link>
-    </Content>
-    <Content Include="..\..\Assets\Sprites\Select.png">
-      <Link>Assets\Sprites\Select.png</Link>
-    </Content>
-    <Content Include="..\..\Assets\Sprites\Selection.png">
-      <Link>Assets\Sprites\Selection.png</Link>
     </Content>
     <Content Include="..\..\Assets\Sprites\SensitiveButton.png">
       <Link>Assets\Sprites\SensitiveButton.png</Link>
@@ -237,17 +243,6 @@
     <Content Include="..\..\Assets\Sprites\Wall.png">
       <Link>Assets\Sprites\Wall.png</Link>
     </Content>
-    <Content Include="..\..\Assets\Sprites\White.png">
-      <Link>Assets\Sprites\White.png</Link>
-    </Content>
-    <Content Include="Assets\Sounds\Button Click Release.mp3" />
-    <Content Include="Assets\Sounds\Button Click.mp3" />
-    <Content Include="Assets\Sounds\GateClose.mp3" />
-    <Content Include="Assets\Sounds\GateOpen.mp3" />
-    <Content Include="Assets\Sounds\PistonExtend.mp3" />
-    <Content Include="Assets\Sounds\PistonRetract.mp3" />
-    <Content Include="Assets\Sounds\SplishSploshSplosh.mp3" />
-    <Content Include="Assets\Sounds\wood chair scrape on floor, papers,.mp3" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
