@@ -4,7 +4,7 @@ using System.Numerics;
 
 namespace OrangeBugReloaded.App.Presentation
 {
-    class CoordinateSystem
+    public class CoordinateSystem
     {
         /// <summary>
         /// Indicates how many device independent pixels
@@ -47,14 +47,14 @@ namespace OrangeBugReloaded.App.Presentation
         {
             return new Vector2(
                 (p.X - CameraPosition.X - .5f) * ZoomLevel * DipsPerUnit + CanvasSize.X / 2,
-                -(p.Y - CameraPosition.Y + .5f) * ZoomLevel * DipsPerUnit + CanvasSize.Y / 2);
+                (p.Y - CameraPosition.Y + .5f) * -ZoomLevel * DipsPerUnit + CanvasSize.Y / 2);
         }
 
         public Vector2 CanvasToGamePoint(Vector2 p)
         {
             return new Vector2(
-                (int)Math.Floor(((p.X - CanvasSize.X / 2) / ZoomLevel) + .5f + CameraPosition.X),
-                (int)Math.Ceiling(((p.Y - CanvasSize.Y / 2) / -ZoomLevel) - .5f + CameraPosition.Y));
+                (int)Math.Floor(((p.X - CanvasSize.X / 2) / ZoomLevel / DipsPerUnit) + CameraPosition.X),
+                (int)Math.Ceiling(((p.Y - CanvasSize.Y / 2) / -ZoomLevel / DipsPerUnit) + CameraPosition.Y));
         }
 
         public Matrix3x2 GameToCanvasMatrix(Vector2 position, float rotation = 0)

@@ -19,5 +19,8 @@
 
         public static float Abs(float value)
             => value < 0 ? -value : value;
+
+        public static bool Within(float value, float min, float max)
+            => value >= min && value <= max;
     }
 }

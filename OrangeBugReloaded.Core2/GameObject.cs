@@ -1,8 +1,9 @@
 ﻿using Newtonsoft.Json;
+using OrangeBugReloaded.Core.Presentation;
 
 namespace OrangeBugReloaded.Core
 {
-    public class GameObject
+    public class GameObject : IVisualHint
     {
         [JsonIgnore]
         public virtual string VisualKey => GetType().Name;

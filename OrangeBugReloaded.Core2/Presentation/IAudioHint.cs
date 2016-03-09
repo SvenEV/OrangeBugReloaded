@@ -1,4 +1,4 @@
-﻿namespace OrangeBugReloaded.Core.Rendering
+﻿namespace OrangeBugReloaded.Core.Presentation
 {
     public interface IAudioHint
     {

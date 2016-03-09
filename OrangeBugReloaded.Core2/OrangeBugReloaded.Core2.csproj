@@ -172,9 +172,8 @@
     <Compile Include="Rectangle.cs" />
     <Compile Include="Reflector.cs" />
     <Compile Include="RegionTree.cs" />
-    <Compile Include="Rendering\IAudioHint.cs" />
-    <Compile Include="Rendering\IVisualHint.cs" />
-    <Compile Include="Rendering\VisualHintAttribute.cs" />
+    <Compile Include="Presentation\IAudioHint.cs" />
+    <Compile Include="Presentation\IVisualHint.cs" />
     <Compile Include="SampleChunks.cs" />
     <Compile Include="FollowUpEvent.cs" />
     <Compile Include="Serialization.cs" />

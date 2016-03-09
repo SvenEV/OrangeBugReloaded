@@ -6,7 +6,7 @@ using OrangeBugReloaded.App.Common;
 using OrangeBugReloaded.Core;
 using OrangeBugReloaded.Core.Entities;
 using OrangeBugReloaded.Core.Events;
-using OrangeBugReloaded.Core.Rendering;
+using OrangeBugReloaded.Core.Presentation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,16 +40,16 @@ namespace OrangeBugReloaded.App.Presentation
             FontSize = 8
         };
 
-        private readonly Dictionary<string, CanvasBitmap> _sprites = new Dictionary<string, CanvasBitmap>();
         private readonly List<EntityInfo> _entities = new List<EntityInfo>();
         private readonly object _entitiesLock = new object();
         private readonly CoordinateSystem _coords = new CoordinateSystem();
         private CanvasAnimatedControl _canvas;
+        private SpriteSheet _spriteSheet;
         private IGameplayMap _map;
-        private float _currentZoomLevel = .2f;
-        private Vector2 _currentCameraPosition = Vector2.Zero;
         private IDisposable _spawnSubscription;
         private IDisposable _moveSubscription;
+        private Vector2 _currentCameraPosition = Vector2.Zero;
+        private float _currentZoomLevel = .2f;
         private string _followedPlayerId;
 
         public IGameplayMap Map
@@ -82,8 +82,6 @@ namespace OrangeBugReloaded.App.Presentation
         }
 
         public PluginCollection Plugins { get; }
-
-        public IReadOnlyDictionary<string, CanvasBitmap> Sprites => _sprites;
 
         public bool DisplayDebugInfo { get; set; } = false;
 
@@ -189,41 +187,56 @@ namespace OrangeBugReloaded.App.Presentation
             _coords.ZoomLevel = _currentZoomLevel;
             _coords.CanvasSize = sender.Size.ToVector2();
 
-            // Draw tiles
+            // Determine the viewport so that only visible tiles/entities are drawn
+            var corner1 = _coords.CanvasToGamePoint(Vector2.Zero);
+            var corner2 = _coords.CanvasToGamePoint(_coords.CanvasSize);
+            var xMin = (int)Math.Min(corner1.X, corner2.X);
+            var xMax = (int)Math.Max(corner1.X, corner2.X);
+            var yMin = (int)Math.Min(corner1.Y, corner2.Y);
+            var yMax = (int)Math.Max(corner1.Y, corner2.Y);
+
             using (var spriteBatch = g.CreateSpriteBatch())
             {
-                foreach (var kvp in Map.ChunkLoader.Chunks.ToArray())
+                // Draw tiles
+                for (var y = yMin; y <= yMax; y++)
                 {
-                    for (var y = 0; y < Chunk.Size; y++)
+                    for (var x = xMin; x <= xMax; x++)
                     {
-                        for (var x = 0; x < Chunk.Size; x++)
+                        var position = new Point(x, y);
+                        var chunkIndex = position / Chunk.Size;
+                        var chunk = Map.ChunkLoader.Chunks.TryGetValue(chunkIndex);
+
+                        if (chunk == null)
+                            continue;
+
+                        var tileInfo = chunk[position % Chunk.Size];
+
+                        //DrawSprite(g, tileInfo.Tile, position.ToVector2());
+                        DrawSpriteBatched(spriteBatch, tileInfo.Tile, position.ToVector2());
+
+                        if (DisplayDebugInfo)
                         {
-                            var tileInfo = kvp.Value[x, y];
-
-                            var position = kvp.Key * Chunk.Size + new Point(x, y);
-                            //DrawSprite(g, tileInfo.Tile, position.ToVector2());
-                            DrawSpriteBatched(spriteBatch, tileInfo.Tile, position.ToVector2());
-
-                            if (DisplayDebugInfo)
-                            {
-                                // Draw tile version for testing purposes
-                                var textPosition = _coords.GameToCanvasPoint(position.ToVector2());
-                                var textRect = new F.Rect(textPosition.X, textPosition.Y, _currentZoomLevel, _currentZoomLevel);
-
-                                g.DrawText(tileInfo.Version.ToString(), textRect, Colors.Yellow, _textFormat);
-                            }
+                            // Draw tile version for testing purposes
+                            var textPosition = _coords.GameToCanvasPoint(position.ToVector2());
+                            var textRect = new F.Rect(textPosition.X, textPosition.Y, _currentZoomLevel, _currentZoomLevel);
+                            g.DrawText(tileInfo.Version.ToString(), textRect, Colors.Yellow, _textFormat);
                         }
                     }
                 }
-
+                
                 // Draw and animate entities
                 lock (_entitiesLock)
                 {
                     foreach (var entityInfo in _entities)
                     {
                         entityInfo.Advance();
-                        //DrawSprite(g, entityInfo.Entity, entityInfo.CurrentPosition);
-                        DrawSpriteBatched(spriteBatch, entityInfo.Entity, entityInfo.CurrentPosition);
+
+                        if (Mathf.Within(entityInfo.CurrentPosition.X, xMin, xMax) &&
+                            Mathf.Within(entityInfo.CurrentPosition.Y, yMin, yMax))
+                        {
+                            //DrawSprite(g, entityInfo.Entity, entityInfo.CurrentPosition);
+                            DrawSpriteBatched(spriteBatch, entityInfo.Entity, entityInfo.CurrentPosition);
+                        }
                     }
                 }
             }
@@ -232,80 +245,35 @@ namespace OrangeBugReloaded.App.Presentation
             Plugins.RaiseOnDraw(pluginDrawArgs);
         }
 
-        public void DrawSprite(CanvasDrawingSession g, object o, Vector2 position)
+        [Obsolete]
+        private void DrawSprite(CanvasDrawingSession g, object o, Vector2 position)
         {
-            var sprite = GetSprite(o);
+            var visualHint = o as IVisualHint;
             var canvasPosition = _coords.GameToCanvasPoint(position);
-            var rect = new F.Rect(canvasPosition.X, canvasPosition.Y, _currentZoomLevel * _coords.DipsPerUnit, _currentZoomLevel * _coords.DipsPerUnit);
-
-            var orientation = (o as GameObject)?.VisualOrientation ?? Point.Zero;
+            var targetRect = new F.Rect(canvasPosition.X, canvasPosition.Y, _currentZoomLevel * _coords.DipsPerUnit, _currentZoomLevel * _coords.DipsPerUnit);
+            var sourceRect = _spriteSheet[visualHint?.VisualKey];
+            var orientation = visualHint?.VisualOrientation ?? Point.Zero;
 
             if (orientation.IsDirection)
             {
                 var rotation = _radiansForDirection[orientation];
                 var m = Matrix4x4.CreateRotationZ(rotation, new Vector3(canvasPosition.X + (_currentZoomLevel * _coords.DipsPerUnit) / 2, canvasPosition.Y + (_currentZoomLevel * _coords.DipsPerUnit) / 2, 0));
-                g.DrawImage(sprite, rect, sprite.Bounds, 1, CanvasImageInterpolation.Linear, m);
+                g.DrawImage(_spriteSheet.Image, targetRect, sourceRect, 1, CanvasImageInterpolation.Linear, m);
             }
             else
             {
-                g.DrawImage(sprite, rect);
+                g.DrawImage(_spriteSheet.Image, targetRect, sourceRect);
             }
         }
 
-        public void DrawSpriteBatched(CanvasSpriteBatch g, object o, Vector2 position)
+        private void DrawSpriteBatched(CanvasSpriteBatch g, object o, Vector2 position)
         {
-            var sprite = GetSprite(o);
-
-
-            var canvasPosition = _coords.GameToCanvasPoint(position);
-            var rect = new F.Rect(canvasPosition.X, canvasPosition.Y, _currentZoomLevel, _currentZoomLevel);
-
-            var orientation = (o as GameObject)?.VisualOrientation ?? Point.Zero;
-
+            var visualHint = o as IVisualHint;
+            var orientation = visualHint?.VisualOrientation ?? Point.Zero;
             var m = _coords.GameToCanvasMatrix(position, orientation.IsDirection ? _radiansForDirection[orientation] : 0);
-
-            if (orientation.IsDirection)
-            {
-                var rotation = _radiansForDirection[orientation];
-                var rotCenter = new Vector2(m.Translation.X + _coords.DipsPerUnit / 2, m.Translation.Y + _coords.DipsPerUnit / 2);
-
-                //g.DrawImage(sprite, rect, sprite.Bounds, 1, CanvasImageInterpolation.Linear, m);
-                g.Draw(sprite, m);
-            }
-            else
-            {
-                //g.DrawImage(sprite, rect);
-                g.Draw(sprite, m);
-            }
+            g.DrawFromSpriteSheet(_spriteSheet.Image, m, _spriteSheet[visualHint?.VisualKey]);
         }
-
-        private Matrix3x2 TransformGamePositionMatrix(Vector2 position)
-        {
-            var v = new Vector2(
-                (position.X - _currentCameraPosition.X - .5f) * _currentZoomLevel + (float)_canvas.Size.Width / 2,
-                -(position.Y - _currentCameraPosition.Y + .5f) * _currentZoomLevel + (float)_canvas.Size.Height / 2);
-
-            var center = new Vector2(
-                (float)_canvas.Size.Width / 2,
-                (float)_canvas.Size.Height / 2);
-
-            var transform =
-                //Matrix3x2.CreateTranslation(position * new Vector2(200, -200)) *
-                //Matrix3x2.CreateTranslation(_currentCameraPosition * new Vector2(200,200))*
-                //Matrix3x2.CreateScale(_currentZoomLevel / 200) *
-                Matrix3x2.CreateTranslation(center) *
-                Matrix3x2.CreateTranslation(position * _currentZoomLevel) *
-                //Matrix3x2.CreateTranslation(new Vector2(200, 0)) *
-                Matrix3x2.Identity;
-
-            return transform;
-        }
-
-        public CanvasBitmap GetSprite(object o)
-        {
-            return _sprites.TryGetValue((o as GameObject)?.VisualKey, _sprites["NoSprite"]);
-        }
-
+        
         private void OnCreateResources(CanvasAnimatedControl sender, CanvasCreateResourcesEventArgs args)
         {
             if (args.Reason != CanvasCreateResourcesReason.DpiChanged)
@@ -314,39 +282,15 @@ namespace OrangeBugReloaded.App.Presentation
 
         private async Task LoadSpritesAsync(ICanvasResourceCreatorWithDpi resourceCreator)
         {
-            var loadSpriteAsync = new Func<string, F.IAsyncOperation<CanvasBitmap>>(s => CanvasBitmap.LoadAsync(resourceCreator, new Uri($"ms-appx:///Assets/Sprites/{s}.png")));
-
-            _sprites["NoSprite"] = await loadSpriteAsync("NoSprite");
+            _spriteSheet = await SpriteSheet.LoadFromApplicationUriAsync(new Uri("ms-appx:///Assets/Sprites/SpriteSheet.png"), resourceCreator);
 
             // Tile sprites
-            _sprites["PathTile"] = await loadSpriteAsync("Path");
-            _sprites["WallTile"] = await loadSpriteAsync("Wall");
-            _sprites["TeleporterTile"] = await loadSpriteAsync("Teleport");
-            _sprites["GateTile-Open"] = await loadSpriteAsync("DummyWallRemoved");
-            _sprites["GateTile-Closed"] = await loadSpriteAsync("DummyWall");
-            _sprites["ButtonTile-Entities-On"] = await loadSpriteAsync("SensitiveButton");
-            _sprites["ButtonTile-Entities-Off"] = await loadSpriteAsync("SensitiveButton");
-            _sprites["ButtonTile-EntitiesExceptPlayer-On"] = await loadSpriteAsync("Button");
-            _sprites["ButtonTile-EntitiesExceptPlayer-Off"] = await loadSpriteAsync("Button");
-            _sprites["ButtonTile-Player-On"] = await loadSpriteAsync("SensitiveButton");
-            _sprites["ButtonTile-Player-Off"] = await loadSpriteAsync("SensitiveButton");
-            _sprites["PinTile-Red"] = await loadSpriteAsync("RedPool");
-            _sprites["PinTile-Green"] = await loadSpriteAsync("GreenPool");
-            _sprites["PinTile-Blue"] = await loadSpriteAsync("BluePool");
-            _sprites["InkTile-Red"] = await loadSpriteAsync("RedInk");
-            _sprites["InkTile-Green"] = await loadSpriteAsync("GreenInk");
-            _sprites["InkTile-Blue"] = await loadSpriteAsync("BlueInk");
-            _sprites["PistonTile"] = await loadSpriteAsync("Piston");
-            _sprites["CornerTile"] = await loadSpriteAsync("Corner");
-
-            // Entity sprites
-            _sprites["PlayerEntity"] = await loadSpriteAsync("PlayerRight");
-            _sprites["BoxEntity"] = await loadSpriteAsync("Box");
-            _sprites["BalloonEntity-Red"] = await loadSpriteAsync("RedBall");
-            _sprites["BalloonEntity-Green"] = await loadSpriteAsync("GreenBall");
-            _sprites["BalloonEntity-Blue"] = await loadSpriteAsync("BlueBall");
-            _sprites["PistonEntity"] = await loadSpriteAsync("BoxingGlove");
-            _sprites["CoinEntity"] = await loadSpriteAsync("Coin");
+            _spriteSheet.AddAlias("ButtonTile-Entities-On", "ButtonTile-Sensitive");
+            _spriteSheet.AddAlias("ButtonTile-Entities-Off", "ButtonTile-Sensitive");
+            _spriteSheet.AddAlias("ButtonTile-EntitiesExceptPlayer-On", "ButtonTile");
+            _spriteSheet.AddAlias("ButtonTile-EntitiesExceptPlayer-Off", "ButtonTile");
+            _spriteSheet.AddAlias("ButtonTile-Player-On", "ButtonTile-Sensitive");
+            _spriteSheet.AddAlias("ButtonTile-Player-Off", "ButtonTile-Sensitive");
         }
 
         private void OnFollowedPlayerMoved(EntityMoveEvent e)

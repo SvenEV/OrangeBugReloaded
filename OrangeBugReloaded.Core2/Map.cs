@@ -370,6 +370,7 @@ namespace OrangeBugReloaded.Core
                     // still contains the balloon with its old color.
                     // Here, after the InkTile has changed the balloons color, we have to
                     // change that event to reflect the changes of InkTile and balloon.
+                    // We probably have to emit spawn/despawn events as well.
                     return true;
                 }
 

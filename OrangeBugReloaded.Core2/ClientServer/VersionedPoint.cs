@@ -26,7 +26,16 @@ namespace OrangeBugReloaded.Core.ClientServer
             return other.Position == Position && other.Version == Version;
         }
 
-        public override int GetHashCode() => new { Position, Version }.GetHashCode();
+        public override int GetHashCode()
+        {
+            unchecked // Overflow is fine, just wrap
+            {
+                var hash = 17;
+                hash = hash * 23 + Position.GetHashCode();
+                hash = hash * 23 + Version.GetHashCode();
+                return hash;
+            }
+        }
 
         public static implicit operator Point(VersionedPoint p) => p.Position;
     }

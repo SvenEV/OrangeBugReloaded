@@ -89,6 +89,9 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .Net Framework and Windows SDK are automatically included -->
+    <Content Include="..\..\Assets\Sprites\SpriteSheet.png.json">
+      <Link>Assets\Sprites\SpriteSheet.png.json</Link>
+    </Content>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
@@ -99,6 +102,7 @@
     <Compile Include="Presentation\CoordinateSystem.cs" />
     <Compile Include="Presentation\EntityInfo.cs" />
     <Compile Include="Presentation\KeyboardManager.cs" />
+    <Compile Include="Presentation\SpriteSheet.cs" />
     <Compile Include="ViewModels\GameServerViewModel.cs" />
     <Compile Include="Common\IRendererPlugin.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
@@ -234,6 +238,9 @@
     </Content>
     <Content Include="..\..\Assets\Sprites\SensitiveButton.png">
       <Link>Assets\Sprites\SensitiveButton.png</Link>
+    </Content>
+    <Content Include="..\..\Assets\Sprites\SpriteSheet.png">
+      <Link>Assets\Sprites\SpriteSheet.png</Link>
     </Content>
     <Content Include="..\..\Assets\Sprites\StopSign.png">
       <Link>Assets\Sprites\StopSign.png</Link>
