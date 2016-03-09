@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core
 {
-    public abstract class Entity : IEquatable<Entity>
+    public abstract class Entity : GameObject, IEquatable<Entity>
     {
         public static Entity None { get; } = NullEntity.Default;
 

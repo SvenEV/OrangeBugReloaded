@@ -11,7 +11,6 @@ namespace OrangeBugReloaded.Core.Tiles
     /// In its closed state the gate behaves like a <see cref="WallTile"/>,
     /// in its opened state it behaves like a <see cref="PathTile"/>.
     /// </summary>
-    [VisualHint("GateTile-{IsOpen ? Open : Closed}")]
     public class GateTile : Tile
     {
         /// <summary>
@@ -25,6 +24,9 @@ namespace OrangeBugReloaded.Core.Tiles
         /// Indicates whether the gate is open.
         /// </summary>
         public bool IsOpen { get; }
+
+        public override string VisualKey => $"GateTile-{(IsOpen ? "Open" : "Closed")}";
+
 
         public GateTile(Point triggerPosition, bool isOpen)
         {

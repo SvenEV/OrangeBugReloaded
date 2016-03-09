@@ -8,12 +8,13 @@ namespace OrangeBugReloaded.Core.Entities
     /// <summary>
     /// This is Orange Bug!
     /// </summary>
-    [VisualHint("PlayerEntity", nameof(Perspective))]
     public class PlayerEntity : Entity, IPusher
     {
         public Point Perspective { get; }
 
         public string PlayerId { get; }
+
+        public override Point VisualOrientation => Perspective;
 
         public PlayerEntity(string playerId, Point perspective)
         {

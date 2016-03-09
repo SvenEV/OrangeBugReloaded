@@ -9,13 +9,14 @@ namespace OrangeBugReloaded.Core.Entities
     /// recolored by an <see cref="Tiles.InkTile"/> and
     /// destroyed by a <see cref="Tiles.PinTile"/>.
     /// </summary>
-    [VisualHint("BalloonEntity-{Color}")]
     public class BalloonEntity : Entity
     {
         /// <summary>
         /// The balloon color.
         /// </summary>
         public InkColor Color { get; }
+
+        public override string VisualKey => $"BalloonEntity-{Color}";
 
         public BalloonEntity(InkColor color)
         {

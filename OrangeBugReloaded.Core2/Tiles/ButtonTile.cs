@@ -9,7 +9,6 @@ namespace OrangeBugReloaded.Core.Tiles
     /// A button that can be pressed and released by entites
     /// stepping onto it or leaving it.
     /// </summary>
-    [VisualHint("ButtonTile-{Sensitivity}-{IsOn ? On : Off}")]
     public class ButtonTile : Tile, ITrigger
     {
         /// <summary>
@@ -23,12 +22,12 @@ namespace OrangeBugReloaded.Core.Tiles
         /// </summary>
         public EntityFilterMode Sensitivity { get; }
 
+        public override string VisualKey => $"ButtonTile-{Sensitivity}-{(IsOn ? "On" : "Off")}";
+
         public ButtonTile(bool isOn, EntityFilterMode sensitivity)
         {
             IsOn = isOn;
             Sensitivity = sensitivity;
-
-            var s = VisualHintAttribute.GetVisualName(this);
         }
 
         internal override Task OnEntityMoveTransactionCompletedAsync(IMovesCompletedArgs e)

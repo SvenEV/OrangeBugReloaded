@@ -96,6 +96,7 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="Presentation\AudioPlayer.cs" />
+    <Compile Include="Presentation\CoordinateSystem.cs" />
     <Compile Include="Presentation\EntityInfo.cs" />
     <Compile Include="Presentation\KeyboardManager.cs" />
     <Compile Include="ViewModels\GameServerViewModel.cs" />

@@ -7,7 +7,6 @@ namespace OrangeBugReloaded.Core.Entities
     /// The entity that represents the extension
     /// of a <see cref="Tiles.PistonTile"/>.
     /// </summary>
-    [VisualHint("PistonEntity", nameof(Direction))]
     public class PistonEntity : Entity, IPusher
     {
         /// <summary>
@@ -15,6 +14,8 @@ namespace OrangeBugReloaded.Core.Entities
         /// </summary>
         [MapDependency(IsRelative = true)]
         public Point Direction { get; }
+
+        public override Point VisualOrientation => Direction;
 
         public PistonEntity(Point direction)
         {

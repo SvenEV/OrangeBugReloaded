@@ -14,7 +14,6 @@ namespace OrangeBugReloaded.Core.Tiles
     /// When the piston extends it pushes the entity next to it
     /// one tile towards the extension direction.
     /// </summary>
-    [VisualHint("PistonTile", nameof(Direction))]
     public class PistonTile : Tile
     {
         // This defines a dependy 2 tiles towards the piston direction.
@@ -45,6 +44,8 @@ namespace OrangeBugReloaded.Core.Tiles
         /// Indicates whether the piston is in the extended state.
         /// </summary>
         public bool IsExtended { get; }
+
+        public override Point VisualOrientation => Direction;
 
         public PistonTile(Point triggerPosition, Point direction, bool isExtended = false)
             : base(isExtended ? Entity.None : new PistonEntity(direction))

@@ -30,6 +30,8 @@ namespace OrangeBugReloaded.App
         /// <param name="e">Details über Startanforderung und -prozess.</param>
         protected override void OnLaunched(LaunchActivatedEventArgs e)
         {
+            App.Current.DebugSettings.EnableFrameRateCounter = true;
+
             var rootFrame = Window.Current.Content as Frame;
 
             if (rootFrame == null)

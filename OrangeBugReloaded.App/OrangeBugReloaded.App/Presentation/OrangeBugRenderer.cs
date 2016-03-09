@@ -22,6 +22,8 @@ namespace OrangeBugReloaded.App.Presentation
     {
         private const float _zoomLevelDamping = 10;
         private const float _cameraPositionDamping = 2;
+        private const float _dipsPerUnit = 200;
+        private const float _unitsPerDip = 1 / _dipsPerUnit;
 
         private static readonly Dictionary<Point, float> _radiansForDirection = new Dictionary<Point, float>
         {
@@ -31,7 +33,7 @@ namespace OrangeBugReloaded.App.Presentation
             { Point.East, Mathf.PI / 2 },
         };
 
-        private static CanvasTextFormat _textFormat = new CanvasTextFormat
+        private static readonly CanvasTextFormat _textFormat = new CanvasTextFormat
         {
             HorizontalAlignment = CanvasHorizontalAlignment.Center,
             VerticalAlignment = CanvasVerticalAlignment.Center,
@@ -41,9 +43,10 @@ namespace OrangeBugReloaded.App.Presentation
         private readonly Dictionary<string, CanvasBitmap> _sprites = new Dictionary<string, CanvasBitmap>();
         private readonly List<EntityInfo> _entities = new List<EntityInfo>();
         private readonly object _entitiesLock = new object();
+        private readonly CoordinateSystem _coords = new CoordinateSystem();
         private CanvasAnimatedControl _canvas;
         private IGameplayMap _map;
-        private float _currentZoomLevel = 40;
+        private float _currentZoomLevel = .2f;
         private Vector2 _currentCameraPosition = Vector2.Zero;
         private IDisposable _spawnSubscription;
         private IDisposable _moveSubscription;
@@ -177,40 +180,51 @@ namespace OrangeBugReloaded.App.Presentation
 
             // Interpolate towards target values for ZoomLevel and CameraPosition
             var deltaTime = (float)args.Timing.ElapsedTime.TotalSeconds;
-            _currentZoomLevel = Mathf.Lerp(_currentZoomLevel, Mathf.Clamp(ZoomLevel, 1, 1000), _zoomLevelDamping * deltaTime);
+            _currentZoomLevel = Mathf.Lerp(_currentZoomLevel, Mathf.Clamp(ZoomLevel, .01f, 1), _zoomLevelDamping * deltaTime);
             _currentCameraPosition = Vector2.Lerp(_currentCameraPosition, CameraPosition, _cameraPositionDamping * deltaTime);
 
+            // Update coordinate system
+            _coords.DipsPerUnit = 200;
+            _coords.CameraPosition = _currentCameraPosition;
+            _coords.ZoomLevel = _currentZoomLevel;
+            _coords.CanvasSize = sender.Size.ToVector2();
+
             // Draw tiles
-            foreach (var kvp in Map.ChunkLoader.Chunks.ToArray())
+            using (var spriteBatch = g.CreateSpriteBatch())
             {
-                for (var y = 0; y < Chunk.Size; y++)
+                foreach (var kvp in Map.ChunkLoader.Chunks.ToArray())
                 {
-                    for (var x = 0; x < Chunk.Size; x++)
+                    for (var y = 0; y < Chunk.Size; y++)
                     {
-                        var tileInfo = kvp.Value[x, y];
-
-                        var position = kvp.Key * Chunk.Size + new Point(x, y);
-                        DrawSprite(g, tileInfo.Tile, position.ToVector2());
-
-                        if (DisplayDebugInfo)
+                        for (var x = 0; x < Chunk.Size; x++)
                         {
-                            // Draw tile version for testing purposes
-                            var textPosition = TransformGamePosition(position.ToVector2());
-                            var textRect = new F.Rect(textPosition.X, textPosition.Y, _currentZoomLevel, _currentZoomLevel);
+                            var tileInfo = kvp.Value[x, y];
 
-                            g.DrawText(tileInfo.Version.ToString(), textRect, Colors.Yellow, _textFormat);
+                            var position = kvp.Key * Chunk.Size + new Point(x, y);
+                            //DrawSprite(g, tileInfo.Tile, position.ToVector2());
+                            DrawSpriteBatched(spriteBatch, tileInfo.Tile, position.ToVector2());
+
+                            if (DisplayDebugInfo)
+                            {
+                                // Draw tile version for testing purposes
+                                var textPosition = _coords.GameToCanvasPoint(position.ToVector2());
+                                var textRect = new F.Rect(textPosition.X, textPosition.Y, _currentZoomLevel, _currentZoomLevel);
+
+                                g.DrawText(tileInfo.Version.ToString(), textRect, Colors.Yellow, _textFormat);
+                            }
                         }
                     }
                 }
-            }
 
-            // Draw and animate entities
-            lock (_entitiesLock)
-            {
-                foreach (var entityInfo in _entities)
+                // Draw and animate entities
+                lock (_entitiesLock)
                 {
-                    entityInfo.Advance();
-                    DrawSprite(g, entityInfo.Entity, entityInfo.CurrentPosition);
+                    foreach (var entityInfo in _entities)
+                    {
+                        entityInfo.Advance();
+                        //DrawSprite(g, entityInfo.Entity, entityInfo.CurrentPosition);
+                        DrawSpriteBatched(spriteBatch, entityInfo.Entity, entityInfo.CurrentPosition);
+                    }
                 }
             }
 
@@ -221,15 +235,15 @@ namespace OrangeBugReloaded.App.Presentation
         public void DrawSprite(CanvasDrawingSession g, object o, Vector2 position)
         {
             var sprite = GetSprite(o);
-            var canvasPosition = TransformGamePosition(position);
-            var rect = new F.Rect(canvasPosition.X, canvasPosition.Y, _currentZoomLevel, _currentZoomLevel);
+            var canvasPosition = _coords.GameToCanvasPoint(position);
+            var rect = new F.Rect(canvasPosition.X, canvasPosition.Y, _currentZoomLevel * _coords.DipsPerUnit, _currentZoomLevel * _coords.DipsPerUnit);
 
-            var orientation = VisualHintAttribute.GetOrientation(o);
+            var orientation = (o as GameObject)?.VisualOrientation ?? Point.Zero;
 
             if (orientation.IsDirection)
             {
                 var rotation = _radiansForDirection[orientation];
-                var m = Matrix4x4.CreateRotationZ(rotation, new Vector3(canvasPosition.X + _currentZoomLevel / 2, canvasPosition.Y + _currentZoomLevel / 2, 0));
+                var m = Matrix4x4.CreateRotationZ(rotation, new Vector3(canvasPosition.X + (_currentZoomLevel * _coords.DipsPerUnit) / 2, canvasPosition.Y + (_currentZoomLevel * _coords.DipsPerUnit) / 2, 0));
                 g.DrawImage(sprite, rect, sprite.Bounds, 1, CanvasImageInterpolation.Linear, m);
             }
             else
@@ -238,33 +252,58 @@ namespace OrangeBugReloaded.App.Presentation
             }
         }
 
-        /// <summary>
-        /// Transforms a position in virtual game coordinates to canvas coordinates.
-        /// </summary>
-        /// <param name="gamePosition">Position in game coordinates</param>
-        /// <returns>Position in canvas coordinates (DIPs)</returns>
-        public Vector2 TransformGamePosition(Vector2 gamePosition)
+        public void DrawSpriteBatched(CanvasSpriteBatch g, object o, Vector2 position)
         {
-            return new Vector2(
-                (gamePosition.X - _currentCameraPosition.X - .5f) * _currentZoomLevel + (float)_canvas.Size.Width / 2,
-                -(gamePosition.Y - _currentCameraPosition.Y + .5f) * _currentZoomLevel + (float)_canvas.Size.Height / 2);
+            var sprite = GetSprite(o);
+
+
+            var canvasPosition = _coords.GameToCanvasPoint(position);
+            var rect = new F.Rect(canvasPosition.X, canvasPosition.Y, _currentZoomLevel, _currentZoomLevel);
+
+            var orientation = (o as GameObject)?.VisualOrientation ?? Point.Zero;
+
+            var m = _coords.GameToCanvasMatrix(position, orientation.IsDirection ? _radiansForDirection[orientation] : 0);
+
+            if (orientation.IsDirection)
+            {
+                var rotation = _radiansForDirection[orientation];
+                var rotCenter = new Vector2(m.Translation.X + _coords.DipsPerUnit / 2, m.Translation.Y + _coords.DipsPerUnit / 2);
+
+                //g.DrawImage(sprite, rect, sprite.Bounds, 1, CanvasImageInterpolation.Linear, m);
+                g.Draw(sprite, m);
+            }
+            else
+            {
+                //g.DrawImage(sprite, rect);
+                g.Draw(sprite, m);
+            }
         }
 
-        /// <summary>
-        /// Transforms a position in canvas coordinates to virtual game coordinates.
-        /// </summary>
-        /// <param name="canvasPosition">Position in canvas coordinates (DIPs)</param>
-        /// <returns>Position in game coordinates</returns>
-        public Point TransformCanvasPosition(Vector2 canvasPosition)
+        private Matrix3x2 TransformGamePositionMatrix(Vector2 position)
         {
-            return new Point(
-                (int)Math.Floor(((canvasPosition.X - (float)_canvas.Size.Width / 2) / _currentZoomLevel) + .5f + _currentCameraPosition.X),
-                (int)Math.Ceiling(((canvasPosition.Y - (float)_canvas.Size.Height / 2) / -_currentZoomLevel) - .5f + _currentCameraPosition.Y));
+            var v = new Vector2(
+                (position.X - _currentCameraPosition.X - .5f) * _currentZoomLevel + (float)_canvas.Size.Width / 2,
+                -(position.Y - _currentCameraPosition.Y + .5f) * _currentZoomLevel + (float)_canvas.Size.Height / 2);
+
+            var center = new Vector2(
+                (float)_canvas.Size.Width / 2,
+                (float)_canvas.Size.Height / 2);
+
+            var transform =
+                //Matrix3x2.CreateTranslation(position * new Vector2(200, -200)) *
+                //Matrix3x2.CreateTranslation(_currentCameraPosition * new Vector2(200,200))*
+                //Matrix3x2.CreateScale(_currentZoomLevel / 200) *
+                Matrix3x2.CreateTranslation(center) *
+                Matrix3x2.CreateTranslation(position * _currentZoomLevel) *
+                //Matrix3x2.CreateTranslation(new Vector2(200, 0)) *
+                Matrix3x2.Identity;
+
+            return transform;
         }
 
         public CanvasBitmap GetSprite(object o)
         {
-            return _sprites.TryGetValue(VisualHintAttribute.GetVisualName(o), _sprites["NoSprite"]);
+            return _sprites.TryGetValue((o as GameObject)?.VisualKey, _sprites["NoSprite"]);
         }
 
         private void OnCreateResources(CanvasAnimatedControl sender, CanvasCreateResourcesEventArgs args)
@@ -312,7 +351,7 @@ namespace OrangeBugReloaded.App.Presentation
 
         private void OnFollowedPlayerMoved(EntityMoveEvent e)
         {
-            CameraPosition = e.TargetPosition.ToVector2();
+            CameraPosition = e.TargetPosition.ToVector2() + new Vector2(.5f, -.5f);
         }
 
         private void OnEntitySpawned(EntitySpawnEvent e)

@@ -166,6 +166,14 @@ namespace OrangeBugReloaded.Core
         }
     }
 
+    public static class PointExtensions
+    {
+        public static Point ToOrangeBugPoint(this Vector2 v)
+        {
+            return new Point((int)Math.Floor(v.X), (int)Math.Ceiling(v.Y));
+        }
+    }
+
     class PointConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType) => objectType == typeof(Point) || objectType == typeof(Point?);

@@ -11,13 +11,14 @@ namespace OrangeBugReloaded.Core.Tiles
     /// Ink can only be used once. When the ink is consumed the tile
     /// transforms into a <see cref="PathTile"/>.
     /// </summary>
-    [VisualHint("InkTile-{Color}")]
     public class InkTile : Tile
     {
         /// <summary>
         /// The ink color.
         /// </summary>
         public InkColor Color { get; }
+
+        public override string VisualKey => $"InkTile-{Color}";
 
         public InkTile(InkColor color)
         {

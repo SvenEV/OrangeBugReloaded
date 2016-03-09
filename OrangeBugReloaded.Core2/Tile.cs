@@ -10,11 +10,10 @@ using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core
 {
-    public abstract class Tile : IEquatable<Tile>
+    public abstract class Tile : GameObject, IEquatable<Tile>
     {
         public static Tile Empty { get; } = WallTile.Default;
 
-        [JsonProperty]
         public Entity Entity { get; private set; } = Entity.None;
 
         /// <summary>
@@ -182,8 +181,8 @@ namespace OrangeBugReloaded.Core
         protected virtual IEnumerable GetHashProperties() { yield break; }
 
         public override string ToString() =>
-            VisualHintAttribute.GetVisualName(this) +
-            (Entity != Entity.None ? " + " + VisualHintAttribute.GetVisualName(Entity) : "");
+            VisualKey +
+            (Entity != Entity.None ? " + " + Entity.VisualKey : "");
 
         public static bool operator ==(Tile a, Tile b) => Equals(a, b);
         public static bool operator !=(Tile a, Tile b) => !Equals(a, b);

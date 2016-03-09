@@ -10,7 +10,6 @@ namespace OrangeBugReloaded.Core.Tiles
     /// A pin that pops <see cref="BalloonEntity"/> of the same color as the pin.
     /// Balloons that do not match the color of the pin cannot move onto the <see cref="PinTile"/>.
     /// </summary>
-    [VisualHint("PinTile-{Color}")]
     public class PinTile : Tile
     {
         /// <summary>
@@ -18,6 +17,8 @@ namespace OrangeBugReloaded.Core.Tiles
         /// A pin only pops balloons that match its color.
         /// </summary>
         public InkColor Color { get; }
+
+        public override string VisualKey => $"PinTile-{Color}";
 
         public PinTile(InkColor color)
         {

@@ -152,6 +152,7 @@
     <Compile Include="Events\ILocatedGameEvent.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="ClientServer\GameServer.cs" />
+    <Compile Include="GameObject.cs" />
     <Compile Include="GameplayArgs.cs" />
     <Compile Include="IChunkStorage.cs" />
     <Compile Include="IMap.cs" />

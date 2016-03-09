@@ -1,5 +1,4 @@
-﻿using OrangeBugReloaded.Core.Rendering;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,11 +6,11 @@ using System.Collections;
 
 namespace OrangeBugReloaded.Core.Tiles
 {
-    [VisualHint("CornerTile", nameof(Orientation))]
     public class CornerTile : Tile
     {
         public Point Orientation { get; }
 
+        public override Point VisualOrientation => Orientation;
         public CornerTile(Point orientation)
         {
             Orientation = orientation;
