@@ -239,12 +239,15 @@ namespace OrangeBugReloaded.Core.ClientServer
 
         private async Task RunAsync()
         {
+            // 4 updates per second
+            var targetElapsedTime = TimeSpan.FromSeconds(.25);
+
             while (true)
             {
-                var now = DateTimeOffset.Now;
+                var startTime = DateTimeOffset.Now;
 
                 // Run all scheduled moves that should have run until now
-                while (_scheduledFollowUpEvents.Any() && _scheduledFollowUpEvents.First().ExecutionTime <= now)
+                while (_scheduledFollowUpEvents.Any() && _scheduledFollowUpEvents.First().ExecutionTime <= startTime)
                 {
                     // Get the "oldest" follow-up event
                     var followUpEvent = _scheduledFollowUpEvents.OrderBy(e => e.ExecutionTime).First();
@@ -261,7 +264,11 @@ namespace OrangeBugReloaded.Core.ClientServer
                     await CommitAndBroadcastAsync(transaction, args.FollowUpEvents);
                 }
 
-                await Task.Delay(200);
+                var elapsed = DateTimeOffset.Now - startTime;
+                var remaining = targetElapsedTime - elapsed;
+
+                if (remaining > TimeSpan.Zero)
+                    await Task.Delay(remaining);
             }
         }
 

@@ -11,7 +11,8 @@
     <Grid Background="Black">
                 
         <Border Padding="12"
-                Background="#FFFE6A01"
+                Background="#FF222222"
+                RequestedTheme="Dark"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Width="340"

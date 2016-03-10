@@ -1,9 +1,8 @@
-﻿using Microsoft.Graphics.Canvas.UI.Xaml;
-using OrangeBugReloaded.App.Presentation;
-using OrangeBugReloaded.Core.ClientServer;
+﻿using OrangeBugReloaded.Core.ClientServer;
 using OrangeBugReloaded.Core.ClientServer.Local;
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.App.ViewModels
 {
@@ -11,20 +10,15 @@ namespace OrangeBugReloaded.App.ViewModels
     {
         private LocalGameServer _server;
         private LocalGameClient _client;
-        private OrangeBugRenderer _renderer;
 
         public GameClientBase Client => _client;
 
-        public OrangeBugRenderer Renderer => _renderer;
-
-        public LocalGameClientViewModel(CanvasAnimatedControl canvas, LocalGameServer gameServer)
+        public LocalGameClientViewModel(LocalGameServer gameServer)
         {
-            _renderer = new OrangeBugRenderer { Canvas = canvas };
             _server = gameServer;
-            Init();
         }
 
-        private async void Init()
+        public async Task InitializeAsync()
         {
             try
             {
@@ -34,9 +28,6 @@ namespace OrangeBugReloaded.App.ViewModels
 
                 _client = new LocalGameClient(playerInfo);
                 await _client.JoinAsync(_server);
-
-                _renderer.Map = _client.Map;
-                _renderer.FollowedPlayerId = playerInfo.PlayerId;
             }
             catch
             {

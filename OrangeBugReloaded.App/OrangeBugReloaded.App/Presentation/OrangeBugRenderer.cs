@@ -48,8 +48,7 @@ namespace OrangeBugReloaded.App.Presentation
         private IGameplayMap _map;
         private IDisposable _spawnSubscription;
         private IDisposable _moveSubscription;
-        private Vector2 _currentCameraPosition = Vector2.Zero;
-        private float _currentZoomLevel = .2f;
+        
         private string _followedPlayerId;
 
         public IGameplayMap Map
@@ -89,6 +88,10 @@ namespace OrangeBugReloaded.App.Presentation
 
         public Vector2 CameraPosition { get; set; }
 
+        public float CurrentZoomLevel { get; set; } = .2f;
+
+        public Vector2 CurrentCameraPosition { get; set; } = Vector2.Zero;
+
         public string FollowedPlayerId
         {
             get { return _followedPlayerId; }
@@ -102,8 +105,8 @@ namespace OrangeBugReloaded.App.Presentation
         public OrangeBugRenderer()
         {
             Plugins = new PluginCollection(this);
-            ZoomLevel = _currentZoomLevel;
-            CameraPosition = _currentCameraPosition;
+            ZoomLevel = CurrentZoomLevel;
+            CameraPosition = CurrentCameraPosition;
         }
 
         private void AttachCanvas(CanvasAnimatedControl canvas)
@@ -178,13 +181,13 @@ namespace OrangeBugReloaded.App.Presentation
 
             // Interpolate towards target values for ZoomLevel and CameraPosition
             var deltaTime = (float)args.Timing.ElapsedTime.TotalSeconds;
-            _currentZoomLevel = Mathf.Lerp(_currentZoomLevel, Mathf.Clamp(ZoomLevel, .01f, 1), _zoomLevelDamping * deltaTime);
-            _currentCameraPosition = Vector2.Lerp(_currentCameraPosition, CameraPosition, _cameraPositionDamping * deltaTime);
+            CurrentZoomLevel = Mathf.Lerp(CurrentZoomLevel, ZoomLevel, _zoomLevelDamping * deltaTime);
+            CurrentCameraPosition = Vector2.Lerp(CurrentCameraPosition, CameraPosition, _cameraPositionDamping * deltaTime);
 
             // Update coordinate system
             _coords.DipsPerUnit = 200;
-            _coords.CameraPosition = _currentCameraPosition;
-            _coords.ZoomLevel = _currentZoomLevel;
+            _coords.CameraPosition = CurrentCameraPosition;
+            _coords.ZoomLevel = CurrentZoomLevel;
             _coords.CanvasSize = sender.Size.ToVector2();
 
             // Determine the viewport so that only visible tiles/entities are drawn
@@ -195,7 +198,7 @@ namespace OrangeBugReloaded.App.Presentation
             var yMin = (int)Math.Min(corner1.Y, corner2.Y);
             var yMax = (int)Math.Max(corner1.Y, corner2.Y);
 
-            using (var spriteBatch = g.CreateSpriteBatch())
+            using (var spriteBatch = g.CreateSpriteBatch(CanvasSpriteSortMode.None))
             {
                 // Draw tiles
                 for (var y = yMin; y <= yMax; y++)
@@ -218,7 +221,7 @@ namespace OrangeBugReloaded.App.Presentation
                         {
                             // Draw tile version for testing purposes
                             var textPosition = _coords.GameToCanvasPoint(position.ToVector2());
-                            var textRect = new F.Rect(textPosition.X, textPosition.Y, _currentZoomLevel, _currentZoomLevel);
+                            var textRect = new F.Rect(textPosition.X, textPosition.Y, CurrentZoomLevel, CurrentZoomLevel);
                             g.DrawText(tileInfo.Version.ToString(), textRect, Colors.Yellow, _textFormat);
                         }
                     }
@@ -229,7 +232,7 @@ namespace OrangeBugReloaded.App.Presentation
                 {
                     foreach (var entityInfo in _entities)
                     {
-                        entityInfo.Advance();
+                        entityInfo.Advance(args.Timing.ElapsedTime);
 
                         if (Mathf.Within(entityInfo.CurrentPosition.X, xMin, xMax) &&
                             Mathf.Within(entityInfo.CurrentPosition.Y, yMin, yMax))
@@ -241,6 +244,9 @@ namespace OrangeBugReloaded.App.Presentation
                 }
             }
 
+            var fps = (int)Math.Round(1000 / args.Timing.ElapsedTime.TotalMilliseconds);
+            g.DrawText(fps + " fps", Vector2.Zero, Colors.Yellow);
+
             var pluginDrawArgs = new PluginDrawEventArgs(args, this);
             Plugins.RaiseOnDraw(pluginDrawArgs);
         }
@@ -250,14 +256,14 @@ namespace OrangeBugReloaded.App.Presentation
         {
             var visualHint = o as IVisualHint;
             var canvasPosition = _coords.GameToCanvasPoint(position);
-            var targetRect = new F.Rect(canvasPosition.X, canvasPosition.Y, _currentZoomLevel * _coords.DipsPerUnit, _currentZoomLevel * _coords.DipsPerUnit);
+            var targetRect = new F.Rect(canvasPosition.X, canvasPosition.Y, CurrentZoomLevel * _coords.DipsPerUnit, CurrentZoomLevel * _coords.DipsPerUnit);
             var sourceRect = _spriteSheet[visualHint?.VisualKey];
             var orientation = visualHint?.VisualOrientation ?? Point.Zero;
 
             if (orientation.IsDirection)
             {
                 var rotation = _radiansForDirection[orientation];
-                var m = Matrix4x4.CreateRotationZ(rotation, new Vector3(canvasPosition.X + (_currentZoomLevel * _coords.DipsPerUnit) / 2, canvasPosition.Y + (_currentZoomLevel * _coords.DipsPerUnit) / 2, 0));
+                var m = Matrix4x4.CreateRotationZ(rotation, new Vector3(canvasPosition.X + (CurrentZoomLevel * _coords.DipsPerUnit) / 2, canvasPosition.Y + (CurrentZoomLevel * _coords.DipsPerUnit) / 2, 0));
                 g.DrawImage(_spriteSheet.Image, targetRect, sourceRect, 1, CanvasImageInterpolation.Linear, m);
             }
             else

@@ -26,7 +26,7 @@ namespace OrangeBugReloaded.App.Presentation
 
         public Vector2 CurrentPosition { get; private set; }
 
-        public DateTime AnimationStartTime { get; private set; }
+        public TimeSpan ElapsedTime { get; private set; }
 
         public TimeSpan AnimationDuration { get; private set; }
 
@@ -54,8 +54,11 @@ namespace OrangeBugReloaded.App.Presentation
             Entity = e.Target.Entity;
             SourcePosition = CurrentPosition;
             TargetPosition = e.TargetPosition.ToVector2();
-            AnimationStartTime = DateTime.Now;
-            AnimationDuration = TimeSpan.FromSeconds(.3);
+            ElapsedTime = TimeSpan.Zero;
+
+            var distance = Vector2.Distance(CurrentPosition, TargetPosition);
+            AnimationDuration = TimeSpan.FromSeconds(.2 * Math.Sqrt(distance));
+            
             _finishEvent.Reset();
 
             Moved?.Invoke(this);
@@ -66,9 +69,11 @@ namespace OrangeBugReloaded.App.Presentation
         /// </summary>
         /// <param name="deltaTime"></param>
         /// <returns>False, if the animation completed</returns>
-        public bool Advance()
+        public bool Advance(TimeSpan elapsedTime)
         {
-            var t = GetAnimationProgress();
+            ElapsedTime += elapsedTime;
+
+            var t = Mathf.Clamp01((float)(ElapsedTime.TotalSeconds / AnimationDuration.TotalSeconds));
             CurrentPosition = Vector2.Lerp(SourcePosition, TargetPosition, 1 - (t - 1) * (t - 1));
 
             if (t >= 1)
@@ -86,13 +91,6 @@ namespace OrangeBugReloaded.App.Presentation
 
             _moveSubscription.Dispose();
             Despawned?.Invoke(this);
-        }
-
-        private float GetAnimationProgress()
-        {
-            var t = (float)((DateTime.Now - AnimationStartTime).TotalSeconds / AnimationDuration.TotalSeconds);
-            t = Mathf.Clamp01(t);
-            return t;
         }
 
         public void Dispose()

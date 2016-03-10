@@ -99,7 +99,7 @@ namespace OrangeBugReloaded.Core
                 Math.Min(max.Y, Math.Max(min.Y, Y)));
         }
 
-#pragma warning disable CS1591 // Fehledes XML-Kommentar für öffentlich sichtbaren Typ oder Element
+#pragma warning disable CS1591 // Missing XML comment for public member
 
         public static Point operator +(Point a, Point b) => new Point(a.X + b.X, a.Y + b.Y);
         public static Point operator -(Point p) => new Point(-p.X, -p.Y);
@@ -117,7 +117,9 @@ namespace OrangeBugReloaded.Core
 
         public static Point Distance(Point a, Point b) => new Point(Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
 
-#pragma warning restore CS1591 // Fehledes XML-Kommentar für öffentlich sichtbaren Typ oder Element
+        public static float EuclideanDistance(Point a, Point b) => (float)Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
+
+#pragma warning restore CS1591 // Missing XML comment for public member
 
         /// <summary>
         /// Throws an exception if the <see cref="Point"/> is not a direction,

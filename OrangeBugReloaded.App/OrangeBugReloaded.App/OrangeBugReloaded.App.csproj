@@ -102,6 +102,9 @@
     <Compile Include="Presentation\CoordinateSystem.cs" />
     <Compile Include="Presentation\EntityInfo.cs" />
     <Compile Include="Presentation\KeyboardManager.cs" />
+    <Compile Include="Presentation\OrangeBugPresenter.xaml.cs">
+      <DependentUpon>OrangeBugPresenter.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Presentation\SpriteSheet.cs" />
     <Compile Include="ViewModels\GameServerViewModel.cs" />
     <Compile Include="Common\IRendererPlugin.cs" />
@@ -251,6 +254,51 @@
     <Content Include="..\..\Assets\Sprites\Wall.png">
       <Link>Assets\Sprites\Wall.png</Link>
     </Content>
+    <Content Include="Assets\Logos\NewStoreLogo.scale-100.png" />
+    <Content Include="Assets\Logos\NewStoreLogo.scale-125.png" />
+    <Content Include="Assets\Logos\NewStoreLogo.scale-150.png" />
+    <Content Include="Assets\Logos\NewStoreLogo.scale-200.png" />
+    <Content Include="Assets\Logos\NewStoreLogo.scale-400.png" />
+    <Content Include="Assets\Logos\SplashScreen.scale-100.png" />
+    <Content Include="Assets\Logos\SplashScreen.scale-125.png" />
+    <Content Include="Assets\Logos\SplashScreen.scale-150.png" />
+    <Content Include="Assets\Logos\SplashScreen.scale-200.png" />
+    <Content Include="Assets\Logos\SplashScreen.scale-400.png" />
+    <Content Include="Assets\Logos\Square150x150Logo.scale-100.png" />
+    <Content Include="Assets\Logos\Square150x150Logo.scale-125.png" />
+    <Content Include="Assets\Logos\Square150x150Logo.scale-150.png" />
+    <Content Include="Assets\Logos\Square150x150Logo.scale-200.png" />
+    <Content Include="Assets\Logos\Square150x150Logo.scale-400.png" />
+    <Content Include="Assets\Logos\Square310x310Logo.scale-100.png" />
+    <Content Include="Assets\Logos\Square310x310Logo.scale-125.png" />
+    <Content Include="Assets\Logos\Square310x310Logo.scale-150.png" />
+    <Content Include="Assets\Logos\Square310x310Logo.scale-200.png" />
+    <Content Include="Assets\Logos\Square310x310Logo.scale-400.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.scale-100.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.scale-125.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.scale-150.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.scale-200.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.scale-400.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.targetsize-16.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.targetsize-16_altform-unplated.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.targetsize-24.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.targetsize-24_altform-unplated.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.targetsize-256.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.targetsize-256_altform-unplated.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.targetsize-32.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.targetsize-32_altform-unplated.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.targetsize-48.png" />
+    <Content Include="Assets\Logos\Square44x44Logo.targetsize-48_altform-unplated.png" />
+    <Content Include="Assets\Logos\Square71x71Logo.scale-100.png" />
+    <Content Include="Assets\Logos\Square71x71Logo.scale-125.png" />
+    <Content Include="Assets\Logos\Square71x71Logo.scale-150.png" />
+    <Content Include="Assets\Logos\Square71x71Logo.scale-200.png" />
+    <Content Include="Assets\Logos\Square71x71Logo.scale-400.png" />
+    <Content Include="Assets\Logos\Wide310x150Logo.scale-100.png" />
+    <Content Include="Assets\Logos\Wide310x150Logo.scale-125.png" />
+    <Content Include="Assets\Logos\Wide310x150Logo.scale-150.png" />
+    <Content Include="Assets\Logos\Wide310x150Logo.scale-200.png" />
+    <Content Include="Assets\Logos\Wide310x150Logo.scale-400.png" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -276,6 +324,10 @@
     <Page Include="MainPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation\OrangeBugPresenter.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
