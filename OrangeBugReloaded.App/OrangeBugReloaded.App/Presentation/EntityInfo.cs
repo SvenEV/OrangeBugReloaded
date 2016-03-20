@@ -13,7 +13,7 @@ namespace OrangeBugReloaded.App.Presentation
     {
         private readonly IDisposable _moveSubscription;
         private readonly IDisposable _despawnSubscription;
-        private readonly AsyncManualResetEvent _finishEvent = new AsyncManualResetEvent();
+        private bool _isDespawned;
 
         public event Action<EntityInfo> Moved;
 
@@ -28,8 +28,6 @@ namespace OrangeBugReloaded.App.Presentation
         public TimeSpan ElapsedTime { get; private set; }
 
         public TimeSpan AnimationDuration { get; private set; }
-
-        public bool IsDespawned { get; private set; }
 
         public EntityInfo(Entity entity, Point position, IObservable<IGameEvent> eventStream)
         {
@@ -60,8 +58,6 @@ namespace OrangeBugReloaded.App.Presentation
             var distance = Vector2.Distance(CurrentPosition, TargetPosition);
             AnimationDuration = TimeSpan.FromSeconds(.2 * Math.Sqrt(distance));
             
-            _finishEvent.Reset();
-
             Moved?.Invoke(this);
         }
 
@@ -69,7 +65,7 @@ namespace OrangeBugReloaded.App.Presentation
         /// Updates the animation progress.
         /// </summary>
         /// <param name="deltaTime"></param>
-        /// <returns>False, if the animation completed</returns>
+        /// <returns>True, if the entity despawned and the animation completed</returns>
         public bool Advance(TimeSpan elapsedTime)
         {
             ElapsedTime += elapsedTime;
@@ -77,21 +73,19 @@ namespace OrangeBugReloaded.App.Presentation
             var t = Mathf.Clamp01((float)(ElapsedTime.TotalSeconds / AnimationDuration.TotalSeconds));
             CurrentPosition = Vector2.Lerp(SourcePosition, TargetPosition, 1 - (t - 1) * (t - 1));
 
-            if (t >= 1)
-                _finishEvent.Set();
+            if (t >= 1 && _isDespawned)
+            {
+                _moveSubscription.Dispose();
+                return true;
+            }
 
-            return t <= 1;
+            return false;
         }
 
-        private async void OnDespawn(EntityDespawnEvent e)
+        private void OnDespawn(EntityDespawnEvent e)
         {
             _despawnSubscription.Dispose();
-
-            // Wait for animation to finish
-            await _finishEvent.WaitAsync();
-
-            _moveSubscription.Dispose();
-            IsDespawned = true;
+            _isDespawned = true;
         }
 
         public void Dispose()

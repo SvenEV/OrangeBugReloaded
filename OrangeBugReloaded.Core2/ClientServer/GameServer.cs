@@ -175,27 +175,6 @@ namespace OrangeBugReloaded.Core.ClientServer
             }
         }
 
-        private void UnloadChunkCore(Point index, ClientConnection connection)
-        {
-            connection.LoadedChunks.Remove(index);
-
-            var connectionsList = _connectionsByChunk.TryGetValue(index);
-
-            if (connectionsList != null)
-            {
-                connectionsList.Remove(connection);
-
-                if (!connectionsList.Any())
-                {
-                    // No more clients have loaded the chunk
-                    // TODO: Check if we can unload the chunk on the server
-                    // We can unload chunks which are no longer referenced by clients or by dependencies from other chunks
-                    // (Finding these chunks again involves checking dependencies and determining a topological order of checking)
-                    _connectionsByChunk.Remove(index);
-                }
-            }
-        }
-
         /// <inheritdoc/>
         public async Task<RemoteMoveResult> MoveAsync(RemoteMoveRequest move, string playerId)
         {
@@ -314,6 +293,27 @@ namespace OrangeBugReloaded.Core.ClientServer
 
                 if (remaining > TimeSpan.Zero)
                     await Task.Delay(remaining);
+            }
+        }
+
+        private void UnloadChunkCore(Point index, ClientConnection connection)
+        {
+            connection.LoadedChunks.Remove(index);
+
+            var connectionsList = _connectionsByChunk.TryGetValue(index);
+
+            if (connectionsList != null)
+            {
+                connectionsList.Remove(connection);
+
+                if (!connectionsList.Any())
+                {
+                    // No more clients have loaded the chunk
+                    // TODO: Check if we can unload the chunk on the server
+                    // We can unload chunks which are no longer referenced by clients or by dependencies from other chunks
+                    // (Finding these chunks again involves checking dependencies and determining a topological order of checking)
+                    _connectionsByChunk.Remove(index);
+                }
             }
         }
 

@@ -234,15 +234,15 @@ namespace OrangeBugReloaded.App.Presentation
                     for (var i = 0; i < _entities.Count; i++)
                     {
                         var entityInfo = _entities[i];
+                        var isDespawned = entityInfo.Advance(args.Timing.ElapsedTime);
 
-                        if (entityInfo.IsDespawned)
+                        if (isDespawned)
                         {
                             _entities.Remove(entityInfo);
                             i--;
                         }
                         else
                         {
-                            entityInfo.Advance(args.Timing.ElapsedTime);
 
                             if (Mathf.Within(entityInfo.CurrentPosition.X, xMin, xMax) &&
                                 Mathf.Within(entityInfo.CurrentPosition.Y, yMin, yMax))
