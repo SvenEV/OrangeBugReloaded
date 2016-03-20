@@ -22,7 +22,7 @@ namespace OrangeBugReloaded.App.ViewModels
 
         public async Task InitializeAsync()
         {
-            var storage = new InMemoryChunkStorage();
+            var storage = new InMemoryChunkStorage(SampleChunks.MapMetadata);
             await storage.SaveAsync(new Point(0, 0), SampleChunks.Chunk1.Clone());
             await storage.SaveAsync(new Point(-1, 0), SampleChunks.Chunk2.Clone());
             await storage.SaveAsync(new Point(-1, -1), SampleChunks.Chunk3.Clone());

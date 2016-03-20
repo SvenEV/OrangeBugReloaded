@@ -5,6 +5,7 @@ namespace OrangeBugReloaded.Core
 {
     public class SampleChunks
     {
+        public static IMapMetadata MapMetadata { get; } = CreateSampleMapMetadata();
         public static Chunk Chunk1 { get; } = CreateSampleChunk();
         public static Chunk Chunk2 { get; } = CreateSampleChunk2();
         public static Chunk Chunk3 { get; } = CreateSampleChunk3();
@@ -21,6 +22,14 @@ namespace OrangeBugReloaded.Core
 
             return chunk;
 
+        }
+
+        private static IMapMetadata CreateSampleMapMetadata()
+        {
+            var meta = new MapMetadata();
+            var level1 = meta.Regions.AddRegion("Level 1", meta.Regions.DefaultRegion.Id, new Point(-3, 2));
+            var level2 = meta.Regions.AddRegion("Level 2", meta.Regions.DefaultRegion.Id, new Point(-3, 2));
+            return meta;
         }
 
         private static Chunk CreateSampleChunk()
@@ -47,9 +56,9 @@ namespace OrangeBugReloaded.Core
             chunk[0, 5] = v0(PathTile.Default);
             chunk[0, 6] = v0(Tile.Compose(new CornerTile(Point.South), CoinEntity.Default));
 
-            for (var y = 1; y < Chunk.Size - 1; y++)
-                for (var x = 1; x < Chunk.Size - 1; x++)
-                    chunk.SetMetadata(new Point(x, y), new TileMetadata(chunk[x, y].Tile, 0, 0));
+            for (var y = 0; y < Chunk.Size; y++)
+                for (var x = 0; x < Chunk.Size; x++)
+                    chunk.SetMetadata(new Point(x, y), new TileMetadata(chunk[x, y].Tile, 1, 0));
 
             return chunk;
         }
@@ -77,6 +86,10 @@ namespace OrangeBugReloaded.Core
             chunk[3, 2] = v0(new CornerTile(Point.South));
 
             chunk[3, 0] = v0(PathTile.Default);
+
+            for (var y = 0; y < Chunk.Size; y++)
+                for (var x = 0; x < Chunk.Size; x++)
+                    chunk.SetMetadata(new Point(x, y), new TileMetadata(chunk[x, y].Tile, 2, 0));
 
             return chunk;
         }

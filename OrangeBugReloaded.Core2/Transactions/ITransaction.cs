@@ -16,13 +16,6 @@ namespace OrangeBugReloaded.Core.Transactions
     /// <typeparam name="TMap">The type of the underlying map</typeparam>
     public interface ITransaction<T> : IGameEventEmitter
     {
-        /// <summary>
-        /// Indicates whether recording of changes has stopped.
-        /// If this is true, the transaction won't allow further changes
-        /// or events to be recorded.
-        /// </summary>
-        bool IsFinalized { get; }
-
         IReadOnlyDictionary<Point, T> Changes { get; }
 
         IReadOnlyList<IGameEvent> Events { get; }
@@ -32,13 +25,30 @@ namespace OrangeBugReloaded.Core.Transactions
         /// </summary>
         MoveInitiator Initiator { get; set; }
 
-        bool Set(Point position, T oldValue, T value);
+        /// <summary>
+        /// Indicates whether recording of changes has stopped.
+        /// If this is true, the transaction won't allow further changes
+        /// or events to be recorded.
+        /// </summary>
+        /// <remarks>
+        /// Setting this from true to false should only happen
+        /// in very rare well documented situations.
+        /// </remarks>
+        bool IsSealed { get; set; }
 
         /// <summary>
-        /// Finalizes the transaction so that no more
-        /// changes can be added.
-        /// <seealso cref="IsFinalized"/>
+        /// Adds a specific change to the transaction.
         /// </summary>
-        void StopRecording();
+        /// <param name="position">Position</param>
+        /// <param name="oldValue">
+        /// Old value that is already existent outside the transaction
+        /// </param>
+        /// <param name="value">New value</param>
+        /// <returns>
+        /// True if the new value has been added to the transaction.
+        /// False otherwise; that is if the old value equals the new value
+        /// or if the transaction is sealed.
+        /// </returns>
+        bool Set(Point position, T oldValue, T value);
     }
 }

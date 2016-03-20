@@ -42,8 +42,8 @@ namespace OrangeBugReloaded.Core
         /// <returns>Task</returns>
         public virtual Task DetachAsync(IEntityDetachArgs e)
         {
-            // Default behavior: Finalize transaction, entity cannot be pushed or collected
-            e.StopRecording();
+            // Default behavior: Seal transaction, entity cannot be pushed or collected
+            e.Seal();
             return Task.CompletedTask;
         }
 
@@ -64,7 +64,7 @@ namespace OrangeBugReloaded.Core
             }
             else
             {
-                e.StopRecording();
+                e.Seal();
             }
         }
 
@@ -87,7 +87,7 @@ namespace OrangeBugReloaded.Core
             }
             else
             {
-                e.StopRecording();
+                e.Seal();
             }
 
             return Task.CompletedTask;

@@ -20,6 +20,7 @@ namespace OrangeBugReloaded.Core
         {
             TileTemplate = tileTemplate.EnsureNotNull();
             RegionId = regionId;
+            Version = version;
         }
 
         public override bool Equals(object obj)

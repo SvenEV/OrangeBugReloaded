@@ -11,12 +11,12 @@ namespace OrangeBugReloaded.Core.Transactions
     /// </summary>
     public class TransactionWithMoveSupport : TransactionBase<TileInfo>, ITransactionWithMoveSupport
     {
-        public static TransactionWithMoveSupport EmptyFinalizedTransaction { get; }
+        public static TransactionWithMoveSupport EmptySealedTransaction { get; }
 
         static TransactionWithMoveSupport()
         {
-            EmptyFinalizedTransaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
-            EmptyFinalizedTransaction.StopRecording();
+            EmptySealedTransaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
+            EmptySealedTransaction.IsSealed = true;
         }
 
         /// <inheritdoc/>

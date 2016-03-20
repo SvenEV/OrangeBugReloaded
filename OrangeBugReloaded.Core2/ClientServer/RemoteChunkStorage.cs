@@ -41,7 +41,8 @@ namespace OrangeBugReloaded.Core.ClientServer
 
         public Task<IMapMetadata> LoadMetadataAsync()
         {
-            throw new NotImplementedException();
+            // TODO: Do we need metadata on client side at all?
+            return Task.FromResult<IMapMetadata>(null);
         }
 
         public Task SaveAsync(Point index, IChunk chunk)

@@ -108,6 +108,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AsyncLock.cs" />
     <Compile Include="AsyncManualResetEvent.cs" />
     <Compile Include="Chunk.cs" />
     <Compile Include="ChunkLoader.cs" />

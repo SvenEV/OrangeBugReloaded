@@ -4,6 +4,7 @@ using OrangeBugReloaded.Core.Transactions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core.ClientServer
@@ -16,6 +17,7 @@ namespace OrangeBugReloaded.Core.ClientServer
     {
         // Maps connection IDs to ClientConnections
         private readonly Dictionary<string, ClientConnection> _clients = new Dictionary<string, ClientConnection>();
+        private readonly AsyncLock _clientsLock = new AsyncLock();
 
         // Maps chunk indices to lists of client connections that have currently loaded that chunk
         private readonly Dictionary<Point, List<ClientConnection>> _connectionsByChunk = new Dictionary<Point, List<ClientConnection>>();
@@ -48,60 +50,67 @@ namespace OrangeBugReloaded.Core.ClientServer
             var chunkPoints = new Rectangle(kvp.Key.X * Chunk.Size, kvp.Key.Y * Chunk.Size, Chunk.Size - 1, Chunk.Size - 1);
             var transaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
             var followUpEvents = await ((Map)Map).UpdateTilesAsync(chunkPoints, transaction);
-            await CommitAndBroadcastAsync(transaction, followUpEvents);
+
+            using (await _clientsLock.LockAsync())
+                await CommitAndBroadcastAsync(transaction, followUpEvents);
         }
 
         /// <inheritdoc/>
         public async Task<JoinResult> JoinAsync(GameClientInfo clientInfo, IGameClientStub clientStub)
         {
-            if (_clients.Values.Any(conn => conn.ClientInfo.PlayerId == clientInfo.PlayerId.ToString()))
-                return new JoinResult(false, Point.Zero, "Another client is already connected using the same player ID");
-
-            var connection = new ClientConnection(clientInfo, clientStub);
-            var playerEntity = new PlayerEntity(clientInfo.PlayerId, Point.North);
-
-            // Check if the player is playing this map for the first time
-            if (Map.Metadata.Players.IsKnown(clientInfo.PlayerId))
+            using (await _clientsLock.LockAsync())
             {
-                // Try to spawn player at its last known position.
-                var playerInfo = Map.Metadata.Players[clientInfo.PlayerId];
-                var spawnResult = await Map.SpawnAsync(playerEntity, playerInfo.Position);
+                if (_clients.Values.Any(conn => conn.ClientInfo.PlayerId == clientInfo.PlayerId.ToString()))
+                    return new JoinResult(false, Point.Zero, "Another client is already connected using the same player ID");
 
-                if (spawnResult.IsSuccessful)
+                var connection = new ClientConnection(clientInfo, clientStub);
+                var playerEntity = new PlayerEntity(clientInfo.PlayerId, Point.North);
+
+                // Check if the player is playing this map for the first time
+                if (Map.Metadata.Players.IsKnown(clientInfo.PlayerId))
                 {
-                    // TODO: What if a player spawns within a level some others are currently trying to solve?
-                    await CommitAndBroadcastAsync(spawnResult.Transaction, spawnResult.FollowUpEvents, connection);
-                    _clients.Add(clientInfo.PlayerId, connection);
-                    Map.Emit(new PlayerJoinEvent(clientInfo));
-                    return new JoinResult(true, playerInfo.Position);
+                    // Try to spawn player at its last known position.
+                    var playerInfo = Map.Metadata.Players[clientInfo.PlayerId];
+                    var spawnTransaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
+                    var spawnResult = await Map.SpawnAsync(playerEntity, playerInfo.Position, spawnTransaction);
+
+                    if (spawnResult.IsSuccessful)
+                    {
+                        // TODO: What if a player spawns within a level some others are currently trying to solve?
+                        await CommitAndBroadcastAsync(spawnResult.Transaction, spawnResult.FollowUpEvents, connection);
+                        _clients.Add(clientInfo.PlayerId, connection);
+                        Map.Emit(new PlayerJoinEvent(clientInfo));
+                        return new JoinResult(true, playerInfo.Position);
+                    }
+                    else
+                    {
+                        // If that fails,
+                        // option 1: spawn at default spawn area
+                        // option 2: return false
+                        throw new NotImplementedException();
+                    }
                 }
                 else
                 {
-                    // If that fails,
-                    // option 1: spawn at default spawn area
-                    // option 2: return false
-                    throw new NotImplementedException();
-                }
-            }
-            else
-            {
-                // Unknown player: Spawn player somewhere in default spawn area, add to list of known players
-                var spawnPositions = await Map.GetCoherentPositionsAsync(Map.Metadata.Regions.DefaultRegion.SpawnPosition);
-                var spawnResult = await Map.SpawnAsync(playerEntity, spawnPositions);
+                    // Unknown player: Spawn player somewhere in default spawn area, add to list of known players
+                    var spawnPositions = await Map.GetCoherentPositionsAsync(Map.Metadata.Regions.DefaultRegion.SpawnPosition);
+                    var spawnTransaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
+                    var spawnResult = await Map.SpawnAsync(playerEntity, spawnPositions, spawnTransaction);
 
-                if (spawnResult != null)
-                {
-                    await CommitAndBroadcastAsync(spawnResult.Transaction, spawnResult.FollowUpEvents, connection);
-                    var playerInfo = new PlayerInfo(clientInfo.PlayerId, clientInfo.PlayerDisplayName, spawnResult.SpawnPosition);
-                    Map.Metadata.Players.Add(playerInfo);
-                    _clients.Add(clientInfo.PlayerId, connection);
-                    Map.Emit(new PlayerJoinEvent(clientInfo));
-                    return new JoinResult(true, spawnResult.SpawnPosition);
-                }
-                else
-                {
-                    // TODO: What now? We could not spawn the player!
-                    throw new NotImplementedException();
+                    if (spawnResult.IsSuccessful)
+                    {
+                        await CommitAndBroadcastAsync(spawnResult.Transaction, spawnResult.FollowUpEvents, connection);
+                        var playerInfo = new PlayerInfo(clientInfo.PlayerId, clientInfo.PlayerDisplayName, spawnResult.SpawnPosition);
+                        Map.Metadata.Players.Add(playerInfo);
+                        _clients.Add(clientInfo.PlayerId, connection);
+                        Map.Emit(new PlayerJoinEvent(clientInfo));
+                        return new JoinResult(true, spawnResult.SpawnPosition);
+                    }
+                    else
+                    {
+                        // TODO: What now? We could not spawn the player!
+                        throw new NotImplementedException();
+                    }
                 }
             }
         }
@@ -109,50 +118,65 @@ namespace OrangeBugReloaded.Core.ClientServer
         /// <inheritdoc/>
         public async Task LeaveAsync(string playerId)
         {
-            var connection = GetClient(playerId);
-            var player = Map.Metadata.Players[playerId];
-
-            // Remove PlayerEntity from Map (despawn)
-            var despawnResult = await Map.DespawnAsync(player.Position);
-
-            if (despawnResult.IsSuccessful)
+            using (await _clientsLock.LockAsync())
             {
-                await CommitAndBroadcastAsync(despawnResult.Transaction, despawnResult.FollowUpEvents, connection);
+                var connection = GetClient(playerId);
+                var playerInfo = Map.Metadata.Players[playerId];
 
-                // Unload all the chunks currently loaded by the client
-                while (connection.LoadedChunks.Any())
-                    await UnloadChunkAsync(connection.LoadedChunks.First(), playerId);
+                // Remove PlayerEntity from Map (despawn)
+                var despawnTransaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
+                var despawnResult = await Map.DespawnAsync(playerInfo.Position, despawnTransaction);
 
-                _clients.Remove(playerId);
-                Map.Emit(new PlayerLeaveEvent(connection.ClientInfo));
-            }
-            else
-            {
-                // TODO: What now? We could not despawn the player!
-                throw new NotImplementedException();
+                if (despawnResult.IsSuccessful)
+                {
+                    await CommitAndBroadcastAsync(despawnResult.Transaction, despawnResult.FollowUpEvents, connection);
+
+                    // Unload all the chunks currently loaded by the client
+                    while (connection.LoadedChunks.Any())
+                        UnloadChunkCore(connection.LoadedChunks.First(), connection);
+
+                    _clients.Remove(playerId);
+                    Map.Emit(new PlayerLeaveEvent(connection.ClientInfo));
+                }
+                else
+                {
+                    // TODO: What now? We could not despawn the player!
+                    throw new NotImplementedException();
+                }
             }
         }
 
         /// <inheritdoc/>
         public async Task<IChunk> LoadChunkAsync(Point index, string playerId)
         {
-            var connection = GetClient(playerId);
+            using (await _clientsLock.LockAsync())
+            {
+                var connection = GetClient(playerId);
 
-            var chunk = await Map.ChunkLoader.GetAsync(index);
+                var chunk = await Map.ChunkLoader.GetAsync(index);
 
-            var connectionsList = _connectionsByChunk.TryGetValue(index);
-            if (connectionsList == null)
-                connectionsList = _connectionsByChunk[index] = new List<ClientConnection>();
+                var connectionsList = _connectionsByChunk.TryGetValue(index);
+                if (connectionsList == null)
+                    connectionsList = _connectionsByChunk[index] = new List<ClientConnection>();
 
-            connection.LoadedChunks.Add(index);
-            connectionsList.Add(connection);
-            return chunk.Clone();
+                connection.LoadedChunks.Add(index);
+                connectionsList.Add(connection);
+                return chunk.Clone();
+            }
         }
 
         /// <inheritdoc/>
-        public Task UnloadChunkAsync(Point index, string playerId)
+        public async Task UnloadChunkAsync(Point index, string playerId)
         {
-            var connection = GetClient(playerId);
+            using (await _clientsLock.LockAsync())
+            {
+                var connection = GetClient(playerId);
+                UnloadChunkCore(index, connection);
+            }
+        }
+
+        private void UnloadChunkCore(Point index, ClientConnection connection)
+        {
             connection.LoadedChunks.Remove(index);
 
             var connectionsList = _connectionsByChunk.TryGetValue(index);
@@ -170,70 +194,89 @@ namespace OrangeBugReloaded.Core.ClientServer
                     _connectionsByChunk.Remove(index);
                 }
             }
-
-            return Task.CompletedTask;
         }
 
         /// <inheritdoc/>
         public async Task<RemoteMoveResult> MoveAsync(RemoteMoveRequest move, string playerId)
         {
-            // TODO: Test, test, test!
-
-            var connection = GetClient(playerId);
-            await connection.MoveSemaphore.WaitAsync();
-
-            try
+            using (await _clientsLock.LockAsync())
             {
-                var source = await Map.GetAsync(move.SourcePosition);
-                var target = await Map.GetAsync(move.TargetPosition);
-                var initiator = new MoveInitiator(source.Tile.Entity, move.SourcePosition);
-                var transaction = new TransactionWithMoveSupport(initiator);
-                var moveResult = await Map.MoveAsync(move.SourcePosition, move.TargetPosition, transaction);
+                var connection = GetClient(playerId);
+                await connection.MoveSemaphore.WaitAsync();
 
-                // Compare affected tiles of the client and those of the server
-                var clientAffectedTiles = move.AffectedPositions.Union(new[] { move.SourcePosition, move.TargetPosition });
-                var serverAffectedTiles = moveResult.Transaction.Changes
-                    .Select(c => new VersionedPoint(c.Key, c.Value.Version))
-                    .Union(new[] { new VersionedPoint(move.SourcePosition, source.Version), new VersionedPoint(move.TargetPosition, target.Version) })
-                    .ToList();
-
-                var versions = serverAffectedTiles.FullOuterJoin(clientAffectedTiles,
-                    vp => vp.Position,
-                    vp => vp.Position,
-                    (serverVP, clientVP, p) => new { Position = p, ServerVersion = serverVP.Version, ClientVersion = clientVP.Version },
-                    VersionedPoint.Empty,
-                    VersionedPoint.Empty);
-
-                if (versions.Any(v => v.ClientVersion != -1 && v.ServerVersion != -1 && v.ClientVersion > v.ServerVersion))
-                    throw new NotImplementedException("This should not happen. Clients must not have a newer version than the server");
-
-                var conflictingVersions = versions.Where(v =>
-                    (v.ClientVersion == -1 && v.ServerVersion != -1) ||
-                    (v.ClientVersion != -1 && v.ServerVersion == -1) ||
-                    (v.ClientVersion != -1 && v.ServerVersion != -1 && v.ClientVersion < v.ServerVersion));
-
-                if (conflictingVersions.Any())
+                try
                 {
-                    // Client not up to date => Cancel move request and send up-to-date chunks
-                    var chunks = await Task.WhenAll(conflictingVersions
-                        .Select(v => v.Position / Chunk.Size).Distinct()
-                        .Select(async index => new KeyValuePair<Point, IChunk>(index, await Map.ChunkLoader.GetAsync(index))));
+                    var source = await Map.GetAsync(move.SourcePosition);
+                    var target = await Map.GetAsync(move.TargetPosition);
+                    var initiator = new MoveInitiator(source.Tile.Entity, move.SourcePosition);
+                    var transaction = new TransactionWithMoveSupport(initiator);
+                    var moveResult = await Map.MoveAsync(move.SourcePosition, move.TargetPosition, transaction);
 
-                    return RemoteMoveResult.CreateFaulted(chunks);
+                    // Compare affected tiles of the client and those of the server
+                    var clientAffectedTiles = move.AffectedPositions.Union(new[] { move.SourcePosition, move.TargetPosition });
+                    var serverAffectedTiles = moveResult.Transaction.Changes
+                        .Select(c => new VersionedPoint(c.Key, c.Value.Version))
+                        .Union(new[] { new VersionedPoint(move.SourcePosition, source.Version), new VersionedPoint(move.TargetPosition, target.Version) })
+                        .ToList();
+
+                    var versions = serverAffectedTiles.FullOuterJoin(clientAffectedTiles,
+                        vp => vp.Position,
+                        vp => vp.Position,
+                        (serverVP, clientVP, p) => new { Position = p, ServerVersion = serverVP.Version, ClientVersion = clientVP.Version },
+                        VersionedPoint.Empty,
+                        VersionedPoint.Empty);
+
+                    if (versions.Any(v => v.ClientVersion != -1 && v.ServerVersion != -1 && v.ClientVersion > v.ServerVersion))
+                        throw new NotImplementedException("This should not happen. Clients must not have a newer version than the server");
+
+                    var conflictingVersions = versions.Where(v =>
+                        (v.ClientVersion == -1 && v.ServerVersion != -1) ||
+                        (v.ClientVersion != -1 && v.ServerVersion == -1) ||
+                        (v.ClientVersion != -1 && v.ServerVersion != -1 && v.ClientVersion < v.ServerVersion));
+
+                    if (conflictingVersions.Any())
+                    {
+                        // Client not up to date => Cancel move request and send up-to-date chunks
+                        var chunks = await Task.WhenAll(conflictingVersions
+                            .Select(v => v.Position / Chunk.Size).Distinct()
+                            .Select(async index => new KeyValuePair<Point, IChunk>(index, await Map.ChunkLoader.GetAsync(index))));
+
+                        return RemoteMoveResult.CreateFaulted(chunks);
+                    }
+                    else
+                    {
+                        // Client and server are on the same version (regarding affected tiles)
+                        // => Commit and schedule follow-up transactions
+                        // => Notify other clients about the changes
+                        var newVersion = await CommitAndBroadcastAsync(moveResult.Transaction, moveResult.FollowUpEvents, connection);
+                        return RemoteMoveResult.CreateSuccessful(newVersion);
+                    }
+                }
+                finally
+                {
+                    connection.MoveSemaphore.Release();
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> ResetRegionAsync(string playerId)
+        {
+            using (await _clientsLock.LockAsync())
+            {
+                var player = Map.Metadata.Players[playerId];
+                var resetTransaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
+                var resetResult = await Map.ResetRegionAsync(player.Position, resetTransaction);
+
+                if (resetResult.IsSuccessful)
+                {
+                    await CommitAndBroadcastAsync(resetResult.Transaction, resetResult.FollowUpEvents);
+                    return true;
                 }
                 else
                 {
-                    // Client and server are on the same version (regarding affected tiles)
-                    // => Commit and schedule follow-up transactions
-                    // => Notify other clients about the changes
-
-                    var newVersion = await CommitAndBroadcastAsync(moveResult.Transaction, moveResult.FollowUpEvents, connection);
-                    return RemoteMoveResult.CreateSuccessful(newVersion);
+                    return false;
                 }
-            }
-            finally
-            {
-                connection.MoveSemaphore.Release();
             }
         }
 
@@ -261,7 +304,9 @@ namespace OrangeBugReloaded.Core.ClientServer
                     var transaction = new TransactionWithMoveSupport(followUpEvent.Initiator);
                     var args = new GameplayArgs(transaction, Map) as IFollowUpArgs;
                     await tileInfo.Tile.OnFollowUpTransactionAsync(args, followUpEvent.Position);
-                    await CommitAndBroadcastAsync(transaction, args.FollowUpEvents);
+
+                    using (await _clientsLock.LockAsync())
+                        await CommitAndBroadcastAsync(transaction, args.FollowUpEvents);
                 }
 
                 var elapsed = DateTimeOffset.Now - startTime;
@@ -327,7 +372,9 @@ namespace OrangeBugReloaded.Core.ClientServer
 
                 var relevantEvents = transaction.Events
                     .OfType<ILocatedGameEvent>()
-                    .Where(ev => ev.GetPositions().Any(p => conn.LoadedChunks.Contains(p / Chunk.Size)))
+                    .Where(ev =>
+                        ev.GetPositions().Any(p => conn.LoadedChunks.Contains(p / Chunk.Size)) ||
+                        ((ev as EntitySpawnEvent)?.Entity as PlayerEntity)?.PlayerId == conn.ClientInfo.PlayerId)
                     .ToArray();
 
                 if (relevantChanges.Any() || relevantEvents.Any())

@@ -81,6 +81,9 @@ namespace OrangeBugReloaded.Core.ClientServer.Net
         public Task<RemoteMoveResult> MoveAsync(RemoteMoveRequest move, string playerId)
             => _gameServer.MoveAsync(move, playerId);
 
+        public Task<bool> ResetRegionAsync(string playerId)
+            => _gameServer.ResetRegionAsync(playerId);
+
 
         // RPC events
 

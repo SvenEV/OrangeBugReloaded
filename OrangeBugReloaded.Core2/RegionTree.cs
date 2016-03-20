@@ -25,14 +25,7 @@ namespace OrangeBugReloaded.Core
                 _regions.Add(RegionInfo.Default.Id, RegionInfo.Default);
         }
 
-        public RegionInfo this[int id]
-        {
-            get
-            {
-                RegionInfo region;
-                return _regions.TryGetValue(id, out region) ? region : RegionInfo.Empty;
-            }
-        }
+        public RegionInfo this[int id] => _regions.TryGetValue(id, RegionInfo.Empty);
 
         /// <summary>
         /// Gets regions that are derived from the region with the
@@ -53,6 +46,14 @@ namespace OrangeBugReloaded.Core
         public RegionInfo GetBaseRegion(int id)
         {
             return this[this[id].Parent];
+        }
+
+        public RegionInfo AddRegion(string name, int parentRegionId, Point spawnPosition)
+        {
+            var id = _regions.Keys.Max() + 1;
+            var newRegion = new RegionInfo(name, id, parentRegionId, spawnPosition);
+            _regions.Add(id, newRegion);
+            return newRegion;
         }
     }
 }

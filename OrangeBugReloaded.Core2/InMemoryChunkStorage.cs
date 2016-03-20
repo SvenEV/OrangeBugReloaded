@@ -12,9 +12,9 @@ namespace OrangeBugReloaded.Core
         private readonly IMapMetadata _meta;
         private readonly Dictionary<Point, IChunk> _chunks = new Dictionary<Point, IChunk>();
 
-        public InMemoryChunkStorage()
+        public InMemoryChunkStorage(IMapMetadata metadata)
         {
-            _meta = null;
+            _meta = metadata;
         }
 
         /// <inheritdoc/>

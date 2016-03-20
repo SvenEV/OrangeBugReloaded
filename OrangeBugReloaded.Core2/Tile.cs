@@ -13,6 +13,7 @@ namespace OrangeBugReloaded.Core
     {
         public static Tile Empty { get; } = WallTile.Default;
 
+        [JsonProperty]
         public Entity Entity { get; private set; } = Entity.None;
 
         /// <summary>
@@ -58,7 +59,7 @@ namespace OrangeBugReloaded.Core
                 await Entity.DetachAsync(detachArgs);
             }
 
-            if (!e.IsFinalized)
+            if (!e.IsSealed)
             {
                 e.Result = Compose(this, e.CurrentMove.Entity);
             }

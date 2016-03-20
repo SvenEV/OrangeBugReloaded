@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 namespace OrangeBugReloaded.Core
 {
     /// <summary>
-    /// An async version of <see cref="System.Threading.ManualResetEvent"/>.
+    /// An async version of <see cref="ManualResetEvent"/>.
     /// </summary>
     /// <remarks>
     /// Taken from http://blogs.msdn.com/b/pfxteam/archive/2012/02/11/10266920.aspx.

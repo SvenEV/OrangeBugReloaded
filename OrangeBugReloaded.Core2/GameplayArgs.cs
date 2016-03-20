@@ -19,7 +19,7 @@ namespace OrangeBugReloaded.Core
 
         public Tile Tile { get; }
         public Point SuggestedPushDirection { get; }
-        public bool IsFinalized => _transaction.IsFinalized;
+        public bool IsSealed => _transaction.IsSealed;
         public EntityMoveInfo CurrentMove => _transaction.CurrentMove;
         public IReadOnlyCollection<FollowUpEvent> FollowUpEvents => _followUpEvents;
         public Tile Result { get; set; }
@@ -44,7 +44,7 @@ namespace OrangeBugReloaded.Core
             SuggestedPushDirection = suggestedPushDirection;
         }
 
-        public void StopRecording() => _transaction.StopRecording();
+        public void Seal() => _transaction.IsSealed = true;
 
         public void Emit(IGameEvent e) => _transaction.Emit(e);
 
@@ -71,30 +71,30 @@ namespace OrangeBugReloaded.Core
 
         public void ValidateResult()
         {
-            if ((Result == null && ResultingEntity == null) && !_transaction.IsFinalized)
-                throw new InvalidOperationException("Invalid result: No result is provided and the transaction is not finalized");
+            if ((Result == null && ResultingEntity == null) && !_transaction.IsSealed)
+                throw new InvalidOperationException("Invalid result: No result is provided and the transaction is not sealed");
 
-            if ((Result != null || ResultingEntity != null) && _transaction.IsFinalized)
-                throw new InvalidOperationException("Invalid result: The transaction is finalized but a result is provided");
+            if ((Result != null || ResultingEntity != null) && _transaction.IsSealed)
+                throw new InvalidOperationException("Invalid result: The transaction is sealed but a result is provided");
         }
     }
 
     // Interfaces for all the different events on tiles and entities
 
-    public interface IBeginMoveArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ICanFinalize, IGameEventEmitter
+    public interface IBeginMoveArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ISealable, IGameEventEmitter
     {
         Entity ResultingEntity { get; set; }
         void ValidateResult();
     }
 
-    public interface IAttachArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ICanFinalize, IGameEventEmitter, ISupportsMove
+    public interface IAttachArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ISealable, IGameEventEmitter, ISupportsMove
     {
         Tile Result { get; set; }
         IEntityDetachArgs CreateEntityDetachArgs(Tile tile, Point suggestedPushDirection);
         void ValidateResult();
     }
 
-    public interface IDetachArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ICanFinalize, IGameEventEmitter, ISupportsMove
+    public interface IDetachArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ISealable, IGameEventEmitter, ISupportsMove
     {
         Tile Result { get; set; }
         void ValidateResult();
@@ -112,7 +112,7 @@ namespace OrangeBugReloaded.Core
         IReadOnlyCollection<FollowUpEvent> FollowUpEvents { get; }
     }
 
-    public interface IEntityDetachArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ICanFinalize, IGameEventEmitter, ISupportsMove
+    public interface IEntityDetachArgs : IReadOnlyMap, IHasInitiator, ICurrentMoveAware, ISealable, IGameEventEmitter, ISupportsMove
     {
         Tile Tile { get; }
         Point SuggestedPushDirection { get; }
@@ -130,10 +130,10 @@ namespace OrangeBugReloaded.Core
         EntityMoveInfo CurrentMove { get; }
     }
 
-    public interface ICanFinalize
+    public interface ISealable
     {
-        bool IsFinalized { get; }
-        void StopRecording();
+        bool IsSealed { get; }
+        void Seal();
     }
 
     public interface ISupportsMove

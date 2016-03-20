@@ -40,7 +40,7 @@ namespace OrangeBugReloaded.Core.Tiles
             else
             {
                 // All other entities are rejected
-                e.StopRecording();
+                e.Seal();
             }
         }
 

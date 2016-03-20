@@ -48,7 +48,7 @@ namespace OrangeBugReloaded.App.Presentation
         private IGameplayMap _map;
         private IDisposable _spawnSubscription;
         private IDisposable _moveSubscription;
-        
+
         private string _followedPlayerId;
 
         public IGameplayMap Map
@@ -226,19 +226,30 @@ namespace OrangeBugReloaded.App.Presentation
                         }
                     }
                 }
-                
+
                 // Draw and animate entities
                 lock (_entitiesLock)
                 {
-                    foreach (var entityInfo in _entities)
+                    //foreach (var entityInfo in _entities)
+                    for (var i = 0; i < _entities.Count; i++)
                     {
-                        entityInfo.Advance(args.Timing.ElapsedTime);
+                        var entityInfo = _entities[i];
 
-                        if (Mathf.Within(entityInfo.CurrentPosition.X, xMin, xMax) &&
-                            Mathf.Within(entityInfo.CurrentPosition.Y, yMin, yMax))
+                        if (entityInfo.IsDespawned)
                         {
-                            //DrawSprite(g, entityInfo.Entity, entityInfo.CurrentPosition);
-                            DrawSpriteBatched(spriteBatch, entityInfo.Entity, entityInfo.CurrentPosition);
+                            _entities.Remove(entityInfo);
+                            i--;
+                        }
+                        else
+                        {
+                            entityInfo.Advance(args.Timing.ElapsedTime);
+
+                            if (Mathf.Within(entityInfo.CurrentPosition.X, xMin, xMax) &&
+                                Mathf.Within(entityInfo.CurrentPosition.Y, yMin, yMax))
+                            {
+                                //DrawSprite(g, entityInfo.Entity, entityInfo.CurrentPosition);
+                                DrawSpriteBatched(spriteBatch, entityInfo.Entity, entityInfo.CurrentPosition);
+                            }
                         }
                     }
                 }
@@ -279,7 +290,7 @@ namespace OrangeBugReloaded.App.Presentation
             var m = _coords.GameToCanvasMatrix(position, orientation.IsDirection ? _radiansForDirection[orientation] : 0);
             g.DrawFromSpriteSheet(_spriteSheet.Image, m, _spriteSheet[visualHint?.VisualKey]);
         }
-        
+
         private void OnCreateResources(CanvasAnimatedControl sender, CanvasCreateResourcesEventArgs args)
         {
             if (args.Reason != CanvasCreateResourcesReason.DpiChanged)
@@ -307,16 +318,12 @@ namespace OrangeBugReloaded.App.Presentation
         private void OnEntitySpawned(EntitySpawnEvent e)
         {
             var entityInfo = new EntityInfo(e.Entity, e.Position, Map.Events);
-            entityInfo.Despawned += OnEntityDespawned;
 
             lock (_entitiesLock)
                 _entities.Add(entityInfo);
-        }
 
-        private void OnEntityDespawned(EntityInfo entityInfo)
-        {
-            lock (_entitiesLock)
-                _entities.Remove(entityInfo);
+            if ((e.Entity as PlayerEntity)?.PlayerId == FollowedPlayerId && FollowedPlayerId != null)
+                CameraPosition = e.Position.ToVector2() + new Vector2(.5f, -.5f);
         }
 
         private void MoveToPlayer(string playerId)

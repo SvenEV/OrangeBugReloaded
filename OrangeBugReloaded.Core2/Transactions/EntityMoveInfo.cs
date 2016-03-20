@@ -7,5 +7,12 @@
         public Point TargetPosition { get; set; }
 
         public Point Offset => TargetPosition - SourcePosition;
+
+        public EntityMoveInfo(Entity entity, Point sourcePosition, Point targetPosition)
+        {
+            Entity = entity;
+            SourcePosition = sourcePosition;
+            TargetPosition = targetPosition;
+        }
     }
 }

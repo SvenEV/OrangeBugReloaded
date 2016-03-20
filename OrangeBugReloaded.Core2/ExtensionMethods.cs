@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OrangeBugReloaded.Core.Transactions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -42,20 +43,24 @@ namespace OrangeBugReloaded.Core
                 _random.Next(rectangle.Bottom, rectangle.Top));
         }
 
-        public static async Task<AreaSpawnResult> SpawnAsync(this IGameplayMap map, Entity entity, IEnumerable<Point> area)
+        public static async Task<AreaSpawnResult> SpawnAsync(this IGameplayMap map, Entity entity, IEnumerable<Point> area, ITransactionWithMoveSupport transaction)
         {
+            if (transaction.IsSealed)
+                return new AreaSpawnResult(transaction, false, Enumerable.Empty<FollowUpEvent>(), Point.Zero);
+
             var availableSpawnPoints = area.Shuffle().ToQueue();
 
             while (availableSpawnPoints.Any())
             {
+                transaction.IsSealed = false; // If the last spawn failed the transaction is sealed which would prevent any other spawns
                 var spawnPosition = availableSpawnPoints.Dequeue();
-                var result = await map.SpawnAsync(entity, spawnPosition);
+                var result = await map.SpawnAsync(entity, spawnPosition, transaction);
 
                 if (result.IsSuccessful)
-                    return new AreaSpawnResult(result.Transaction, true, result.FollowUpEvents, spawnPosition);
+                    return new AreaSpawnResult(transaction, true, result.FollowUpEvents, spawnPosition);
             }
 
-            return null;
+            return new AreaSpawnResult(transaction, false, Enumerable.Empty<FollowUpEvent>(), Point.Zero);
         }
 
         /// <summary>
@@ -65,10 +70,14 @@ namespace OrangeBugReloaded.Core
         /// <param name="map">Map</param>
         /// <param name="startPosition">Start position</param>
         /// <param name="maxRadius">The maximum radius in which points are selected</param>
+        /// <param name="throwIfMaxRadiusExceeded">
+        /// If true and the specified maximum radius is exceeded
+        /// an <see cref="InvalidOperationException"/> is thrown.
+        /// </param>
         /// <returns>
         /// Points that form a cohesive map area of the same region (including the start position).
         /// </returns>
-        public static async Task<IReadOnlyCollection<Point>> GetCoherentPositionsAsync(this IMap map, Point startPosition, int maxRadius = 10)
+        public static async Task<IReadOnlyCollection<Point>> GetCoherentPositionsAsync(this IMap map, Point startPosition, int maxRadius = 10, bool throwIfMaxRadiusExceeded = true)
         {
             var startTile = await map.GetMetadataAsync(startPosition);
             var visited = new HashSet<Point>();
@@ -82,16 +91,20 @@ namespace OrangeBugReloaded.Core
                 foreach (var dir in Point.Directions)
                 {
                     var neighborPosition = currentPosition + dir;
-                    var distance = Point.Distance(neighborPosition, startPosition);
+                    var neighbor = await map.GetMetadataAsync(currentPosition + dir);
 
-                    if (distance.X <= maxRadius && distance.Y <= maxRadius)
+                    if (!visited.Contains(neighborPosition) && neighbor.RegionId == startTile.RegionId)
                     {
-                        var neighbor = await map.GetMetadataAsync(currentPosition + dir);
-
-                        if (!visited.Contains(neighborPosition) && neighbor.RegionId == startTile.RegionId)
+                        var distance = Point.Distance(neighborPosition, startPosition);
+                        if (distance.X <= maxRadius && distance.Y <= maxRadius)
                         {
                             queue.Enqueue(neighborPosition);
                             visited.Add(neighborPosition);
+                        }
+                        else
+                        {
+                            if (throwIfMaxRadiusExceeded)
+                                throw new InvalidOperationException("Region too large: maximum radius exceeded");
                         }
                     }
                 }

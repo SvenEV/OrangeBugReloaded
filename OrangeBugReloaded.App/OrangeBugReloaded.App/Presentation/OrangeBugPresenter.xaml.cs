@@ -3,6 +3,7 @@ using OrangeBugReloaded.Core;
 using OrangeBugReloaded.Core.ClientServer;
 using System;
 using System.Numerics;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
@@ -40,6 +41,7 @@ namespace OrangeBugReloaded.App.Presentation
             InitializeComponent();
             _renderer.Canvas = canvas;
             KeyboardManager.ArrowKeyDown.Subscribe(OnDirectionKeyDown);
+            KeyboardManager.KeyDown.Where(e => e.Key == Windows.System.VirtualKey.F5).Subscribe(OnResetKeyDown);
         }
 
         private void OnPointerWheelChanged(object _, PointerRoutedEventArgs e)
@@ -57,6 +59,12 @@ namespace OrangeBugReloaded.App.Presentation
         {
             if (GameClient != null)
                 await GameClient.MovePlayerAsync(direction);
+        }
+
+        private async void OnResetKeyDown(KeyDownEvent _)
+        {
+            if (GameClient != null)
+                await GameClient.ResetRegionAsync();
         }
 
         // TODO: Use a combination of PointerPressed/PointerReleased instead of tap events

@@ -21,16 +21,17 @@ namespace OrangeBugReloaded.Core.Transactions
         public MoveInitiator Initiator { get; set; }
         
         /// <inheritdoc/>
-        public bool IsFinalized { get; private set; }
+        public bool IsSealed { get; set; }
 
         public TransactionBase(MoveInitiator initiator)
         {
             Initiator = initiator;
         }
 
+        /// <inheritdoc/>
         public bool Set(Point position, T oldValue, T value)
         {
-            if (IsFinalized || Equals(oldValue, value))
+            if (IsSealed || Equals(oldValue, value))
                 return false;
 
             _changes[position] = value;
@@ -38,15 +39,9 @@ namespace OrangeBugReloaded.Core.Transactions
         }
         
         /// <inheritdoc/>
-        public void StopRecording()
-        {
-            IsFinalized = true;
-        }
-
-        /// <inheritdoc/>
         public void Emit(IGameEvent e)
         {
-            if (IsFinalized)
+            if (IsSealed)
                 return;
 
             _events.Add(e);

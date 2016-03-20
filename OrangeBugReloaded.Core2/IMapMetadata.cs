@@ -23,8 +23,6 @@ namespace OrangeBugReloaded.Core
         /// </summary>
         /// <returns>The new version</returns>
         int NextTileMetadataVersion();
-
-
     }
 
     public interface IRegionTree
@@ -32,6 +30,7 @@ namespace OrangeBugReloaded.Core
         RegionInfo DefaultRegion { get; }
         RegionInfo GetBaseRegion(int id);
         IReadOnlyCollection<RegionInfo> GetDerivedRegions(int id);
+        RegionInfo AddRegion(string name, int parentRegionId, Point spawnPosition);
         RegionInfo this[int id] { get; }
     }
 

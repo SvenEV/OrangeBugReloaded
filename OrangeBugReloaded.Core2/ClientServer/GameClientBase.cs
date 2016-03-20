@@ -4,14 +4,12 @@ using OrangeBugReloaded.Core.Transactions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Subjects;
 using System.Threading.Tasks;
 
 namespace OrangeBugReloaded.Core.ClientServer
 {
     public abstract class GameClientBase : IGameClientStub
     {
-        private readonly Subject<IGameEvent> _events = new Subject<IGameEvent>();
         private IGameServerStub _serverStub;
 
         public Point PlayerPosition { get; private set; }
@@ -19,8 +17,6 @@ namespace OrangeBugReloaded.Core.ClientServer
         public GameClientInfo PlayerInfo { get; }
 
         public IGameplayMap Map { get; private set; }
-
-        public IObservable<IGameEvent> Events => _events;
 
         public GameClientBase(GameClientInfo playerInfo)
         {
@@ -98,6 +94,11 @@ namespace OrangeBugReloaded.Core.ClientServer
             return await MoveAsync(PlayerPosition, PlayerPosition + direction);
         }
 
+        public async Task<bool> ResetRegionAsync()
+        {
+            return await _serverStub.ResetRegionAsync(PlayerInfo.PlayerId);
+        }
+
         public async Task OnUpdate(ClientUpdate e)
         {
             foreach (var change in e.TileUpdates)
@@ -125,9 +126,6 @@ namespace OrangeBugReloaded.Core.ClientServer
             }
 
             AnalyzeEvents(e.Events);
-
-            foreach (var ev in e.Events)
-                _events.OnNext(ev);
         }
 
         private async Task ApplyChunkAsync(IChunk chunk, Point index)
@@ -156,6 +154,20 @@ namespace OrangeBugReloaded.Core.ClientServer
 
                 // Make sure we have that part of the map loaded
                 await Map.GetAsync(PlayerPosition);
+            }
+            else
+            {
+                var playerSpawnEvent = events.OfType<EntitySpawnEvent>()
+                    .FirstOrDefault(ev => (ev.Entity as PlayerEntity)?.PlayerId == PlayerInfo.PlayerId);
+
+                if (playerSpawnEvent != null)
+                {
+                    // It is the player that has been moved
+                    PlayerPosition = playerSpawnEvent.Position;
+
+                    // Make sure we have that part of the map loaded
+                    await Map.GetAsync(PlayerPosition);
+                }
             }
         }
     }

@@ -42,7 +42,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
             else
             {
-                e.StopRecording();
+                e.Seal();
             }
         }
 
@@ -54,7 +54,7 @@ namespace OrangeBugReloaded.Core.Tiles
             }
             else
             {
-                e.StopRecording();
+                e.Seal();
             }
         }
 

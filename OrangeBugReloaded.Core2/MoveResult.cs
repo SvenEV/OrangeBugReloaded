@@ -44,4 +44,12 @@ namespace OrangeBugReloaded.Core
             SpawnPosition = spawnPosition;
         }
     }
+
+    public class ResetResult : MoveResult
+    {
+        public ResetResult(ITransactionWithMoveSupport transaction, bool isSuccessful, IEnumerable<FollowUpEvent> followUpEvents)
+            : base(transaction, isSuccessful, followUpEvents)
+        {
+        }
+    }
 }

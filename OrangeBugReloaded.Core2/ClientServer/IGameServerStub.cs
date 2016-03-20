@@ -42,5 +42,13 @@ namespace OrangeBugReloaded.Core.ClientServer
         /// <param name="playerId">Player ID</param>
         /// <returns>Resulting information</returns>
         Task<RemoteMoveResult> MoveAsync(RemoteMoveRequest move, string playerId);
+
+        /// <summary>
+        /// Tries to reset the region where the specified player
+        /// is currently located.
+        /// </summary>
+        /// <param name="playerId">Player ID</param>
+        /// <returns>True if the region has successfully been reset</returns>
+        Task<bool> ResetRegionAsync(string playerId);
     }
 }

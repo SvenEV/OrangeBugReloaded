@@ -15,7 +15,6 @@ namespace OrangeBugReloaded.App.Presentation
         private readonly IDisposable _despawnSubscription;
         private readonly AsyncManualResetEvent _finishEvent = new AsyncManualResetEvent();
 
-        public event Action<EntityInfo> Despawned;
         public event Action<EntityInfo> Moved;
 
         public Entity Entity { get; private set; }
@@ -29,6 +28,8 @@ namespace OrangeBugReloaded.App.Presentation
         public TimeSpan ElapsedTime { get; private set; }
 
         public TimeSpan AnimationDuration { get; private set; }
+
+        public bool IsDespawned { get; private set; }
 
         public EntityInfo(Entity entity, Point position, IObservable<IGameEvent> eventStream)
         {
@@ -90,7 +91,7 @@ namespace OrangeBugReloaded.App.Presentation
             await _finishEvent.WaitAsync();
 
             _moveSubscription.Dispose();
-            Despawned?.Invoke(this);
+            IsDespawned = true;
         }
 
         public void Dispose()

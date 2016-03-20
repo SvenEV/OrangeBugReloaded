@@ -95,13 +95,21 @@ namespace OrangeBugReloaded.Core
         /// <param name="entity">The entity that is spawned</param>
         /// <param name="position">The position of the tile where the entity is attached</param>
         /// <returns>Spawn result</returns>
-        Task<MoveResult> SpawnAsync(Entity entity, Point position);
+        Task<MoveResult> SpawnAsync(Entity entity, Point position, ITransactionWithMoveSupport transaction);
 
         /// <summary>
         /// Tries to remove the entity from the tile at the specified position.
         /// </summary>
         /// <param name="position">The position of the tile where the entity is despawned</param>
         /// <returns>Despawn result</returns>
-        Task<MoveResult> DespawnAsync(Point position);
+        Task<MoveResult> DespawnAsync(Point position, ITransactionWithMoveSupport transaction);
+
+        /// <summary>
+        /// Tries to reset the region that includes the specified position to
+        /// the tile template specified in the tile metadata.
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        Task<ResetResult> ResetRegionAsync(Point position, ITransactionWithMoveSupport transaction);
     }
 }

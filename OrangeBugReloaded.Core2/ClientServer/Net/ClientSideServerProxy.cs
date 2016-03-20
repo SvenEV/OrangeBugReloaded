@@ -28,6 +28,11 @@ namespace OrangeBugReloaded.Core.ClientServer.Net
             return await _connection.Proxy.MoveAsync(move, playerId);
         }
 
+        public async Task<bool> ResetRegionAsync(string playerId)
+        {
+            return await _connection.Proxy.ResetRegionAsync(playerId);
+        }
+
         public Task UnloadChunkAsync(Point index, string playerId)
         {
             return _connection.Proxy.UnloadChunkAsync(index, playerId);

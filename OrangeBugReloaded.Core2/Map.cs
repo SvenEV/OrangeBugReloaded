@@ -1,4 +1,5 @@
-﻿using OrangeBugReloaded.Core.Events;
+﻿using OrangeBugReloaded.Core.Entities;
+using OrangeBugReloaded.Core.Events;
 using OrangeBugReloaded.Core.Transactions;
 using System;
 using System.Collections.Generic;
@@ -38,9 +39,9 @@ namespace OrangeBugReloaded.Core
             _eventSource = new Subject<IGameEvent>();
 
             // TODO: For now, just create metadata instead of loading from storage
-            Metadata = new MapMetadata();
+            Metadata = storage.LoadMetadataAsync().Result;
         }
-        
+
         /// <inheritdoc/>
         public void Emit(IGameEvent e)
         {
@@ -76,7 +77,7 @@ namespace OrangeBugReloaded.Core
                 // Update dependencies
                 Dependencies.RemoveDependenciesOf(oldTileInfo.Tile, position);
                 Dependencies.AddDependenciesOf(tileInfo.Tile, position);
-                
+
                 return true;
             }
 
@@ -121,25 +122,19 @@ namespace OrangeBugReloaded.Core
         }
 
         /// <inheritdoc/>
-        public async Task<MoveResult> SpawnAsync(Entity entity, Point position)
+        public async Task<MoveResult> SpawnAsync(Entity entity, Point position, ITransactionWithMoveSupport transaction)
         {
             var tileInfo = await GetAsync(position);
             tileInfo.Tile.EnsureNotNull();
 
-            var transaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
-            transaction.Moves.Push(new EntityMoveInfo
-            {
-                Entity = entity,
-                SourcePosition = position,
-                TargetPosition = position
-            });
+            transaction.Moves.Push(new EntityMoveInfo(entity, position, position));
 
             // Try to attach entity
             var attachArgs = new GameplayArgs(transaction, this);
             await tileInfo.Tile.AttachEntityAsync(attachArgs);
             attachArgs.ValidateResult();
 
-            if (transaction.IsFinalized)
+            if (transaction.IsSealed)
                 return new MoveResult(transaction, false, Enumerable.Empty<FollowUpEvent>());
 
             var newTileInfo = tileInfo.WithTile(attachArgs.Result);
@@ -152,29 +147,24 @@ namespace OrangeBugReloaded.Core
             return new MoveResult(transaction, true, followUpEvents);
         }
 
-        public async Task<MoveResult> DespawnAsync(Point position)
+        /// <inheritdoc/>
+        public async Task<MoveResult> DespawnAsync(Point position, ITransactionWithMoveSupport transaction)
         {
             var tileInfo = await GetAsync(position);
             tileInfo.Tile.EnsureNotNull();
 
             // No entity => nothing to despawn
             if (tileInfo.Tile.Entity == Entity.None)
-                return new MoveResult(TransactionWithMoveSupport.EmptyFinalizedTransaction, true, Enumerable.Empty<FollowUpEvent>());
+                return new MoveResult(transaction, true, Enumerable.Empty<FollowUpEvent>());
 
-            var transaction = new TransactionWithMoveSupport(MoveInitiator.Empty);
-            transaction.Moves.Push(new EntityMoveInfo
-            {
-                Entity = tileInfo.Tile.Entity,
-                SourcePosition = position,
-                TargetPosition = position
-            });
+            transaction.Moves.Push(new EntityMoveInfo(tileInfo.Tile.Entity, position, position));
 
             // Try to detach entity
             var detachArgs = new GameplayArgs(transaction, this);
             await tileInfo.Tile.DetachEntityAsync(detachArgs);
             detachArgs.ValidateResult();
 
-            if (transaction.IsFinalized)
+            if (transaction.IsSealed)
                 return new MoveResult(transaction, false, Enumerable.Empty<FollowUpEvent>());
 
             var newTileInfo = tileInfo.WithTile(detachArgs.Result);
@@ -185,6 +175,87 @@ namespace OrangeBugReloaded.Core
             var followUpEvents = await UpdateTilesAsync(new[] { position }, transaction);
 
             return new MoveResult(transaction, true, followUpEvents);
+        }
+
+        /// <inheritdoc/>
+        public async Task<ResetResult> ResetRegionAsync(Point position, ITransactionWithMoveSupport transaction)
+        {
+            // TOOD: Do not modify map directly, collect changes in a transaction
+            // instead of 'bool' return 'ResetResult' containing the transaction
+
+            var tileMeta = await GetMetadataAsync(position);
+            var region = Metadata.Regions[tileMeta.RegionId];
+            var regionPoints = await this.GetCoherentPositionsAsync(position);
+            var playersInRegion = new List<PlayerEntity>();
+
+            // Despawn all players within region
+            foreach (var p in regionPoints)
+            {
+                var tileInfo = await GetAsync(p);
+                var player = tileInfo.Tile.Entity as PlayerEntity;
+
+                if (player != null)
+                {
+                    playersInRegion.Add(player);
+                    var despawnResult = await DespawnAsync(p, transaction);
+                    if (!despawnResult.IsSuccessful)
+                        return new ResetResult(transaction, false, Enumerable.Empty<FollowUpEvent>()); // If we can't despawn a player in the region, we can't reset
+                }
+            }
+
+            // Replace tiles with their templates
+            foreach (var p in regionPoints)
+            {
+                var meta = await GetMetadataAsync(p);
+                var oldTileInfo = await GetAsync(p);
+                var newTileInfo = new TileInfo(meta.TileTemplate, oldTileInfo.Version); // Version will be set during commit
+
+                var hasChanged = transaction.Set(p, oldTileInfo, newTileInfo);
+
+                if (hasChanged && oldTileInfo.Tile.Entity != Entity.None)
+                    transaction.Emit(new EntityDespawnEvent(p, oldTileInfo.Tile.Entity));
+
+                if (hasChanged && newTileInfo.Tile.Entity != Entity.None)
+                    transaction.Emit(new EntitySpawnEvent(p, newTileInfo.Tile.Entity));
+            }
+
+            // Respawn players at spawn position
+            var spawnPoints = await this.GetCoherentPositionsAsync(region.SpawnPosition);
+            var availableSpawnPoints = spawnPoints.Shuffle().ToQueue();
+
+            if (availableSpawnPoints.Count < playersInRegion.Count)
+                return new ResetResult(transaction, false, Enumerable.Empty<FollowUpEvent>()); // Spawn region is too small to respawn all players
+
+            foreach (var player in playersInRegion)
+            {
+                var success = false;
+                var spawnPosition = Point.Zero;
+
+                while (!success && availableSpawnPoints.Any())
+                {
+                    transaction.IsSealed = false; // If the last spawn failed the transaction is sealed which would prevent any other spawns
+                    spawnPosition = availableSpawnPoints.Dequeue();
+                    var spawnResult = await SpawnAsync(player, spawnPosition, transaction);
+                    success = spawnResult.IsSuccessful;
+                }
+
+                if (success)
+                {
+                    // Update player position in map metadata
+                    Metadata.Players[player.PlayerId] = Metadata.Players[player.PlayerId].WithPosition(spawnPosition);
+                }
+                else
+                {
+                    // We ran out of available spawn positions and could not spawn the player
+                    // => we can't fully reset the region
+                    return new ResetResult(transaction, false, Enumerable.Empty<FollowUpEvent>());
+                }
+            }
+
+            // Notify changed tiles and tiles that directly or indirectly depend on changed tiles
+            var affectedTiles = transaction.Changes.Select(kvp => kvp.Key);
+            var followUpEvents = await UpdateTilesAsync(affectedTiles, transaction);
+            return new ResetResult(transaction, true, followUpEvents);
         }
 
         private async Task<bool> MoveCoreAsync(Point sourcePosition, Point targetPosition, ITransactionWithMoveSupport transaction)
@@ -201,17 +272,11 @@ namespace OrangeBugReloaded.Core
             if (source.Tile.Entity == Entity.None)
             {
                 // Cancel if there's no entity to move
-                transaction.StopRecording();
+                transaction.IsSealed = true;
                 return false;
             }
 
-            var move = new EntityMoveInfo
-            {
-                SourcePosition = sourcePosition,
-                TargetPosition = targetPosition,
-                Entity = source.Tile.Entity
-            };
-
+            var move = new EntityMoveInfo(source.Tile.Entity, sourcePosition, targetPosition);
             transaction.Moves.Push(move);
 
             IBeginMoveArgs beginMoveArgs = new GameplayArgs(transaction, this);
@@ -221,7 +286,7 @@ namespace OrangeBugReloaded.Core
             // OnBeginMove: Notify entity that a move has been initiated
             await source.Tile.Entity.BeginMoveAsync(beginMoveArgs);
             beginMoveArgs.ValidateResult();
-            if (transaction.IsFinalized) return false;
+            if (transaction.IsSealed) return false;
 
             var newSource = source.WithTile(Tile.Compose(source.Tile, beginMoveArgs.ResultingEntity));
             if (transaction.Set(sourcePosition, source, newSource))
@@ -232,12 +297,12 @@ namespace OrangeBugReloaded.Core
             // Detach: Remove the entity from the source tile
             await source.Tile.DetachEntityAsync(detachArgs);
             detachArgs.ValidateResult();
-            if (transaction.IsFinalized) return false;
+            if (transaction.IsSealed) return false;
 
             // Attach: Add the entity to the target tile
             await target.Tile.AttachEntityAsync(attachArgs);
             attachArgs.ValidateResult();
-            if (transaction.IsFinalized) return false;
+            if (transaction.IsSealed) return false;
 
             // Detach from old tile, attach to new tile have succeeded
             // => Apply changes to transaction
@@ -262,14 +327,15 @@ namespace OrangeBugReloaded.Core
 
             if (oldTarget.Tile.Entity != Entity.None)
             {
-                // The entity at target position has been replaced
-                // or the entity at old target has been moved/collected/...
+                // The entity at target position has either been replaced
+                // or it has been moved/collected/... during a nested move
                 var oldTargetEntityOverwritten = // TODO: Test this!
                     !(transaction.Events.OfType<EntityDespawnEvent>().Any(ev => ev.Position == targetPosition) ||
                     transaction.Events.OfType<EntityMoveEvent>().Any(ev => ev.SourcePosition == targetPosition));
 
                 if (oldTargetEntityOverwritten)
                 {
+                    // If replaced, emit despawn event
                     var despawnEvent = new EntityDespawnEvent(targetPosition, oldTarget.Tile.Entity);
                     transaction.Emit(despawnEvent);
                 }
@@ -311,7 +377,8 @@ namespace OrangeBugReloaded.Core
             // TODO: This is problematic! A commit is done directly on the map
             // bypassing the GameServer. We might have to forward the new chunk
             // to some of the players.
-            await transaction.CommitAsync(this, Metadata.NextTileVersion());
+            // On client side we can't just invent some new version numbers.
+            await transaction.CommitAsync(this, Metadata?.NextTileVersion() ?? 0);
         }
 
         private void OnChunkUnloaded(KeyValuePair<Point, IChunk> kvp)
@@ -358,7 +425,7 @@ namespace OrangeBugReloaded.Core
                 await tileInfo.Tile.OnEntityMoveTransactionCompletedAsync(completionArgs);
                 completionArgs.ValidateResult();
 
-                if (transaction.IsFinalized)
+                if (transaction.IsSealed)
                     return null; // Null terminates the loop
 
                 var newTileInfo = tileInfo.WithTile(completionArgs.Result);
