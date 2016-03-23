@@ -38,7 +38,7 @@ namespace OrangeBugReloaded.Core
 
             _eventSource = new Subject<IGameEvent>();
 
-            // TODO: For now, just create metadata instead of loading from storage
+            // TODO: LoadMetadataAsync() should be treated like async!
             Metadata = storage.LoadMetadataAsync().Result;
         }
 
@@ -329,7 +329,7 @@ namespace OrangeBugReloaded.Core
             {
                 // The entity at target position has either been replaced
                 // or it has been moved/collected/... during a nested move
-                var oldTargetEntityOverwritten = // TODO: Test this!
+                var oldTargetEntityOverwritten =
                     !(transaction.Events.OfType<EntityDespawnEvent>().Any(ev => ev.Position == targetPosition) ||
                     transaction.Events.OfType<EntityMoveEvent>().Any(ev => ev.SourcePosition == targetPosition));
 
@@ -432,12 +432,14 @@ namespace OrangeBugReloaded.Core
                 
                 if (transaction.Set(p, tileInfo, newTileInfo))
                 {
-                    // TODO: Somehow modify events that have been emitted during the move.
+                    // TODO: Test and check whether this is sufficient
+                    // (Initial idea:
+                    // Somehow modify events that have been emitted during the move.
                     // E.g. when a balloon is moved onto an InkTile the move event's target
                     // still contains the balloon with its old color.
                     // Here, after the InkTile has changed the balloons color, we have to
                     // change that event to reflect the changes of InkTile and balloon.
-                    // We probably have to emit spawn/despawn events as well.
+                    // We probably have to emit spawn/despawn events as well.)
                     if (tileInfo.Tile.Entity != Entity.None)
                     {
                         if (newTileInfo.Tile.Entity == Entity.None)

@@ -125,7 +125,6 @@ namespace OrangeBugReloaded.Core
         /// <returns>Tile with the entity attached</returns>
         public static T Compose<T>(T tile, Entity entity) where T : Tile
         {
-            // QUESTION: Should we cache created instances?
             var newTile = (T)tile.EnsureNotNull().MemberwiseClone();
             newTile.Entity = entity.EnsureNotNull();
             return newTile;
@@ -140,7 +139,6 @@ namespace OrangeBugReloaded.Core
         /// <returns>Tile without an entity attached</returns>
         public static T WithoutEntity<T>(T tile) where T : Tile
         {
-            // QUESTION: Should we cache created instances?
             var newTile = (T)tile.EnsureNotNull().MemberwiseClone();
             newTile.Entity = Entity.None;
             return newTile;

@@ -80,8 +80,6 @@ namespace OrangeBugReloaded.Core
             if (e.CurrentMove.Entity is PlayerEntity)
             {
                 // Player collects the entity
-                // TODO: Is it sufficient to do nothing here?
-                //e.Result = Tile.WithoutEntity(e.Tile);
                 var despawnEvent = new EntityDespawnEvent(e.CurrentMove.TargetPosition, e.Tile.Entity);
                 e.Emit(despawnEvent);
             }
