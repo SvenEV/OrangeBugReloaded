@@ -230,7 +230,6 @@ namespace OrangeBugReloaded.App.Presentation
                 // Draw and animate entities
                 lock (_entitiesLock)
                 {
-                    //foreach (var entityInfo in _entities)
                     for (var i = 0; i < _entities.Count; i++)
                     {
                         var entityInfo = _entities[i];

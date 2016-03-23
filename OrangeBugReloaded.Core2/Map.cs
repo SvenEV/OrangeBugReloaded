@@ -429,7 +429,7 @@ namespace OrangeBugReloaded.Core
                     return null; // Null terminates the loop
 
                 var newTileInfo = tileInfo.WithTile(completionArgs.Result);
-
+                
                 if (transaction.Set(p, tileInfo, newTileInfo))
                 {
                     // TODO: Somehow modify events that have been emitted during the move.
@@ -438,6 +438,18 @@ namespace OrangeBugReloaded.Core
                     // Here, after the InkTile has changed the balloons color, we have to
                     // change that event to reflect the changes of InkTile and balloon.
                     // We probably have to emit spawn/despawn events as well.
+                    if (tileInfo.Tile.Entity != Entity.None)
+                    {
+                        if (newTileInfo.Tile.Entity == Entity.None)
+                            transaction.Emit(new EntityDespawnEvent(p, tileInfo.Tile.Entity));
+                        else
+                            transaction.Emit(new EntityChangeEvent(p, newTileInfo.Tile.Entity));
+                    }
+                    else
+                    {
+                        if (newTileInfo.Tile.Entity != Entity.None)
+                            transaction.Emit(new EntitySpawnEvent(p, newTileInfo.Tile.Entity));
+                    }
                     return true;
                 }
 

@@ -145,6 +145,7 @@
     <Compile Include="EntityFilterMode.cs" />
     <Compile Include="Events\ChunkAddedEvent.cs" />
     <Compile Include="Events\ChunkRemovedEvent.cs" />
+    <Compile Include="Events\EntityChangeEvent.cs" />
     <Compile Include="Events\EntityDespawnEvent.cs" />
     <Compile Include="Events\EntityMoveEvent.cs" />
     <Compile Include="Events\EntitySpawnEvent.cs" />

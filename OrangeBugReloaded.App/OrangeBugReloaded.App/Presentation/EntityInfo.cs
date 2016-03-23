@@ -5,13 +5,13 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Reactive.Linq;
-using System.Threading;
 
 namespace OrangeBugReloaded.App.Presentation
 {
     class EntityInfo : IDisposable
     {
         private readonly IDisposable _moveSubscription;
+        private readonly IDisposable _changeSubscription;
         private readonly IDisposable _despawnSubscription;
         private bool _isDespawned;
 
@@ -37,7 +37,12 @@ namespace OrangeBugReloaded.App.Presentation
             _moveSubscription = eventStream
                 .OfType<EntityMoveEvent>()
                 .Where(e => e.SourcePosition.ToVector2() == TargetPosition)
-                .Subscribe(OnMoved);
+                .Subscribe(OnEntityMoved);
+
+            _changeSubscription = eventStream
+                .OfType<EntityChangeEvent>()
+                .Where(e => e.Position.ToVector2() == TargetPosition)
+                .Subscribe(OnEntityChanged);
 
             _despawnSubscription = eventStream
                 .OfType<EntityDespawnEvent>()
@@ -45,7 +50,7 @@ namespace OrangeBugReloaded.App.Presentation
                 .Subscribe(OnDespawn);
         }
 
-        private void OnMoved(EntityMoveEvent e)
+        private void OnEntityMoved(EntityMoveEvent e)
         {
             Debug.WriteLine($"{e.Source.Entity.GetType().Name} at {e.SourcePosition} -> {e.Target.Entity.GetType().Name} at {e.TargetPosition}");
 
@@ -59,6 +64,11 @@ namespace OrangeBugReloaded.App.Presentation
             AnimationDuration = TimeSpan.FromSeconds(.2 * Math.Sqrt(distance));
             
             Moved?.Invoke(this);
+        }
+
+        private void OnEntityChanged(EntityChangeEvent e)
+        {
+            Entity = e.Entity;
         }
 
         /// <summary>
@@ -91,6 +101,7 @@ namespace OrangeBugReloaded.App.Presentation
         public void Dispose()
         {
             _moveSubscription.Dispose();
+            _changeSubscription.Dispose();
             _despawnSubscription.Dispose();
         }
     }

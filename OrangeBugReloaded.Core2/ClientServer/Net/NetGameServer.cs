@@ -7,7 +7,7 @@ using UwpNetworkingEssentials.Rpc;
 
 namespace OrangeBugReloaded.Core.ClientServer.Net
 {
-    public class NetGameServer : IGameServerStub, IRpcTarget
+    public class NetGameServer : IRpcTarget
     {
         // Maps StreamSocketConnection IDs to player information
         private readonly Dictionary<string, GameClientInfo> _players = new Dictionary<string, GameClientInfo>();
@@ -53,6 +53,7 @@ namespace OrangeBugReloaded.Core.ClientServer.Net
 
 
         // RPC methods
+        // These are similar to those in IGameServerStub but tailored to RPC connections.
 
         public async Task<JoinResult> JoinAsync(GameClientInfo clientInfo, [RpcCaller]RpcConnection caller)
         {
@@ -66,23 +67,24 @@ namespace OrangeBugReloaded.Core.ClientServer.Net
             return joinResult;
         }
 
-        public async Task LeaveAsync(string playerId)
+        public async Task LeaveAsync([RpcCaller]RpcConnection caller)
         {
-            await _gameServer.LeaveAsync(playerId);
-            // TODO: _players.Remove(Caller-Connection-ID)
+            var playerInfo = _players[caller.Id];
+            _players.Remove(caller.Id);
+            await _gameServer.LeaveAsync(playerInfo.PlayerId);
         }
 
-        public Task<IChunk> LoadChunkAsync(Point index, string playerId)
-            => _gameServer.LoadChunkAsync(index, playerId);
+        public Task<IChunk> LoadChunkAsync(Point index, [RpcCaller]RpcConnection caller)
+            => _gameServer.LoadChunkAsync(index, _players[caller.Id].PlayerId);
 
-        public Task UnloadChunkAsync(Point index, string playerId)
-            => _gameServer.UnloadChunkAsync(index, playerId);
+        public Task UnloadChunkAsync(Point index, [RpcCaller]RpcConnection caller)
+            => _gameServer.UnloadChunkAsync(index, _players[caller.Id].PlayerId);
 
-        public Task<RemoteMoveResult> MoveAsync(RemoteMoveRequest move, string playerId)
-            => _gameServer.MoveAsync(move, playerId);
+        public Task<RemoteMoveResult> MoveAsync(RemoteMoveRequest move, [RpcCaller]RpcConnection caller)
+            => _gameServer.MoveAsync(move, _players[caller.Id].PlayerId);
 
-        public Task<bool> ResetRegionAsync(string playerId)
-            => _gameServer.ResetRegionAsync(playerId);
+        public Task<bool> ResetRegionAsync([RpcCaller]RpcConnection caller)
+            => _gameServer.ResetRegionAsync(_players[caller.Id].PlayerId);
 
 
         // RPC events
